@@ -1,0 +1,80 @@
+=> gopher://gopher.floodgap.com:70/1/ Floodgap Systems gopher root
+ 
+Welcome to Gopherspace!
+These documents and files should help you get started with
+using and creating gopher content.
+ 
+=> gopher://gopher.floodgap.com:70/0/gopher/proxy Does this gopher menu look correct?
+ 
+```
+-- All about gopher -----------------------------------------------
+```
+=> gopher://gopher.floodgap.com:70/0/gopher/welcome A Brief Introduction to Gopherspace -- READ ME FIRST!
+=> gopher://gopher.floodgap.com:70/0/gopher/relevance.txt Why is gopher still relevant?
+ 
+"Thinking of it like that, a method of easily serving directories
+of data, rather than a scaled down web makes the whole thing more
+appealing I think." -- Rob Sayers
+ 
+=> gopher://sdf.org:70/0/users/rbigelo/gopher.txt Robert Bigelow: Gopher & Gopherspace
+ 
+=> gopher://gopher.floodgap.com:70/0/gopher/webisdead.txt Wired 08/2010: The Web Is Dead. Long Live The Internet.
+(Wired 08/2010. We'll take this down if Wired objects.)
+ 
+=> gopher://gopher.floodgap.com:70/0/gopher/StarTribune.txt The creators of Gopherspace at UMN (Star Tribune 11/5/01)
+ 
+=> gopher://gopher.floodgap.com:70/0/gopher/wbgopher Using your web browser to explore Gopherspace
+(and why you shouldn't use Internet Explorer)
+=> gopher://gopher.floodgap.com:70/1/overbite The Overbite Project: Gopher clients for mobile and desktop (OverbiteWX, OverbiteNX, Overbite Android)
+(download Overbite clients for your operating system
+or browser, including Firefox!)
+=> gopher://gopher.floodgap.com:70/1/gopher/clients Patches and clients for other legacy platforms
+ 
+```
+-- Creating your own gopher ---------------------------------------
+```
+Create your own gopherspace and come forward into the past!
+ 
+=> gopher://phlogosphere.org:70/1 The SDF Member PHLOGOSPHERE
+Don't have your own server? Create it for free at SDF! Or, if you
+have your own Unix machine with Perl, install
+=> gopher://gopher.floodgap.com:70/1/buck The Bucktooth gopher server
+ 
+Then get started creating your own content. Take a look at the
+=> gopher://gopher.floodgap.com:70/1/gopher/toybox The Gopher Toybox: sample gophermaps to create your own server
+to download a sample set of files you can modify yourself!
+This is public domain.
+ 
+```
+-- Share your gopherspace -----------------------------------------
+```
+Now that it's running, tell everyone about it!
+ 
+Get a dual-purpose social media link with the fld.gp shortener:
+=> gopher://fld.gp:70/1/gopher/shorten Floodgap Gopher Shortener Service
+ 
+Did you just put a completely new server online?
+Tell us about your new server and Veronica will come index it:
+=> gopher://gopher.floodgap.com:70/1/new New gopher servers since 1999
+ 
+```
+-- Reference documentation ----------------------------------------
+```
+=> gopher://gopher.floodgap.com:70/1/gopher/tech Technical specifications, RFCs, documents
+ 
+​** Points to ponder:
+ 
+[We] like to consider the hundreds of interconnected
+Gopher servers to be one large distributed entity; thus,
+we speak of "the Gopher", with its many small parts,
+spread throughout the Internet. The Gopher is always
+growing, always changing. It's everywhere, but you can't
+locate it; it's always there, but you can't see it. ...
+The Gopher is the largest and most practical example of
+applied pantheism in the history of mankind.
+```
+      Hahn; Stout. The Internet Complete Reference (1994)
+```
+ 
+=> gopher://gopher.floodgap.com:70/0/gopher/itbwtcl "In The Beginning Was The Command Line"
+by Neil Stephenson

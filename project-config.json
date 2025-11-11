@@ -1,0 +1,13 @@
+{
+    "name": "gemifer128",
+    "description": "Project gemini128",
+    "toolkit": "acme",
+    "sources": [
+        "src/main.asm"
+    ],
+    "build": "debug",
+    "definitions": [],
+    "includes": [],
+    "args": [],
+    "compiler": ""
+}

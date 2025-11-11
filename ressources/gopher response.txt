@@ -1,0 +1,307 @@
+WiC64:  command WIC64_CMD_GET_VERSION_STRING (len=0/0x0, using revised protocol)
+WiC64:  replies Success
+WiC64:  sends payload 18/0x12 bytes...
+WiC64:  0000: 32 2e 31 2e 30 20 28 76 69 63 65 3b 20 33 2e 39 |2.1.0 (vice; 3.9|
+WiC64:  0010: 29 00                                           |).              |
+WiC64:  command WIC64_CMD_TCP_OPEN (len=23/0x17, using revised protocol)
+WiC64:  0000: 67 6f 70 68 65 72 2e 66 6c 6f 6f 64 67 61 70 2e |gopher.floodgap.|
+WiC64:  0010: 63 6f 6d 3a 37 30 00                            |com:70.         |
+WiC64:  do_connect: curl_easy_perform: No error
+WiC64:  replies Success
+WiC64:  command WIC64_CMD_TCP_WRITE (len=3/0x3, using revised protocol)
+WiC64:  0000: 0d 0a 00                                        |...             |
+WiC64:  tcp_send_alarm_handler: tcp sent successfully
+WiC64:  replies Success
+WiC64:  command WIC64_CMD_TCP_AVAILABLE (len=0/0x0, using revised protocol)
+WiC64:  replies Success
+WiC64:  sends payload 2/0x2 bytes...
+WiC64:  0000: 00 00                                           |..              |
+WiC64:  command WIC64_CMD_TCP_READ (len=0/0x0, using revised protocol)
+WiC64:  replies Success
+WiC64:  command WIC64_CMD_TCP_READ (len=0/0x0, using revised protocol)
+WiC64:  replies Success
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 69 57 65 6c 63 6f 6d 65 20 74 6f 20 46 6c 6f 6f |iWelcome to Floo|
+WiC64:  0010: 64 67 61 70 20 53 79 73 74 65 6d 73 27 20 6f 66 |dgap Systems' of|
+WiC64:  0020: 66 69 63 69 61 6c 20 67 6f 70 68 65 72 20 73 65 |ficial gopher se|
+WiC64:  0030: 72 76 65 72 2e 09 09 65 72 72 6f 72 2e 68 6f 73 |rver...error.hos|
+WiC64:  0040: 74 09 31 0d 0a 69 46 6c 6f 6f 64 67 61 70 20 68 |t.1..iFloodgap h|
+WiC64:  0050: 61 73 20 73 65 72 76 65 64 20 74 68 65 20 67 6f |as served the go|
+WiC64:  0060: 70 68 65 72 20 63 6f 6d 6d 75 6e 69 74 79 20 73 |pher community s|
+WiC64:  0070: 69 6e 63 65 20 31 39 39 39 09 09 65 72 72 6f 72 |ince 1999..error|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 72 20 73 65 72 76 65 72 20 73 79 73 74 65 6d 2e |r server system.|
+WiC64:  0010: 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a |..error.host.1..|
+WiC64:  0020: 69 67 6f 70 68 65 72 2e 66 6c 6f 6f 64 67 61 70 |igopher.floodgap|
+WiC64:  0030: 2e 63 6f 6d 20 69 73 20 61 6e 20 49 42 4d 20 50 |.com is an IBM P|
+WiC64:  0040: 6f 77 65 72 20 35 32 30 20 45 78 70 72 65 73 73 |ower 520 Express|
+WiC64:  0050: 20 77 69 74 68 20 61 20 32 2d 77 61 79 09 09 65 | with a 2-way..e|
+WiC64:  0060: 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 69 34 2e |rror.host.1..i4.|
+WiC64:  0070: 32 47 48 7a 20 50 4f 57 45 52 36 20 43 50 55 20 |2GHz POWER6 CPU |
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 73 2e 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 |s...error.host.1|
+WiC64:  0010: 0d 0a 69 20 09 09 65 72 72 6f 72 2e 68 6f 73 74 |..i ..error.host|
+WiC64:  0020: 09 31 0d 0a 69 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a |.1..i***********|
+WiC64:  0030: 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a |****************|
+WiC64:  0040: 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a |****************|
+WiC64:  0050: 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a |****************|
+WiC64:  0060: 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a |..error.host.1..|
+WiC64:  0070: 69 2a 2a 20 20 20 20 20 20 20 20 20 20 20 20 20 |i**             |
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 20 20 20 20 20 20 2a 2a 09 09 65 72 72 6f 72 2e |      **..error.|
+WiC64:  0010: 68 6f 73 74 09 31 0d 0a 69 2a 2a 2a 2a 2a 2a 2a |host.1..i*******|
+WiC64:  0020: 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a |****************|
+WiC64:  0030: 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a |****************|
+WiC64:  0040: 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a 2a |****************|
+WiC64:  0050: 2a 2a 2a 2a 09 09 65 72 72 6f 72 2e 68 6f 73 74 |****..error.host|
+WiC64:  0060: 09 31 0d 0a 69 20 09 09 65 72 72 6f 72 2e 68 6f |.1..i ..error.ho|
+WiC64:  0070: 73 74 09 31 0d 0a 30 44 6f 65 73 20 74 68 69 73 |st.1..0Does this|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 30 |.error.host.1..0|
+WiC64:  0010: 41 72 65 20 79 6f 75 20 72 75 6e 6e 69 6e 67 20 |Are you running |
+WiC64:  0020: 61 20 62 6f 74 3f 20 41 72 65 20 77 65 20 62 6c |a bot? Are we bl|
+WiC64:  0030: 6f 63 6b 69 6e 67 20 79 6f 75 3f 09 2f 72 65 73 |ocking you?./res|
+WiC64:  0040: 70 6f 6e 73 69 62 6c 65 2d 62 6f 74 09 67 6f 70 |ponsible-bot.gop|
+WiC64:  0050: 68 65 72 2e 66 6c 6f 6f 64 67 61 70 2e 63 6f 6d |her.floodgap.com|
+WiC64:  0060: 09 37 30 0d 0a 69 50 6c 65 61 73 65 20 72 65 61 |.70..iPlease rea|
+WiC64:  0070: 64 20 74 68 69 73 20 64 6f 63 75 6d 65 6e 74 2e |d this document.|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 6f 77 6e 20 47 6f 70 68 65 72 73 70 61 63 65 20 |own Gopherspace |
+WiC64:  0010: 61 6e 64 20 73 68 65 6c 6c 20 61 63 63 6f 75 6e |and shell accoun|
+WiC64:  0020: 74 21 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 |t!..error.host.1|
+WiC64:  0030: 0d 0a 69 20 09 09 65 72 72 6f 72 2e 68 6f 73 74 |..i ..error.host|
+WiC64:  0040: 09 31 0d 0a 69 2d 2d 2d 20 47 65 74 74 69 6e 67 |.1..i--- Getting|
+WiC64:  0050: 20 73 74 61 72 74 65 64 20 77 69 74 68 20 47 6f | started with Go|
+WiC64:  0060: 70 68 65 72 20 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d |pher -----------|
+WiC64:  0070: 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d |----------------|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 72 73 70 61 63 65 3f 20 57 65 20 74 65 6c 6c 20 |rspace? We tell |
+WiC64:  0010: 79 6f 75 21 20 41 6e 64 20 66 69 6e 64 20 6f 75 |you! And find ou|
+WiC64:  0020: 74 20 68 6f 77 09 09 65 72 72 6f 72 2e 68 6f 73 |t how..error.hos|
+WiC64:  0030: 74 09 31 0d 0a 69 74 6f 20 63 72 65 61 74 65 20 |t.1..ito create |
+WiC64:  0040: 79 6f 75 72 20 6f 77 6e 20 47 6f 70 68 65 72 20 |your own Gopher |
+WiC64:  0050: 77 6f 72 6c 64 21 29 09 09 65 72 72 6f 72 2e 68 |world!)..error.h|
+WiC64:  0060: 6f 73 74 09 31 0d 0a 69 20 09 09 65 72 72 6f 72 |ost.1..i ..error|
+WiC64:  0070: 2e 68 6f 73 74 09 31 0d 0a 30 55 73 69 6e 67 20 |.host.1..0Using |
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 69 |.error.host.1..i|
+WiC64:  0010: 28 75 73 65 66 75 6c 20 74 69 70 73 20 66 6f 72 |(useful tips for|
+WiC64:  0020: 20 67 6f 70 68 65 72 20 6e 65 77 62 69 65 73 2c | gopher newbies,|
+WiC64:  0030: 20 75 70 64 61 74 65 64 20 31 37 20 4e 6f 76 65 | updated 17 Nove|
+WiC64:  0040: 6d 62 65 72 20 32 30 31 38 29 09 09 65 72 72 6f |mber 2018)..erro|
+WiC64:  0050: 72 2e 68 6f 73 74 09 31 0d 0a 69 20 09 09 65 72 |r.host.1..i ..er|
+WiC64:  0060: 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 31 54 68 65 |ror.host.1..1The|
+WiC64:  0070: 20 4f 76 65 72 62 69 74 65 20 50 72 6f 6a 65 63 | Overbite Projec|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 6d 09 37 30 0d 0a 69 28 64 6f 77 6e 6c 6f 61 64 |m.70..i(download|
+WiC64:  0010: 20 67 6f 70 68 65 72 20 61 64 64 2d 6f 6e 73 20 | gopher add-ons |
+WiC64:  0020: 66 6f 72 20 4d 6f 7a 69 6c 6c 61 20 46 69 72 65 |for Mozilla Fire|
+WiC64:  0030: 66 6f 78 2f 53 65 61 4d 6f 6e 6b 65 79 2c 09 09 |fox/SeaMonkey,..|
+WiC64:  0040: 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 69 6d |error.host.1..im|
+WiC64:  0050: 6f 62 69 6c 65 20 63 6c 69 65 6e 74 73 20 66 6f |obile clients fo|
+WiC64:  0060: 72 20 41 6e 64 72 6f 69 64 20 61 6e 64 20 6d 6f |r Android and mo|
+WiC64:  0070: 72 65 21 20 50 75 74 20 47 6f 70 68 65 72 73 70 |re! Put Gophersp|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 70 6c 61 74 66 6f 72 6d 73 09 2f 67 6f 70 68 65 |platforms./gophe|
+WiC64:  0010: 72 2f 63 6c 69 65 6e 74 73 09 67 6f 70 68 65 72 |r/clients.gopher|
+WiC64:  0020: 2e 66 6c 6f 6f 64 67 61 70 2e 63 6f 6d 09 37 30 |.floodgap.com.70|
+WiC64:  0030: 0d 0a 69 20 09 09 65 72 72 6f 72 2e 68 6f 73 74 |..i ..error.host|
+WiC64:  0040: 09 31 0d 0a 69 2d 2d 2d 20 46 69 6e 64 20 61 6e |.1..i--- Find an|
+WiC64:  0050: 64 20 73 65 61 72 63 68 20 66 6f 72 20 6f 74 68 |d search for oth|
+WiC64:  0060: 65 72 20 47 6f 70 68 65 72 20 73 69 74 65 73 20 |er Gopher sites |
+WiC64:  0070: 6f 6e 20 74 68 65 20 49 6e 74 65 72 6e 65 74 20 |on the Internet |
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 69 6e 20 47 6f 70 68 65 72 73 70 61 63 65 20 77 |in Gopherspace w|
+WiC64:  0010: 69 74 68 20 56 2d 32 20 66 72 6f 6d 20 68 65 72 |ith V-2 from her|
+WiC64:  0020: 65 3a 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 |e:..error.host.1|
+WiC64:  0030: 0d 0a 37 53 65 61 72 63 68 20 56 65 72 6f 6e 69 |..7Search Veroni|
+WiC64:  0040: 63 61 2d 32 09 2f 76 32 2f 76 73 09 67 6f 70 68 |ca-2./v2/vs.goph|
+WiC64:  0050: 65 72 2e 66 6c 6f 6f 64 67 61 70 2e 63 6f 6d 09 |er.floodgap.com.|
+WiC64:  0060: 37 30 0d 0a 69 20 09 09 65 72 72 6f 72 2e 68 6f |70..i ..error.ho|
+WiC64:  0070: 73 74 09 31 0d 0a 31 41 6c 6c 20 74 68 65 20 67 |st.1..1All the g|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 2e 68 6f 73 74 09 31 0d 0a 31 4e 65 77 20 47 6f |.host.1..1New Go|
+WiC64:  0010: 70 68 65 72 20 73 65 72 76 65 72 73 20 73 69 6e |pher servers sin|
+WiC64:  0020: 63 65 20 31 39 39 39 09 2f 6e 65 77 09 67 6f 70 |ce 1999./new.gop|
+WiC64:  0030: 68 65 72 2e 66 6c 6f 6f 64 67 61 70 2e 63 6f 6d |her.floodgap.com|
+WiC64:  0040: 09 37 30 0d 0a 69 28 75 70 64 61 74 65 64 20 31 |.70..i(updated 1|
+WiC64:  0050: 31 20 4f 63 74 6f 62 65 72 20 32 30 32 35 29 09 |1 October 2025).|
+WiC64:  0060: 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 69 |.error.host.1..i|
+WiC64:  0070: 20 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d | ..error.host.1.|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 20 46 6c 6f 6f 64 67 61 70 20 47 72 6f 75 6e 64 | Floodgap Ground|
+WiC64:  0010: 68 6f 67 09 2f 67 72 6f 75 6e 64 68 6f 67 09 67 |hog./groundhog.g|
+WiC64:  0020: 6f 70 68 65 72 2e 66 6c 6f 6f 64 67 61 70 2e 63 |opher.floodgap.c|
+WiC64:  0030: 6f 6d 09 37 30 0d 0a 69 28 55 53 41 20 61 6e 64 |om.70..i(USA and|
+WiC64:  0040: 20 41 75 73 74 72 61 6c 69 61 3b 20 75 70 64 61 | Australia; upda|
+WiC64:  0050: 74 65 73 20 6f 63 63 75 72 20 74 68 72 6f 75 67 |tes occur throug|
+WiC64:  0060: 68 6f 75 74 20 74 68 65 20 64 61 79 29 09 09 65 |hout the day)..e|
+WiC64:  0070: 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 31 4e 65 |rror.host.1..1Ne|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 74 09 31 0d 0a 31 4d 6f 73 74 20 63 75 72 72 65 |t.1..1Most curre|
+WiC64:  0010: 6e 74 20 46 6c 6f 6f 64 67 61 70 20 6e 65 77 73 |nt Floodgap news|
+WiC64:  0020: 20 66 65 65 64 73 09 2f 66 65 65 64 73 2f 6c 61 | feeds./feeds/la|
+WiC64:  0030: 74 65 73 74 09 67 6f 70 68 65 72 2e 66 6c 6f 6f |test.gopher.floo|
+WiC64:  0040: 64 67 61 70 2e 63 6f 6d 09 37 30 0d 0a 69 28 74 |dgap.com.70..i(t|
+WiC64:  0050: 6f 64 61 79 27 73 20 6d 6f 73 74 20 75 70 64 61 |oday's most upda|
+WiC64:  0060: 74 65 64 20 6e 65 77 73 20 61 6e 64 20 68 65 61 |ted news and hea|
+WiC64:  0070: 64 6c 69 6e 65 73 29 09 09 65 72 72 6f 72 2e 68 |dlines)..error.h|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 61 70 20 46 69 6c 65 20 41 72 63 68 69 76 65 73 |ap File Archives|
+WiC64:  0010: 20 61 6e 64 20 4d 69 72 72 6f 72 73 09 2f 61 72 | and Mirrors./ar|
+WiC64:  0020: 63 68 69 76 65 09 67 6f 70 68 65 72 2e 66 6c 6f |chive.gopher.flo|
+WiC64:  0030: 6f 64 67 61 70 2e 63 6f 6d 09 37 30 0d 0a 69 28 |odgap.com.70..i(|
+WiC64:  0040: 69 6e 63 6c 75 64 65 73 20 65 78 74 65 72 6e 61 |includes externa|
+WiC64:  0050: 6c 20 61 72 63 68 69 76 65 73 20 61 6e 64 20 68 |l archives and h|
+WiC64:  0060: 69 73 74 6f 72 69 63 61 6c 20 66 69 6c 65 73 2c |istorical files,|
+WiC64:  0070: 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a |..error.host.1..|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 69 |.error.host.1..i|
+WiC64:  0010: 20 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d | ..error.host.1.|
+WiC64:  0020: 0a 69 2d 2d 2d 20 46 75 6e 2c 20 67 61 6d 65 73 |.i--- Fun, games|
+WiC64:  0030: 2c 20 61 6e 64 20 6f 74 68 65 72 20 6e 65 61 74 |, and other neat|
+WiC64:  0040: 20 74 68 69 6e 67 73 20 2d 2d 2d 2d 2d 2d 2d 2d | things --------|
+WiC64:  0050: 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d |----------------|
+WiC64:  0060: 2d 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d |-..error.host.1.|
+WiC64:  0070: 0a 31 46 6c 6f 6f 64 67 61 70 20 47 6f 70 68 65 |.1Floodgap Gophe|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 2e 68 6f 73 74 09 31 0d 0a 69 20 53 68 6f 72 74 |.host.1..i Short|
+WiC64:  0010: 65 6e 65 72 20 53 65 72 76 69 63 65 29 09 09 65 |ener Service)..e|
+WiC64:  0020: 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 31 46 6c |rror.host.1..1Fl|
+WiC64:  0030: 6f 6f 64 67 61 70 20 75 73 65 72 73 20 61 6e 64 |oodgap users and|
+WiC64:  0040: 20 73 74 61 66 66 20 67 6f 70 68 65 72 20 70 61 | staff gopher pa|
+WiC64:  0050: 67 65 73 09 2f 75 73 65 72 73 09 67 6f 70 68 65 |ges./users.gophe|
+WiC64:  0060: 72 2e 66 6c 6f 6f 64 67 61 70 2e 63 6f 6d 09 37 |r.floodgap.com.7|
+WiC64:  0070: 30 0d 0a 69 28 74 68 65 20 75 73 75 61 6c 20 67 |0..i(the usual g|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 2e 63 6f 6d 09 37 30 0d 0a 69 28 76 65 72 73 69 |.com.70..i(versi|
+WiC64:  0010: 6f 6e 20 30 2e 35 2e 31 20 72 65 6c 65 61 73 65 |on 0.5.1 release|
+WiC64:  0020: 64 20 32 34 20 4f 63 74 6f 62 65 72 20 32 30 31 |d 24 October 201|
+WiC64:  0030: 35 29 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 |5)..error.host.1|
+WiC64:  0040: 0d 0a 69 20 09 09 65 72 72 6f 72 2e 68 6f 73 74 |..i ..error.host|
+WiC64:  0050: 09 31 0d 0a 69 2d 2d 2d 20 53 65 72 76 65 72 20 |.1..i--- Server |
+WiC64:  0060: 73 6f 66 74 77 61 72 65 20 62 65 68 69 6e 64 20 |software behind |
+WiC64:  0070: 74 68 65 20 73 63 65 6e 65 73 20 2d 2d 2d 2d 2d |the scenes -----|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 72 65 6c 65 61 73 65 64 20 31 37 20 46 65 62 72 |released 17 Febr|
+WiC64:  0010: 75 61 72 79 20 32 30 32 34 29 09 09 65 72 72 6f |uary 2024)..erro|
+WiC64:  0020: 72 2e 68 6f 73 74 09 31 0d 0a 69 20 09 09 65 72 |r.host.1..i ..er|
+WiC64:  0030: 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 69 2d 2d 2d |ror.host.1..i---|
+WiC64:  0040: 20 47 6f 70 68 65 72 73 70 61 63 65 20 61 64 76 | Gopherspace adv|
+WiC64:  0050: 6f 63 61 63 79 20 61 6e 64 20 61 63 74 69 76 69 |ocacy and activi|
+WiC64:  0060: 73 6d 20 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d |sm -------------|
+WiC64:  0070: 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 2d 09 09 65 72 |------------..er|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 65 20 46 6c 6f 6f 64 67 61 70 20 50 75 62 6c 69 |e Floodgap Publi|
+WiC64:  0010: 63 20 47 6f 70 68 65 72 20 50 72 6f 78 79 09 09 |c Gopher Proxy..|
+WiC64:  0020: 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a 69 66 |error.host.1..if|
+WiC64:  0030: 6f 72 20 63 6f 6d 6d 75 6e 69 74 79 20 61 64 76 |or community adv|
+WiC64:  0040: 6f 63 61 63 79 20 70 75 72 70 6f 73 65 73 3b 20 |ocacy purposes; |
+WiC64:  0050: 75 70 64 61 74 65 73 20 6d 6f 6e 74 68 6c 79 29 |updates monthly)|
+WiC64:  0060: 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 0d 0a |..error.host.1..|
+WiC64:  0070: 69 20 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 31 |i ..error.host.1|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 76 65 72 09 09 67 6f 70 68 65 72 2e 66 6c 6f 6f |ver..gopher.floo|
+WiC64:  0010: 64 67 61 70 2e 63 6f 6d 09 31 30 35 0d 0a 30 59 |dgap.com.105..0Y|
+WiC64:  0020: 65 73 2c 20 67 6f 70 68 65 72 2e 66 6c 6f 6f 64 |es, gopher.flood|
+WiC64:  0030: 67 61 70 2e 63 6f 6d 20 69 73 20 74 68 65 20 73 |gap.com is the s|
+WiC64:  0040: 61 6d 65 20 61 73 20 67 6f 70 68 65 72 2e 70 74 |ame as gopher.pt|
+WiC64:  0050: 6c 6f 6d 61 2e 65 64 75 09 2f 70 74 6c 6f 6d 61 |loma.edu./ptloma|
+WiC64:  0060: 09 67 6f 70 68 65 72 2e 66 6c 6f 6f 64 67 61 70 |.gopher.floodgap|
+WiC64:  0070: 2e 63 6f 6d 09 37 30 0d 0a 31 54 68 65 20 46 6c |.com.70..1The Fl|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 68 65 72 2e 66 6c 6f 6f 64 67 61 70 2e 63 6f 6d |her.floodgap.com|
+WiC64:  0010: 09 37 30 0d 0a 30 57 68 61 74 27 73 20 74 68 65 |.70..0What's the|
+WiC64:  0020: 20 74 65 6d 70 65 72 61 74 75 72 65 20 69 6e 20 | temperature in |
+WiC64:  0030: 74 68 65 20 46 6c 6f 6f 64 67 61 70 20 73 65 72 |the Floodgap ser|
+WiC64:  0040: 76 65 72 20 72 6f 6f 6d 3f 09 2f 73 65 72 76 65 |ver room?./serve|
+WiC64:  0050: 72 74 65 6d 70 73 2e 74 78 74 09 67 6f 70 68 65 |rtemps.txt.gophe|
+WiC64:  0060: 72 2e 66 6c 6f 6f 64 67 61 70 2e 63 6f 6d 09 37 |r.floodgap.com.7|
+WiC64:  0070: 30 0d 0a 30 22 2f 75 73 72 2f 62 69 6e 2f 74 61 |0..0"/usr/bin/ta|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 240, total_read = 240
+WiC64:  replies Success
+WiC64:  sends payload 240/0xf0 bytes...
+WiC64:  0000: 65 09 67 6f 70 68 65 72 2e 66 6c 6f 6f 64 67 61 |e.gopher.floodga|
+WiC64:  0010: 70 2e 63 6f 6d 09 37 30 0d 0a 68 46 6c 6f 6f 64 |p.com.70..hFlood|
+WiC64:  0020: 67 61 70 2e 63 6f 6d 20 28 57 65 62 20 70 61 67 |gap.com (Web pag|
+WiC64:  0030: 65 73 29 09 55 52 4c 3a 68 74 74 70 3a 2f 2f 77 |es).URL:http://w|
+WiC64:  0040: 77 77 2e 66 6c 6f 6f 64 67 61 70 2e 63 6f 6d 2f |ww.floodgap.com/|
+WiC64:  0050: 09 67 6f 70 68 65 72 2e 66 6c 6f 6f 64 67 61 70 |.gopher.floodgap|
+WiC64:  0060: 2e 63 6f 6d 09 37 30 0d 0a 69 20 09 09 65 72 72 |.com.70..i ..err|
+WiC64:  0070: 6f 72 2e 68 6f 73 74 09 31 0d 0a 69 50 6c 65 61 |or.host.1..iPlea|
+WiC64:  0080: ...
+WiC64:  tcp_get_alarm_handler: nread = 70, total_read = 70
+WiC64:  replies Success
+WiC64:  sends payload 70/0x46 bytes...
+WiC64:  0000: 20 61 72 65 20 72 61 74 65 2d 6c 69 6d 69 74 65 | are rate-limite|
+WiC64:  0010: 64 20 64 75 65 09 09 65 72 72 6f 72 2e 68 6f 73 |d due..error.hos|
+WiC64:  0020: 74 09 31 0d 0a 69 74 6f 20 73 70 69 64 65 72 69 |t.1..ito spideri|
+WiC64:  0030: 6e 67 2e 09 09 65 72 72 6f 72 2e 68 6f 73 74 09 |ng...error.host.|
+WiC64:  0040: 31 0d 0a 2e 0d 0a                               |1.....          |
+WiC64:  tcp_get_alarm_handler: connection closed
