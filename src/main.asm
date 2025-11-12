@@ -2,11 +2,16 @@
 ; Example
 ;
 
+b_fast = $77b3
+b_slow = $77c4
+
 k_primm = $ff7d
 k_getin = $eeeb
 bsout = $ffd2
 
 zp_contentAddress = $0a
+zp_linecount = $0c
+
 
 wic64_include_load_and_run = 0
 wic64_include_enter_portal = 0
@@ -118,7 +123,7 @@ main
     +wic64_execute tcpRead, response, 5
     bcc +
     jmp .connTimeout
-+   lda #'O'
++   lda #'o'
     jsr bsout
     lda wic64_bytes_to_transfer
     sta packBytes
@@ -170,7 +175,9 @@ main
 
     lda #$0d
     jsr bsout
-    jsr .parseContent
+    jsr doFast
+    jsr parseGopher
+    jsr doSlow
 
     jsr recoverZp
     rts
@@ -184,283 +191,22 @@ main
 
 .waitAndDoAgain
     jsr k_primm
-    !pet "Zero response. Key to try again.",0
+    !text "Zero response. Key to try again.",0
 
 -   jsr k_getin
     beq -
     jmp .handleResponse
 
-.parseContent
-    lda #0
-    sta parseSeq
-    sta parseMode
-
-    lda responseSize
-    sta leftToParse
-    lda responseSize+1
-    sta leftToParse+1
-
-    jmp .decideOnParseSeq
-
-.decideOnParseSeq
-    lda parseSeq
-    bne +
-    jmp .handleType
-
-+   cmp #1
-    bne +
-    jmp .handleSelector
-
-+   cmp #2
-    bne +
-    jmp .handleHost
-
-+   cmp #3
-    bne +
-    jmp .handlePort
-
-+   rts
-    nop
-
-.handleType
-    lda parseMode
-    bne .gotoParseMode
--   jsr .readNextByte
-    bne .gotoParseMode
-
-.foundZero
-    jsr k_primm
-    !pet "Found zero byte",$d,0
-    rts
-
-.gotoParseMode
-    cmp #$69 ;i - info
-    bne +
-    sta parseMode
-    jmp .handleInfo
-
-+   cmp #$30 ; 0 - textfile
-    bne +
-    sta parseMode
-    jmp .handleTypeText
-
-+   cmp #$31 ; 1 - menu / directory
-    bne +
-    sta parseMode
-    jmp .handleTypeMenu
-
-+   cmp #$32 ; 2 - cso phonebook
-    bne +
-    sta parseMode
-    jmp .handleTypePhonebook
-
-+   cmp #$33 ; 3 - error/info
-    bne +
-    sta parseMode
-    jmp .handleTypeError
-
-+   cmp #$34 ; 4 - binary
-    bne +
-    sta parseMode
-    jmp .handleTypeBinary
-
-+   cmp #$35 ; 5 - dos binary
-    bne +
-    sta parseMode
-    jmp .handleTypeDosBinary
-
-+   cmp #$36 ; 6 - uuencoded text (probably a binary?)
-    bne +
-    sta parseMode
-    jmp .handleTypeUUenc
-
-+   cmp #$37 ; 7 - error/info
-    bne +
-    sta parseMode
-    jmp .handleTypeSearch
-
-+   cmp #$38 ; 8 - Telnet
-    bne +
-    sta parseMode
-    jmp .handleTypeTelnet
-
-+   cmp #$39 ; 9 - generic binary
-    bne +
-    sta parseMode
-    jmp .handleTypeGenericBinary
-
-+   cmp #'+' ; + - gopher + info
-    bne +
-    sta parseMode
-    jmp .handleTypePlus
-
-+   cmp #'g' ; G - GIF
-    bne +
-    sta parseMode
-    jmp .handleTypeGif
-
-+   cmp #'l' ; L - generic image
-    bne +
-    sta parseMode
-    jmp .handleTypeGenericImage
-
-+   cmp #'H' ; H - Hyperlink
-    bne +
-    sta parseMode
-    jmp .handleTypeHyperlink
-
-+   cmp #'s' ; s - audio
-    bne +
-    sta parseMode
-    jmp .handleTypeAudio
-
-+   cmp #'M' ; m - multipart mime
-    bne +
-    sta parseMode
-    jmp .handleTypeMime
-
-+   cmp #'D' ; d - document. mostly pdf
-    bne +
-    sta parseMode
-    jmp .handleTypeDoc
-
-+   cmp #'T' ; t - terminal connection tn3270
-    bne +
-    sta parseMode
-    jmp .handleTypeTerminal
-
-+   cmp #$9 ;tab
-    bne +
-    sta parseMode
-    jmp .handleTab
-
-+   dey
-    beq +
-    jmp -
-
-+   sec
-    lda availableResponse
-    sbc wic64_bytes_to_transfer
-    sta availableResponse
-    lda availableResponse+1
-    sbc wic64_bytes_to_transfer+1
-    sta availableResponse+1
-
-    lda availableResponse
-    bne +
-    lda availableResponse+1
-    bne +
-    jmp .allResponseRead
-
-+   jmp .readResponsePart
-
 .noWicDetected
     jsr k_primm
-    !pet "No WiC64 detected!",$d,0
+    !text "No WiC64 detected!",$d,0
     rts
 
 .legacyFirmware
     jsr k_primm
-    !pet "Firmware too old!",$d,0
+    !text "Firmware too old!",$d,0
     
     rts
-
-.handleTypeAudio
-.handleTypeBinary
-.handleTypeDoc
-.handleTypeDosBinary
-.handleTypeGenericBinary
-.handleTypeGenericImage
-.handleTypeGif
-.handleTypeHyperlink
-.handleTypeTerminal
-.handleTypeMime
-.handleTypePlus
-.handleTypeTelnet
-.handleTypeSearch
-.handleTypeUUenc
-.handleTypeError
-.handleTypePhonebook
-.handleTypeText
-.handleTypeMenu
-.handleInfo
-    jsr .readNextByte
-    cmp #9  ; tab. end ascii output
-    bne +
-    lda #$0d
-    jsr bsout
-    inc parseSeq
-    lda #0
-    sta parseMode
-    jmp .decideOnParseSeq
-
-+   jsr bsout
-    jmp .handleInfo
-
-.handleTab
-    inc parseSeq
-    jmp .decideOnParseSeq
-
-; for now, just skip until tab
-.handleSelector
-    jsr .readNextByte
-    cmp #9
-    beq +
-    jmp .handleSelector
-+   jmp .handleTab
-
-.handleHost
-    jsr .readNextByte
-    cmp #9
-    beq +
-    jmp .handleHost
-+   jmp .handleTab
-
-.handlePort
-    jsr .readNextByte
-    cmp #13
-    bne .handlePort
-    jsr .readNextByte
-    cmp #10
-    bne .handlePort
-    
-    ; we found a CR LF sequence. end the line
-    lda #0
-    sta parseSeq
-
-    ; and check whether to end parsing alltogether
-    lda leftToParse+1
-    bmi .parseComplete
-;    lda leftToParse
-;    cmp responseSize
-;    bne +               ; we haven't yet reached zero. continue parsing
-;    lda leftToParse+1
-;    bmi .parseComplete
-;    cmp responseSize+1
-;    beq .parseComplete
-
-    jmp .decideOnParseSeq
-
-.parseComplete
-    lda #4
-    sta parseSeq    ;parseSeq 4 should end parsing
-    jmp .decideOnParseSeq
-
-.readNextByte
-    ldy #0
-    lda (zp_contentAddress),y
-
-    inc zp_contentAddress
-    bne +
-    inc zp_contentAddress+1
-
-+   dec leftToParse
-    bne +
-    dec leftToParse+1
-
-+   rts
-
-
 
 storeInBank1
 
@@ -480,6 +226,10 @@ storeInBank1
     rts
 
 .initContentAddress
+    lda #0
+    sta zp_linecount
+    sta zp_linecount+1
+
     lda #<permResponse
     sta zp_contentAddress
     lda #>permResponse
@@ -492,6 +242,14 @@ storeInBank1
     jmp .connTimeout
 +   rts
 
+
+doFast
+    jsr b_fast
+    rts
+
+doSlow
+    jsr b_slow
+    rts
 
 k_indsta
     pha
@@ -523,56 +281,60 @@ recoverZp
     bne -
     rts
 
-mmuBankConfig   !byte $3F,$7F,$BF,$FF,$16,$56,$96,$D6,$2A,$6A,$AA,$EA,$06,$0A,$01,$00
-zpStore         !fill 134
-
+!src "src/parseGopher.asm"
 !src "src/wic64/wic64.asm"
 
+mmuBankConfig       !byte $3F,$7F,$BF,$FF,$16,$56,$96,$D6,$2A,$6A,$AA,$EA,$06,$0A,$01,$00
+zpStore             !fill 134
 
-txtDetect       !pet "Detecting WiC64... ",0
-txtConnected    !pet "Check WiC64 is connected ...",0
-txtTimeout      !pet "timeout",$d,0
-txtNotConnected !pet "not connected",$d,0
-txtTcpOpen      !pet "TCP Connection open... ",0
-txtTcpRead      !pet "TCP Read... ",0
-txtTcpWrite     !pet "TCP Write... ",0
-txtTcpClose     !pet "TCP Close... ", 0
-txtTcpAvlbl     !pet "TCP Available... ",0
-txtDone         !pet "done",$d,0
+txtDetect           !text "Detecting WiC64... ",0
+txtConnected        !text "Check WiC64 is connected ...",0
+txtTimeout          !text "timeout",$d,0
+txtNotConnected     !text "not connected",$d,0
+txtTcpOpen          !text "TCP Connection open... ",0
+txtTcpRead          !text "TCP Read... ",0
+txtTcpWrite         !text "TCP Write... ",0
+txtTcpClose         !text "TCP Close... ", 0
+txtTcpAvlbl         !text "TCP Available... ",0
+txtDone             !text "done",$d,0
 
-availableResponse    !word 0,0
-writeResponse        !word 0,0
-openResponse         !word 0,0
-
-tcpOpen         !byte "R", WIC64_TCP_OPEN, <hostPort_size, >hostPort_size
-hostPort        !text "gopher.floodgap.com:70",0
+tcpOpen             !byte "R", WIC64_TCP_OPEN, <hostPort_size, >hostPort_size
+hostPort            !text "gopher.floodgap.com:70",0
 hostPort_size = *-hostPort
 
-tcpAvailable    !byte "R", WIC64_TCP_AVAILABLE, $00, $00
-tcpRead         !byte "R", WIC64_TCP_READ, $00, $00
-tcpWrite        !byte "R", WIC64_TCP_WRITE, <url_size, >url_size
-url             !text "\r\n",0
+tcpAvailable        !byte "R", WIC64_TCP_AVAILABLE, $00, $00
+tcpRead             !byte "R", WIC64_TCP_READ, $00, $00
+tcpWrite            !byte "R", WIC64_TCP_WRITE, <url_size, >url_size
+url                 !text "\r\n",0
 url_size = *-url
 
-tcpClose        !byte "R", WIC64_TCP_READ, $00, $00
+tcpClose            !byte "R", WIC64_TCP_READ, $00, $00
 
-wic64IsConnected !byte "R", WIC64_IS_CONNECTED, $01, $00, 5
+wic64IsConnected    !byte "R", WIC64_IS_CONNECTED, $01, $00, 5
 
-wic64GetStMsg   !byte "R", WIC64_GET_STATUS_MESSAGE, $01, $00, 0
+wic64GetStMsg       !byte "R", WIC64_GET_STATUS_MESSAGE, $01, $00, 0
 wic64TransferTimeout !byte "R", WIC64_SET_TRANSFER_TIMEOUT, $01, $00, 5
-wic64RemoteTimeout !byte "R", WIC64_SET_REMOTE_TIMEOUT, $01, $00, 10
+wic64RemoteTimeout  !byte "R", WIC64_SET_REMOTE_TIMEOUT, $01, $00, 10
 
-parseMode       !byte 0 ; $69 for i, $31 for 1, etc
-parseSeq        !byte 0 ; 0=type specific parsing, 1=selector, 2=hostname, 3=port
+availableResponse   !word 0
+writeResponse       !word 0
+openResponse        !word 0
 
-packBytes       !byte 0
-connectResponse !byte 0
-statusResponse  !fill 40,$ea
+packBytes           !byte 0
+connectResponse     !byte 0
+statusResponse      !fill 40
 
-contentBank     !byte 0
-contentAddr     !word 1024
-responseSize    !word 0
-leftToParse     !word 0
-response        !fill 256
+contentBank         !byte 0
+contentAddr         !word 1024
+responseSize        !word 0
+response            !fill 256
 
-permResponse    !byte 0
+; this contains the vectors to all information per line
+; start address (beginning of first line) is written after content is completely stored in 'permResponse'
+; 10 bytes per line
+; type, text, selector, host, port
+; this could be kept at 4kb below I/O space at $c000 (2kb of table space is good for 200 lines)
+linkTable           !word 0
+
+permResponse        !byte 0
+

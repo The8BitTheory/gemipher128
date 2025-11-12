@@ -1,6 +1,6 @@
 {
-    "name": "gemifer128",
-    "description": "Project gemini128",
+    "name": "gemipher128",
+    "description": "A Gopher and Gemini client for the C128-VDC",
     "toolkit": "acme",
     "sources": [
         "src/main.asm"

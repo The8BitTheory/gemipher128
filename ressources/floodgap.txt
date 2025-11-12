@@ -1,0 +1,112 @@
+Welcome to Floodgap Systems' official gopher server.
+Floodgap has served the gopher community since 1999
+(formerly gopher.ptloma.edu).
+ 
+We run Bucktooth 0.2.9 on xinetd as our server system.
+gopher.floodgap.com is an IBM Power 520 Express with a 2-way
+4.2GHz POWER6 CPU and 8GB of RAM, running AIX 6.1 +patches.
+Send gopher@floodgap.com your questions and suggestions.
+ 
+```
+​***********************************************************
+​**              OVER 20 YEARS SERVING YOU!               **
+​**               Plain text is beautiful!                **
+​***********************************************************
+```
+ 
+=> gopher://gopher.floodgap.com:70/0/gopher/proxy Does this gopher menu look correct?
+(plus using the Floodgap Public Gopher Proxy)
+=> gopher://gopher.floodgap.com:70/0/responsible-bot Are you running a bot? Are we blocking you?
+Please read this document. Please don't cost us money.
+=> gopher://sdf.org:70/1 Super-Dimensional Fortress: SDF Gopherspace
+Get your own Gopherspace and shell account!
+ 
+```
+--- Getting started with Gopher -------------------------------
+```
+=> gopher://gopher.floodgap.com:70/1/gopher Getting started with gopher, software, more
+(what is Gopherspace? We tell you! And find out how
+to create your own Gopher world!)
+ 
+=> gopher://gopher.floodgap.com:70/0/gopher/wbgopher Using your web browser to explore Gopherspace
+(READ IT! LEARN IT! LOVE IT!)
+(useful tips for gopher newbies, updated 17 November 2018)
+ 
+=> gopher://gopher.floodgap.com:70/1/overbite The Overbite Project: Gopher clients for mobile and desktop (OverbiteWX, OverbiteNX, Overbite Android)
+(download gopher add-ons for Mozilla Firefox/SeaMonkey,
+mobile clients for Android and more! Put Gopherspace on
+your mobile phone or desktop computer!)
+=> gopher://gopher.floodgap.com:70/1/gopher/clients Other Gopher clients for various platforms
+ 
+```
+--- Find and search for other Gopher sites on the Internet ----
+```
+=> gopher://gopher.floodgap.com:70/1/v2 Search Gopherspace with Veronica-2
+or search all known titles in Gopherspace with V-2 from here:
+=> gopher://gopher.floodgap.com:70/7/v2/vs Search Veronica-2
+ 
+=> gopher://gopher.floodgap.com:70/1/world All the gopher servers in the world (that we know of)
+(updated with robot updates)
+=> gopher://gopher.floodgap.com:70/1/new New Gopher servers since 1999
+(updated 11 October 2025)
+ 
+```
+--- Get news, weather and more through Gopherspace ------------
+```
+=> gopher://gopher.floodgap.com:70/1/groundhog Weather maps and forecasts via Floodgap Groundhog
+(USA and Australia; updates occur throughout the day)
+=> gopher://gopher.floodgap.com:70/1/feeds News and headline feeds via Flood Feeds
+(updates occur daily/regularly)
+=> gopher://gopher.floodgap.com:70/1/feeds/latest Most current Floodgap news feeds
+(today's most updated news and headlines)
+ 
+```
+--- File archives and downloads -------------------------------
+```
+=> gopher://gopher.floodgap.com:70/1/archive Floodgap File Archives and Mirrors
+(includes external archives and historical files,
+Walnut Creek CP/M-Osborne-Commodore-Beehive archives,
+Info-Mac, classic Mac software and more)
+ 
+```
+--- Fun, games, and other neat things -------------------------
+```
+=> gopher://gopher.floodgap.com:70/1/fun Floodgap Gopher Fun and Games
+(with xkcd, the Gopher Figlet gateway and the fld.gp Gopher
+ Shortener Service)
+=> gopher://gopher.floodgap.com:70/1/users Floodgap users and staff gopher pages
+(the usual gang of idiots)
+=> gopher://gopher.floodgap.com:70/1/gophervr The New GopherVR: A Virtual Reality View of Gopherspace
+(version 0.5.1 released 24 October 2015)
+ 
+```
+--- Server software behind the scenes -------------------------
+```
+=> gopher://gopher.floodgap.com:70/1/buck The Bucktooth gopher server
+(version 0.2.10 released 17 February 2024)
+ 
+```
+--- Gopherspace advocacy and activism -------------------------
+```
+=> gopher://gopher.floodgap.com:70/1/gstats Floodgap Gopher Statistics Project
+(monthly traffic analysis of the Floodgap Public Gopher Proxy
+for community advocacy purposes; updates monthly)
+ 
+```
+--- Floodgap specific -----------------------------------------
+```
+Floodgap CSO/ph phonebook server
+```
+
+```
+=> gopher://gopher.floodgap.com:70/0/ptloma Yes, gopher.floodgap.com is the same as gopher.ptloma.edu
+=> gopher://gopher.floodgap.com:70/1/ffsl The Floodgap Free Software License
+=> gopher://gopher.floodgap.com:70/0/whereis Where's Floodgap? (not for hatemail ;-)
+=> gopher://gopher.floodgap.com:70/0/servertemps.txt What's the temperature in the Floodgap server room?
+=> gopher://gopher.floodgap.com:70/0/recent "/usr/bin/tail" our gopher server log
+=> gopher://gopher.floodgap.com:70/0/umngone RIP, Master gopher at University of Minnesota
+=> http://www.floodgap.com/ Floodgap.com (Web pages)
+ 
+Please note that this gopher is no longer affiliated with
+Point Loma Nazarene University. Some areas are rate-limited due
+to spidering.
