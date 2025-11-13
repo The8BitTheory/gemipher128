@@ -120,6 +120,7 @@ main
     jsr bsout
     +print txtTcpRead
 .readResponsePart
+;    inc zp_linecount
     +wic64_execute tcpRead, response, 5
     bcc +
     jmp .connTimeout
@@ -128,6 +129,10 @@ main
     lda wic64_bytes_to_transfer
     sta packBytes
     jsr .storeInPerm
+
+;    lda zp_linecount
+;    cmp #10
+;    beq .allResponseRead
     
 .handleResponse
     +wic64_execute tcpAvailable, availableResponse, 5
@@ -308,7 +313,7 @@ tcpWrite            !byte "R", WIC64_TCP_WRITE, <url_size, >url_size
 url                 !text "\r\n",0
 url_size = *-url
 
-tcpClose            !byte "R", WIC64_TCP_READ, $00, $00
+tcpClose            !byte "R", WIC64_TCP_CLOSE, $00, $00
 
 wic64IsConnected    !byte "R", WIC64_IS_CONNECTED, $01, $00, 5
 
