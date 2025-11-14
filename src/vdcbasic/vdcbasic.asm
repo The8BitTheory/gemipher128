@@ -38,15 +38,17 @@
 ; October 2025  released as part of the Dungeon Crawler Limited Asset Jam 2025 project
 ;  
 
+!zone vdcbasic
+
 ; TODO    disp, attr and crsr should accept values <0 and >65535!
 !macro message {!pet "vdc basic v2g installed"}
 
-  !to "vdcbasic2g.bin", cbm
+;  !to "vdcbasic2g.bin", cbm
 
   !source <6502/std.a>    ; for +bit16
   !source <6502/opcodes.a>  ; for AND/ORA self-mods
-  !source <cbm/c128/kernal.a> ; for k_primm
-  !source "./src/vdclib.a"  ; macros and code parts
+;!source <cbm/c128/kernal.a> ; for k_primm
+  !source "src/vdcbasic/vdclib.a"  ; macros and code parts
 
 ;build params
 release_vdl = 0
@@ -66,10 +68,6 @@ arg6  = $8D ; word - by now only used by VMC for source address increase (only u
 arg_address     = $3f ; word. target position of VMP output and address to read VCL from
 arg_address2    = $77 ; word. used to hold target offset of VMS
 
-;$a-$14 should also be safely available. 11 bytes
-vcl_command_id  = $a    ;byte
-multi1          = $b    ;word. for multiplications
-multi2          = $d    ;word. for multiplications
 
 
 ;$26-$2c should also be safely available. 7 bytes
@@ -92,167 +90,8 @@ e_set_vdc_registers   = $e1dc ; a kernel routine to set several registers in a r
 k_fetch                 = $02a2 ; read a value from any bank
 
 ; constants
-FIRST_0xCE_TOKEN  = $0b ; BASIC 7 goes up to $ce $0a ("POINTER"), so we start at $ce $0b
-FIRST_0xFE_TOKEN  = $27 ; BASIC 7 goes up to $fe $26 ("SLOW"), so we start at $fe $27
 MODIFIED8   = $ff ; dummy value
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; entry point: intercept four BASIC vectors
-;    * = $0ac6
-    * = $1300
-    ; three are consecutive
-    ldx #$05
--     lda vectors, x
-      sta $030c, x
-      dex
-      bpl -
-    ; fourth is set separately
-    lda #<call_function
-    sta $02fc
-    lda #>call_function
-    sta $02fd
-    ; output installation message
-    lda #0
-    sta $ff00
-    jsr k_primm
-    !by 13
-    +message
-    !by 13, 0 ; message terminator
-    rts
-vectors ; table of three vectors
-    !word tokenize, detokenize, execute_instruction
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; intercepted BASIC vectors
-tokenize
-    pha
-    ; try new commands
-    lda #>instruction_strings
-    ldy #<instruction_strings
-    jsr $43e2
-    bcs tokenize_instruction
-    ; try new functions
-    lda #>function_strings
-    ldy #<function_strings
-    jsr $43e2
-    bcs tokenize_function
-    ; not found -> pass to BASIC
-    pla
-    sec
-    jmp $4321
-
-tokenize_instruction
-    tax
-    pla
-    txa
-    and #$7f
-    clc
-    adc #FIRST_0xFE_TOKEN
-    ldx #$00
-    jmp $43b2
-
-tokenize_function
-    tax
-    pla
-    txa
-    and #$7f
-    clc
-    adc #FIRST_0xCE_TOKEN
-    ldx #$ff
-    jmp $43b2
-
-detokenize
-    ora #$80
-    inx
-    beq detokenize_function
-;detokenize_instruction
-    sec
-    sbc #FIRST_0xFE_TOKEN
-    tax
-    lda #>instruction_strings
-    ldy #<instruction_strings
-    jmp $516a
-
-detokenize_function
-    sec
-    sbc #FIRST_0xCE_TOKEN
-    tax
-    lda #>function_strings
-    ldy #<function_strings
-    jmp $516a
-
-execute_instruction
-    ldx #0
-    stx $ff00
-    and #$7f
-    sec
-    sbc #FIRST_0xFE_TOKEN
-    asl
-    tay
-    lda instruction_ptrs + 1, y
-    pha
-    lda instruction_ptrs, y
-    pha
-    jmp chrget
-
-call_function
-    ldx #0
-    stx $ff00
-    sec
-    sbc #FIRST_0xCE_TOKEN
-    asl
-    tay
-    lda function_ptrs + 1, y
-    sta $58
-    lda function_ptrs, y
-    sta $57
-    jsr $56
-    clc
-    rts
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; strings and pointers
-instruction_strings
-    !pet "rgW", "rgA", "rgO"
-    !pet "vmW", "vmA", "vmO"
-    !pet "vmF", "vmC"
-    !pet "rtV", "vtR", "vcC", "swP"
-    !pet "rsT", "syN"
-    !pet "disP", "attR", "crsR"
-    !pet "vcS", "vmP", "zzZ", "vcL"
-    !pet "vmS", "vmB"
-!if release_vdl {    
-    !pet "vdL"
-}
-!if release_vdr {
-    !pet "vdR"
-}
-!if release_vdb {
-    !pet "vdB"
-}
-    !byte 0 ; terminator
-instruction_ptrs
-    !word rgw - 1, rga - 1, rgo - 1
-    !word vmw - 1, vma - 1, vmo - 1
-    !word vmf - 1, vmc - 1
-    !word rtv - 1, vtr - 1, vcc - 1, swp - 1
-    !word rst - 1, syn - 1
-    !word disp - 1, attr - 1, crsr - 1
-    !word vcs - 1, vmp - 1, zzz - 1, vcl - 1
-    !word vms -1, vmb -1
-!if release_vdl {
-    !word vdl -1
-}
-!if release_vdr {
-    !word vdr -1
-}
-!if release_vdb {
-    !word vdb -1
-}
-    
-function_strings
-    !pet "rgD", "vmD"
-    !byte 0 ; terminator
-function_ptrs
-    !word rgd, vmd
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; new functions
 shared_function_entry
@@ -443,62 +282,10 @@ vmo ; VRAM location |= value
     jmp A_to_vram_XXYY
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; new instructions (the more complicated ones)
-complex_instruction_parse3args
-    jsr b_parse_uint16
-    sty arg1
-    sta arg1 + 1
-    jsr b_parse_comma_uint16
-    sty arg2
-    sta arg2 + 1
-    jsr b_parse_comma_uint16
-    sty arg3
-    sta arg3 + 1
-    rts
 
 ; sibbling to complex_instruction_block_entry. for all instructions without repeat support
 complex_instruction_shared_entry ; read args (uint16, uint16, uint16), remember CR, activate full RAM with I/O
-    jsr complex_instruction_parse3args
     jmp remember_mem_conf
-
-; sibbling to complex_instruction_shared_entry. for all instructions that support repeats
-complex_instruction_block_entry
-    jsr complex_instruction_parse3args
-
-    jsr chrgot  ; anything else?
-    beq +
-
-    ; parse nr of repetitions
-    jsr b_skip_comma
-    jsr b_parse_uint8_to_X
-    stx arg4
-
-    ;parse target address increase
-    jsr b_parse_int16_AAYY
-    sty arg5
-    sta arg5+1
-    
-    jmp ++
-
-    ; set nr of repetitions to 1
-+   ldx #1
-    stx arg4
-
-++  jsr chrgot ; do we have another parameter?
-    beq +
-    
-    ; parse source address increase per repetition
-    jsr b_parse_int16_AAYY
-    sty arg6
-    sta arg6+1
-
-    jmp remember_mem_conf
-
-    ; set source address increase to 0
-+   ldx #0
-    stx arg6
-    stx arg6+1
-
-    ldy arg3    ;this is to keep compatibility with complex_instruction_shared_entry
 
     ; remember memory configuration for shared exit
 remember_mem_conf
@@ -518,7 +305,7 @@ complex_instruction_shared_exit ; restore memory configuration
     +addcode_vdc_do_YYAA_cycles
 
 vmf ; fill VRAM with value
-    jsr complex_instruction_block_entry  ; > AAYY = arg3
+
     ; decrement byte counter because the first one will be written manually
 
 vmf_execute
@@ -561,7 +348,7 @@ vmf_execute
 
 ; this is parsing VMC parameters from basic
 vmc ; copy VRAM to VRAM
-    jsr complex_instruction_block_entry ; > AAYY = arg3
+
     
 ; this can be used with pre-filled parameters, eg via VMP or VCL or VMS
 vmc_execute
@@ -958,8 +745,9 @@ swp ; exchange contents of RAM and VRAM
 
 !zone copy_charset
 
+; arguments: ram-source, vram-target, nr of characters to copy
 vcc ; copy charset from RAM to VRAM
-    jsr complex_instruction_shared_entry
+    jsr remember_mem_conf
     ; get low byte of RAM pointer into Y and clear base pointer's low byte instead
     ldy arg1
     ldx #0
@@ -1047,24 +835,11 @@ reset_vdc_registers
 !zone print_to_vdc {
 
 vmb
-;parse target address (where to render the text to)
-    jsr b_parse_uint16
-    sty arg_address
-    sta arg_address + 1
+; arg_address
+; location of strnig to $24/$25 in bank 
+; length of string in vmp_length
 
-;parse location of string in bank 0
-    jsr b_skip_comma
-
-    jsr b_parse_uint16
-    sty $24
-    sta $25
-
-;parse  length of string
-    jsr b_skip_comma
-
-    jsr b_parse_uint8_to_X
-    stx vmp_length
-
+;bank 0 for string
     lda #$3f
     sta vmp_bank
 
@@ -1194,8 +969,6 @@ vmp_prepare
 
 ; VCS: VDC Charset Set - sets the parameters for the VMP command. these settings stick, so they don't need to be given for each VMP call
 vcs
-    jsr complex_instruction_parse3args
-
     ;parse address of the charset in vram.
     lda arg1
     sta arg_charset_address
@@ -1210,18 +983,13 @@ vcs
     lda arg3
     sta arg_charset_height
 
-    jsr chrgot
-    beq +
-
 ;   screen-width parameter found, read it
-    jsr b_skip_comma
-    jsr b_parse_uint8_to_X
     stx arg_screen_width
     jmp ++
 
 ;   no screen-width parameter found, pull it from the vdc-register    
 +   ldx #1
-    jsr vdc_reg_X_to_A
+    ;jsr vdc_reg_X_to_A
     sta arg_screen_width
 
     ;calc size of each character in bytes (width*height)
@@ -1376,70 +1144,6 @@ vcl
 
 }
 
-!if release_vdl {
-; draw line (x1,y1,x2,y2,color)
-vdl
-    rts
-}
-
-!if release_vdr {
-; draw rectangle (x1,y1,x2,y2,<color>,<fill>)
-vdr
-    jsr complex_instruction_parse3args
-    
-    ;y2
-    jsr b_parse_comma_uint16
-    sty arg4
-    sta arg4+1
-
-    ;color
-    jsr b_skip_comma
-    jsr b_parse_uint8_to_X
-    stx arg5
-
-    ;assume fill for now
-    ;jsr chrget
-
-    ;line width in bytes (usually 80)
-    ldx #1
-    jsr vdc_reg_X_to_A
-    sta arg6
-
-    ;multiply y1 with line width
-    ;add x1 to that
-    ; this is the start-address -> arg1
-
-    ;color is arg5 --> arg2
-
-    ;subtract x1 from x2
-    ; this is the length --> arg3
-
-    ;subtract y1 from y2
-    ; this is the nr of repetitions
-
-    ;address-increment is arg6
-
-    rts
-}
-
-; draw box 4 x/y pairs
-vdb
-    rts
-
-; dummy entry to skip token $fe3a
-zzz
-    rts
-
-b_parse_int16_AAYY
-    JSR chrget    ; CHRGET
-
-    JSR $77EF    ; Evaluate expression
-    JSR $77DA    ; Confirm numeric
-    JSR $849F    ; Float to fixed
-
-    rts
-
-
 arg_charset_address !word 0 ; the address in VRAM where the character set is stored
 arg_charset_width   !byte 0 ; width in bytes of one character
 arg_charset_height  !byte 0 ; height in scanlines of one character
@@ -1453,3 +1157,7 @@ vcl_parameter_bytes !byte 0,5,9,11,5,9,3,7    ;first byte is dummy-byte. values 
 vms_block_source    !word 0;
 vmp_bank            !byte 0
 
+;$a-$14 should also be safely available. 11 bytes
+vcl_command_id      !byte 0    ;byte
+multi1              !word 0    ;word. for multiplications
+multi2              !word 0    ;word. for multiplications

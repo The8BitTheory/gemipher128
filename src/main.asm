@@ -1,10 +1,24 @@
-;
-; Example
-;
+; ------------
+; memory map
+; ------------
+; $0.1c01 - $0.bfff: programcode. only enable basic-rom when needed
 
+; bank 1 used for data
+;  no clue yet whether to work with indirect kernal routines, or with common memory
+;  speed is not essential, so I guess we'll go with indirect routines
+;  will need to either copy data to bank 0 for VDC-related things, or make VDC libs interact with bank 1
+
+; basic rom lo $4000-$7fff
 b_fast = $77b3
 b_slow = $77c4
 
+; basic rom hi $8000-$bfff
+
+; monitor, screen editor $c000-$cfff
+
+; i/o $d000-$dfff
+
+; kernal $e000-$ffff
 k_primm = $ff7d
 k_getin = $eeeb
 bsout = $ffd2
@@ -37,27 +51,37 @@ wic64_optimize_for_size = 0
 }
 
 *=$1c01
-!byte $1c,$1c,$0a,$00
-!byte $fe,$11,$22,$56,$44,$43,$42,$41,$53,$49,$43,$32
-!byte $47,$2e,$31,$33,$30,$30,$22,$2c,$42,$30,$00
-!byte $2c,$1c,$14,$00
-!byte $9e,$20,$d1,$28,$22,$31,$33,$30,$30,$22,$29,$00
-!byte $49,$1c,$19,$00
-!byte $fe,$11,$22,$41,$53,$43,$49,$49,$32
-!byte $2e,$43,$48,$52,$22,$2c,$42,$30
-!byte $2c,$50,$31,$36,$33,$38,$34,$00
-!byte $63,$1c,$1e,$00
-!byte $fe,$31,$20,$31,$36,$33,$38,$34,$2c
-!byte $d1,$28,$22,$33,$30,$30,$30,$22
-!byte $29,$2c,$39,$36,$00
-!byte $6e,$1c,$b5
-!byte $07,$9e,$20,$37,$34,$32,$34,$00
-!byte $00,$00
-;!byte $0b,$1c,$b5,$07,$9e,$20,$37,$34,$32,$34,$00,$00,$00
+;!byte $1c,$1c,$0a,$00
+;!byte $fe,$11,$22,$56,$44,$43,$42,$41,$53,$49,$43,$32
+;!byte $47,$2e,$31,$33,$30,$30,$22,$2c,$42,$30,$00   ;bload vdcbasic
+;!byte $2c,$1c,$14,$00
+;!byte $9e,$20,$d1,$28,$22,$31,$33,$30,$30,$22,$29,$00   ; sys dec("1300")
+;!byte $49,$1c,$19,$00
+;!byte $fe,$11,$22,$41,$53,$43,$49,$49,$32   
+;!byte $2e,$43,$48,$52,$22,$2c,$42,$30           ;bload ascii2
+;!byte $2c,$50,$31,$36,$33,$38,$34,$00
+;!byte $63,$1c,$1e,$00
+;!byte $fe,$31,$20,$31,$36,$33,$38,$34,$2c
+;!byte $d1,$28,$22,$33,$30,$30,$30,$22
+;!byte $29,$2c,$39,$36,$00                       ;vcc
+;!byte $6e,$1c,$b5
+;!byte $07,$9e,$20,$37,$34,$32,$34,$00       ;sys 7424
+;!byte $00,$00
+!byte $0b,$1c,$b5,$07,$9e,$20,$37,$34,$32,$34,$00,$00,$00
 
 *=$1d00
 main
+;    jsr k_primm
+;    !pet "pet klein GROSS",0
+;    jsr k_primm
+;    !text "ascii klein GROSS",0
+
+    jsr disableBasicRom
+
     jsr saveZp
+
+    jsr initVdc
+
     jsr .initContentAddress
 
     lda #14
@@ -231,9 +255,9 @@ storeInBank1
     rts
 
 .initContentAddress
-    lda #0
-    sta zp_linecount
-    sta zp_linecount+1
+;    lda #0
+;    sta zp_linecount
+;    sta zp_linecount+1
 
     lda #<permResponse
     sta zp_contentAddress
@@ -248,13 +272,27 @@ storeInBank1
 +   rts
 
 
-doFast
-    jsr b_fast
+; used for regular runtime (should leave us with $1c01 - $bfff for program code. close to 42 kB )
+disableBasicRom
+    lda #%00001110
+    sta $ff00
     rts
 
-doSlow
-    jsr b_slow
+; used for slow/fast
+enableBasicLo
+    lda #%00000000
+    sta $ff00
     rts
+
+doFast
+    jsr enableBasicLo
+    jsr b_fast
+    jmp disableBasicRom
+
+doSlow
+    jsr enableBasicLo
+    jsr b_slow
+    jmp disableBasicRom
 
 k_indsta
     pha
@@ -286,6 +324,8 @@ recoverZp
     bne -
     rts
 
+!src "src/file/load.asm"
+!src "src/vdc.asm"
 !src "src/parseGopher.asm"
 !src "src/wic64/wic64.asm"
 
@@ -333,6 +373,10 @@ contentBank         !byte 0
 contentAddr         !word 1024
 responseSize        !word 0
 response            !fill 256
+
+fileOpError         !byte 0
+filenameCharset     !pet "ascii2.chr"
+filenameLength=*-filenameCharset
 
 ; this contains the vectors to all information per line
 ; start address (beginning of first line) is written after content is completely stored in 'permResponse'
