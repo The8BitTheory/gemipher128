@@ -49,6 +49,8 @@ loadGopherPage
 
 
 .sendRequest
+    jsr initContentAddress
+    
     lda #0
     sta responseSize
     sta responseSize+1
@@ -108,7 +110,7 @@ loadGopherPage
 .storeInPerm
     ; setup for indsta
     lda #zp_contentAddress
-    sta $02B9
+    sta c_stash_zp
 
     ldx #CONTENT_BANK
     lda mmuBankConfig,X

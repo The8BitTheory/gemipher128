@@ -9,9 +9,33 @@
 ; moving it over a line that contains a selector will display the selector at the bottom
 ; 
 
+; LINK TABLE
+; 10 bytes per line of gopher content (data from network, not characters on screen)
+;  each entry contains a pointer to that line's respective information
+; type, text, selector, host, port
+; this could be kept at 4kb below I/O space at $c000 (2kb of table space is good for 200 lines)
+
+
 !zone gopher
 
 parseGopher
+    ; set zp_content to beginning of content so we can start parsing that now
+    ; also sets linktableposition to the first byte
+    jsr initContentAddress
+
+    ; setup indirect reading from bank 1
+    lda #zp_contentAddress
+    sta c_fetch_zp
+
+    ; setup indirect writing to bank 1
+    lda #zp_linkTablePosition
+    sta c_stash_zp
+
+    ; good thing we're both, reading and writing, from and to bank 1
+    ldx #CONTENT_BANK
+    lda mmuBankConfig,X
+    sta zp_contentBank
+
     lda #0
     sta .parseSeq
     sta .parseMode
@@ -54,119 +78,104 @@ parseGopher
     !pet "Found zero byte",$d,0
     rts
 
+; checks the first character of the line
+;  that defines how to handle all remaining data until \r\n
 .selectNextParseMode
+    sta .parseMode
+    jsr .storeTypePointerInLinkTable
     ;pha
     ;jsr bsout
     ;pla
-
+    
+    lda .parseMode
     cmp #$69 ;i - info
     bne +
-    sta .parseMode
     lda #$5     ;white
     jsr bsout
     jmp .handleInfo
 
 +   cmp #$30 ; 0 - textfile
     bne +
-    sta .parseMode
     lda #$9c    ; purple
     jsr bsout
     jmp .handleTypeText
 
 +   cmp #$31 ; 1 - menu / directory
     bne +
-    sta .parseMode
     lda #$1e    ; green
     jsr bsout
     jmp .handleTypeMenu
 
 +   cmp #$32 ; 2 - cso phonebook
     bne +
-    sta .parseMode
     lda #$9a ;light blue
     jsr bsout
     jmp .handleTypePhonebook
 
 +   cmp #$33 ; 3 - error/info
     bne +
-    sta .parseMode
     jmp .handleTypeError
 
 +   cmp #$34 ; 4 - binary
     bne +
-    sta .parseMode
     jmp .handleTypeBinary
 
 +   cmp #$35 ; 5 - dos binary
     bne +
-    sta .parseMode
     jmp .handleTypeDosBinary
 
 +   cmp #$36 ; 6 - uuencoded text (probably a binary?)
     bne +
-    sta .parseMode
     jmp .handleTypeUUenc
 
 +   cmp #$37 ; 7 - error/info
     bne +
-    sta .parseMode
     jmp .handleTypeSearch
 
 +   cmp #$38 ; 8 - Telnet
     bne +
-    sta .parseMode
     jmp .handleTypeTelnet
 
 +   cmp #$39 ; 9 - generic binary
     bne +
-    sta .parseMode
     jmp .handleTypeGenericBinary
 
 +   cmp #'+' ; + - gopher + info
     bne +
-    sta .parseMode
     jmp .handleTypePlus
 
 +   cmp #'g' ; G - GIF
     bne +
-    sta .parseMode
     jmp .handleTypeGif
 
 +   cmp #'l' ; L - generic image
     bne +
-    sta .parseMode
     jmp .handleTypeGenericImage
 
 +   cmp #'h' ; H - Hyperlink
     bne +
-    sta .parseMode
     lda #$9e    ; $9e=yellow, $81=dark purple (should be orange, which is not a vdc-color)
     jsr bsout
     jmp .handleTypeHyperlink
 
 +   cmp #'s' ; s - audio
     bne +
-    sta .parseMode
     jmp .handleTypeAudio
 
 +   cmp #'M' ; m - multipart mime
     bne +
-    sta .parseMode
     jmp .handleTypeMime
 
 +   cmp #'D' ; d - document. mostly pdf
     bne +
-    sta .parseMode
     jmp .handleTypeDoc
 
 +   cmp #'T' ; t - terminal connection tn3270
     bne +
-    sta .parseMode
     jmp .handleTypeTerminal
 
 +   cmp #$9 ;tab
     bne +
-    sta .parseMode
     jmp .handleTab
 
 +   lda #$12 ;reverse on
@@ -260,8 +269,10 @@ parseGopher
     jmp .decideOnParseSeq
 
 .readNextByte
+    ; read from bank 1
+    ldx zp_contentBank
     ldy #0
-    lda (zp_contentAddress),y
+    jsr c_fetch
 
     inc zp_contentAddress
     bne +
@@ -273,6 +284,25 @@ parseGopher
 
 +   rts
 
+.storeTypePointerInLinkTable
+    ldy #0
+    lda zp_contentAddress
+    jsr .stashToLinkTable
+    lda zp_contentAddress+1
+    jsr .stashToLinkTable
+
++   rts
+
+
+.stashToLinkTable
+    ldx zp_contentBank
+    ; y must be set accordingly at this point
+    jsr c_stash
+    inc zp_linkTablePosition
+    bne +
+    inc zp_linkTablePosition+1
+
++   rts
 
 .parseMode       !byte 0 ; $69 for i, $31 for 1, etc
 .parseSeq        !byte 0 ; 0=type specific parsing, 1=selector, 2=hostname, 3=port

@@ -9,7 +9,13 @@
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
 
+LINKTABLE_ADDRESS = $f700
+
 ; bank 1 used for data
+;  content data starts at $0400 and goes up.
+;  link tables are expected to have 2kb and start at $f700
+;  once we have that working, we can think about keeping multiple pages in memory
+
 ;  no clue yet whether to work with indirect kernal routines, or with common memory
 ;  speed is not essential, so I guess we'll go with indirect routines
 ;  will need to either copy data to bank 0 for VDC-related things, or make VDC libs interact with bank 1
@@ -21,9 +27,16 @@ zp_tempX = $0e      ; used to hold x register when working with FAR routines
 zp_tempY = $0f    ; used to hold y register when working with FAR routines
 
 zp_contentBank  = $10
+zp_linkTablePosition = $11 ; and $12
+
+; next available is $13
 
 ; common memory area below $0400
+c_fetch = $02a2
+c_fetch_zp = $02aa
 c_stash = $02af
+c_stash_zp = $02b9
+
 
 ; basic rom lo $4000-$7fff
 b_fast = $77b3
@@ -89,39 +102,46 @@ main
 
     jsr initVdc
 
-    jsr .initContentAddress
-
     lda #14
     jsr bsout
 
+; load from network
     jsr loadGopherPage
 
-    ; set zp_content to beginning of content so we can start parsing that now
-    jsr .initContentAddress
 
+; do the processing
     lda #$0d
     jsr bsout
     jsr doFast
     jsr parseGopher
     jsr doSlow
 
+; display page on top
+
+; get user input to see what to do next
+
+
+; we're done, clean the campground before leaving
     jsr recoverZp
     rts
-    nop
+    nop ; only for debugging purposes to give breakpoints a safe spot
 
 
-.initContentAddress
-;    lda #0
-;    sta zp_linecount
-;    sta zp_linecount+1
-
+; set the relevant content pointers to their initial position
+; this is done when writing downloaded data and when starting to parse
+; and will probably also be done when displaying content on screen
+initContentAddress
     lda #<CONTENT_ADDRESS
     sta zp_contentAddress
     lda #>CONTENT_ADDRESS
     sta zp_contentAddress+1
+
+    lda #<LINKTABLE_ADDRESS
+    sta zp_linkTablePosition
+    lda #>LINKTABLE_ADDRESS
+    sta zp_linkTablePosition+1
+
     rts
-
-
 
 ; used for regular runtime (should leave us with $1c01 - $bfff for program code. close to 42 kB )
 disableBasicRom
@@ -192,12 +212,6 @@ fileOpError         !byte 0
 filenameCharset     !pet "ascii2.chr"
 filenameLength=*-filenameCharset
 
-; this contains the vectors to all information per line
-; start address (beginning of first line) is written after content is completely stored in 'permResponse'
-; 10 bytes per line
-; type, text, selector, host, port
-; this could be kept at 4kb below I/O space at $c000 (2kb of table space is good for 200 lines)
-linkTable           !word 0
 
-;permResponse        !byte 0
+
 
