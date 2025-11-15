@@ -136,6 +136,7 @@ initContentAddress
     lda #>CONTENT_ADDRESS
     sta zp_contentAddress+1
 
+initLinkTableAddress
     lda #<LINKTABLE_ADDRESS
     sta zp_linkTablePosition
     lda #>LINKTABLE_ADDRESS

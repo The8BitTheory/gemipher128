@@ -31,6 +31,8 @@ parseGopher
     lda #zp_linkTablePosition
     sta c_stash_zp
 
+    jsr .clearLinkTable
+
     ; good thing we're both, reading and writing, from and to bank 1
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
@@ -47,21 +49,31 @@ parseGopher
 
     jmp .decideOnParseSeq
 
+; which section of the line are we parsing?
+; 0=type and visible content
+; 1=selector
+; 2=host
+; 3=port
+; 4=end
 .decideOnParseSeq
     lda .parseSeq
     bne +
+    jsr .storePointerInLinkTable
     jmp .handleType
 
 +   cmp #1
     bne +
+    jsr .storePointerInLinkTable
     jmp .handleSelector
 
 +   cmp #2
     bne +
+    jsr .storePointerInLinkTable
     jmp .handleHost
 
 +   cmp #3
     bne +
+    jsr .storePointerInLinkTable
     jmp .handlePort
 
 +   rts
@@ -82,103 +94,53 @@ parseGopher
 ;  that defines how to handle all remaining data until \r\n
 .selectNextParseMode
     sta .parseMode
-    jsr .storeTypePointerInLinkTable
-    ;pha
-    ;jsr bsout
-    ;pla
-    
-    lda .parseMode
+
+    ;jsr .storePointerInLinkTable    ; this stores the pointer to the link
+    pha
+    jsr .readNextByte
+    jsr .storePointerInLinkTable
+    pla
     cmp #$69 ;i - info
-    bne +
-    lda #$5     ;white
-    jsr bsout
-    jmp .handleInfo
-
-+   cmp #$30 ; 0 - textfile
-    bne +
-    lda #$9c    ; purple
-    jsr bsout
-    jmp .handleTypeText
-
-+   cmp #$31 ; 1 - menu / directory
-    bne +
-    lda #$1e    ; green
-    jsr bsout
-    jmp .handleTypeMenu
-
-+   cmp #$32 ; 2 - cso phonebook
-    bne +
-    lda #$9a ;light blue
-    jsr bsout
-    jmp .handleTypePhonebook
-
-+   cmp #$33 ; 3 - error/info
-    bne +
-    jmp .handleTypeError
-
-+   cmp #$34 ; 4 - binary
-    bne +
-    jmp .handleTypeBinary
-
-+   cmp #$35 ; 5 - dos binary
-    bne +
-    jmp .handleTypeDosBinary
-
-+   cmp #$36 ; 6 - uuencoded text (probably a binary?)
-    bne +
-    jmp .handleTypeUUenc
-
-+   cmp #$37 ; 7 - error/info
-    bne +
-    jmp .handleTypeSearch
-
-+   cmp #$38 ; 8 - Telnet
-    bne +
-    jmp .handleTypeTelnet
-
-+   cmp #$39 ; 9 - generic binary
-    bne +
-    jmp .handleTypeGenericBinary
-
-+   cmp #'+' ; + - gopher + info
-    bne +
-    jmp .handleTypePlus
-
-+   cmp #'g' ; G - GIF
-    bne +
-    jmp .handleTypeGif
-
-+   cmp #'l' ; L - generic image
-    bne +
-    jmp .handleTypeGenericImage
-
-+   cmp #'h' ; H - Hyperlink
-    bne +
-    lda #$9e    ; $9e=yellow, $81=dark purple (should be orange, which is not a vdc-color)
-    jsr bsout
-    jmp .handleTypeHyperlink
-
-+   cmp #'s' ; s - audio
-    bne +
-    jmp .handleTypeAudio
-
-+   cmp #'M' ; m - multipart mime
-    bne +
-    jmp .handleTypeMime
-
-+   cmp #'D' ; d - document. mostly pdf
-    bne +
-    jmp .handleTypeDoc
-
-+   cmp #'T' ; t - terminal connection tn3270
-    bne +
-    jmp .handleTypeTerminal
-
-+   cmp #$9 ;tab
-    bne +
-    jmp .handleTab
-
-+   lda #$12 ;reverse on
+    beq .handleVisible
+    cmp #$30 ; 0 - textfile
+    beq .handleVisible
+    cmp #$31 ; 1 - menu / directory
+    beq .handleVisible
+    cmp #$32 ; 2 - cso phonebook
+    beq .handleVisible
+    cmp #$33 ; 3 - error/info
+    beq .handleVisible
+    cmp #$34 ; 4 - binary
+    beq .handleVisible
+    cmp #$35 ; 5 - dos binary
+    beq .handleVisible
+    cmp #$36 ; 6 - uuencoded text (probably a binary?)
+    beq .handleVisible
+    cmp #$37 ; 7 - error/info
+    beq .handleVisible
+    cmp #$38 ; 8 - Telnet
+    beq .handleVisible
+    cmp #$39 ; 9 - generic binary
+    beq .handleVisible
+    cmp #'+' ; + - gopher + info
+    beq .handleVisible
+    cmp #'g' ; G - GIF
+    beq .handleVisible
+    cmp #'l' ; L - generic image
+    beq .handleVisible
+    cmp #'h' ; H - Hyperlink
+    beq .handleVisible
+    cmp #'s' ; s - audio
+    beq .handleVisible
+    cmp #'M' ; m - multipart mime
+    beq .handleVisible
+    cmp #'D' ; d - document. mostly pdf
+    beq .handleVisible
+    cmp #'T' ; t - terminal connection tn3270
+    beq .handleVisible
+;    cmp #$9 ;tab
+;    beq .handleVisible
+    lda #$12 ;reverse on
     jsr bsout
     lda #'x'
     jsr bsout
@@ -205,23 +167,26 @@ parseGopher
 .handleTypeMenu
 .handleInfo
     jsr .readNextByte
+    
+.handleVisible
     cmp #9  ; tab. end ascii output
     bne +
-    lda #$0d
-    jsr bsout
+;    lda #$0d    ; some color
+;    jsr bsout
     inc .parseSeq
     lda #0
     sta .parseMode
-    ;lda #$12 ;reverse on
-    ;jsr bsout
     jmp .decideOnParseSeq
 
-+   jsr bsout
++   ;jsr bsout
     jmp .handleInfo
 
 .handleTab
     inc .parseSeq
     jmp .decideOnParseSeq
+
+; the order in the line is
+; type, visible content, selector (ie target path), host, port
 
 ; for now, just skip until tab
 .handleSelector
@@ -284,7 +249,7 @@ parseGopher
 
 +   rts
 
-.storeTypePointerInLinkTable
+.storePointerInLinkTable
     ldy #0
     lda zp_contentAddress
     jsr .stashToLinkTable
@@ -303,6 +268,39 @@ parseGopher
     inc zp_linkTablePosition+1
 
 +   rts
+
+.clearLinkTable
+    ldy #0
+    ldx zp_contentBank
+-   lda #0
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    jsr c_stash
+
+    jsr initLinkTableAddress
+    iny
+    bne -
+
+    jmp initLinkTableAddress
 
 .parseMode       !byte 0 ; $69 for i, $31 for 1, etc
 .parseSeq        !byte 0 ; 0=type specific parsing, 1=selector, 2=hostname, 3=port
