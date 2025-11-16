@@ -36,7 +36,7 @@ zp_visibleLength = $13  ;also used by display.asm
 ; textdisplay
 ; also using zp_visibleLength
 zp_currentLinkTablePtr = $14; and $15
-zp_currentLine = $16
+zp_vram_address = $16 ; and $17
 
 ; next available is $13
 

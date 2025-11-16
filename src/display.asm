@@ -9,6 +9,9 @@ displayTextmode
     sta zp_contentBank
     
     jsr initLinkTableAddress
+    lda #0
+    sta zp_vram_address
+    sta zp_vram_address+1
 
     ldx #10
     jsr .gotoLineNumber
@@ -19,9 +22,10 @@ displayTextmode
 -   jsr .displayVisibleContent
 
     jsr .incLineNumber
+    jsr .incOutputLineNumber
 
-+   lda #$0d
-    jsr bsout
++   ;lda #$0d
+    ;jsr bsout
 
     dec zp_tempX
     bne -
@@ -43,6 +47,17 @@ displayTextmode
     sta zp_linkTablePosition
     bcc +
     inc zp_linkTablePosition+1
+
++   rts
+
+.incOutputLineNumber
+    clc
+    lda zp_vram_address
+    adc #80
+    sta zp_vram_address
+    bcc +
+    inc zp_vram_address+1
+    
 +   rts
 
 .displayVisibleContent
@@ -74,18 +89,50 @@ displayTextmode
     ; A now contains the type of the line
     jsr .handleType
 
+    lda zp_currentLinkTablePtr
+    sta arg1
+    lda zp_currentLinkTablePtr+1
+    sta arg1+1
+
+    lda zp_vram_address
+    sta arg2
+    lda zp_vram_address+1
+    sta arg2+1
+    
+    jsr .myRtv
+
     ; go on reading the text content of the line
+;-   ldx zp_contentBank
+;    iny
+;    jsr c_fetch
+;    cmp #9
+;   beq +
+;    jsr bsout
+;    jmp -
+
+;+   
+    rts
+    nop
+
+.myRtv   ; copy RAM to VRAM
+
+    ldy arg2
+    lda arg2 + 1
+    jsr rtv_vtr_swp_shared_setup
+    
 -   ldx zp_contentBank
     iny
     jsr c_fetch
+
     cmp #9
     beq +
-    jsr bsout
-    jmp -
+    sec
+    sbc #64
+; write byte to VRAM
+	+vdc_sta
+	jmp -
 
-+   
-    rts
-    nop
++   jmp complex_instruction_shared_exit
 
 .handleType
     cmp #$69 ;i - info
