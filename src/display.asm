@@ -10,53 +10,61 @@ displayTextmode
     
     jsr initLinkTableAddress
 
+    ldx #10
+    jsr .gotoLineNumber
+
     ; load type
     ldx #20
     stx zp_tempX
 -   jsr .displayVisibleContent
 
-    clc
-    lda zp_linkTablePosition
-    adc #8
-    sta zp_linkTablePosition
-    bcc +
-    inc zp_linkTablePosition+1
+    jsr .incLineNumber
 
 +   lda #$0d
     jsr bsout
 
     dec zp_tempX
-    bpl -
+    bne -
 
-
-
-
-
-    ; format output accordingly
-;    jsr .handleType
 
     rts
+    nop
+
+.gotoLineNumber
+    jsr .incLineNumber
+    dex
+    bne .gotoLineNumber
+    rts
+
+.incLineNumber
+    clc
+    lda zp_linkTablePosition
+    adc #9
+    sta zp_linkTablePosition
+    bcc +
+    inc zp_linkTablePosition+1
++   rts
 
 .displayVisibleContent
-    ; double the y-offset
-    ;sty zp_tempY
-    ;tya
-    ;adc zp_tempY
-    ;tay
     ldy #0
 
+; read start position of current line from link-table
     lda #zp_linkTablePosition
     sta c_fetch_zp
     
     ldx zp_contentBank
     jsr c_fetch
     sta zp_currentLinkTablePtr
-    
     iny
     ldx zp_contentBank
     jsr c_fetch
     sta zp_currentLinkTablePtr+1
+    iny
+    ldx zp_contentBank
+    jsr c_fetch
+    sta zp_visibleLength
 
+; read first character of current line from content area (holds the line type)
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp
     ldy #0

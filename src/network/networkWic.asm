@@ -83,7 +83,7 @@ loadGopherPage
     jsr bsout
     +print txtTcpRead
 .readResponsePart
-;    inc zp_linecount
+
     +wic64_execute tcpRead, response, 5
     bcc +
     jmp .connTimeout
@@ -93,9 +93,6 @@ loadGopherPage
     sta packBytes
     jsr .storeInPerm
 
-;    lda zp_linecount
-;    cmp #10
-;    beq .allResponseRead
     
 .handleResponse
     +wic64_execute tcpAvailable, availableResponse, 5

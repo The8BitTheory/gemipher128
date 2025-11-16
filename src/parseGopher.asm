@@ -41,6 +41,8 @@ parseGopher
     lda #0
     sta .parseSeq
     sta .parseMode
+    sta zp_linecount
+    sta zp_linecount+1
 
     lda responseSize
     sta .leftToParse
@@ -58,10 +60,11 @@ parseGopher
 .decideOnParseSeq
     lda .parseSeq
     bne +
+    sta zp_visibleLength
     jsr .storePointerInLinkTable
     jmp .handleType
 
-+   cmp #1
+ +  cmp #1
     bne +
     jsr .storePointerInLinkTable
     jmp .handleSelector
@@ -133,48 +136,24 @@ parseGopher
     beq .handleVisible
     cmp #'T' ; t - terminal connection tn3270
     beq .handleVisible
-;    cmp #$9 ;tab
-;    beq .handleVisible
-;    lda #$12 ;reverse on
-;    jsr bsout
-;    lda #'x'
-;    jsr bsout
+
     rts
 
 
-.handleTypeAudio
-.handleTypeBinary
-.handleTypeDoc
-.handleTypeDosBinary
-.handleTypeGenericBinary
-.handleTypeGenericImage
-.handleTypeGif
-.handleTypeHyperlink
-.handleTypeTerminal
-.handleTypeMime
-.handleTypePlus
-.handleTypeTelnet
-.handleTypeSearch
-.handleTypeUUenc
-.handleTypeError
-.handleTypePhonebook
-.handleTypeText
-.handleTypeMenu
-.handleInfo
 .handleVisible
     jsr .readNextByte
     
     cmp #9  ; tab. end ascii output
     bne +
-;    lda #$0d    ; some color
-;    jsr bsout
     inc .parseSeq
     lda #0
     sta .parseMode
+    lda zp_visibleLength
+    jsr .storeValueInLinkTable
     jmp .decideOnParseSeq
 
-+   ;jsr bsout
-    jmp .handleInfo
++   inc zp_visibleLength
+    jmp .handleVisible
 
 .handleTab
     inc .parseSeq
@@ -243,6 +222,12 @@ parseGopher
     dec .leftToParse+1
 
 +   rts
+
+
+.storeValueInLinkTable
+    ldy #0
+    jsr .stashToLinkTable
+    rts
 
 .storePointerInLinkTable
     ldy #0

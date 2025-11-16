@@ -29,10 +29,14 @@ zp_tempY = $0f    ; used to hold y register when working with FAR routines
 zp_contentBank  = $10
 zp_linkTablePosition = $11 ; and $12
 
+; used by parseGopher.asm
+zp_visibleLength = $13  ;also used by display.asm
+
 ; used by display.asm
 ; textdisplay
-zp_currentLinkTablePtr = $13; and $14
-zp_currentLine = $15
+; also using zp_visibleLength
+zp_currentLinkTablePtr = $14; and $15
+zp_currentLine = $16
 
 ; next available is $13
 
