@@ -4,6 +4,9 @@
 ; zp_linkTablePointer will point to the index inside of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
+    lda #$93 ; clear screen
+    jsr bsout
+
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
     sta zp_contentBank
@@ -13,8 +16,8 @@ displayTextmode
     sta zp_vram_address
     sta zp_vram_address+1
 
-    ldx #10
-    jsr .gotoLineNumber
+;    ldx #10
+;    jsr .gotoLineNumber
 
     ; load type
     ldx #20
@@ -89,11 +92,6 @@ displayTextmode
     ; A now contains the type of the line
     jsr .handleType
 
-    lda zp_currentLinkTablePtr
-    sta arg1
-    lda zp_currentLinkTablePtr+1
-    sta arg1+1
-
     lda zp_vram_address
     sta arg2
     lda zp_vram_address+1
@@ -119,20 +117,37 @@ displayTextmode
     ldy arg2
     lda arg2 + 1
     jsr rtv_vtr_swp_shared_setup
+
+    ldy #0
     
 -   ldx zp_contentBank
     iny
     jsr c_fetch
 
     cmp #9
-    beq +
+    beq .rtvDone
+
+    cmp #65 ;A  
+    bmi .rtvWrite       ; < A (so, must be a digit. don't change)
+
+    cmp #97 ;a  ; < a (so, must be an uppercase letter. subtract 64
+    bpl +
     sec
     sbc #64
+    jmp .rtvWrite
+
++   cmp #123 ; <z (so, must be a lowercase letter)
+    bpl .rtvWrite
+    sec
+    sbc #32
+
 ; write byte to VRAM
-	+vdc_sta
+.rtvWrite
+    +vdc_sta
 	jmp -
 
-+   jmp complex_instruction_shared_exit
+.rtvDone
+    jmp complex_instruction_shared_exit
 
 .handleType
     cmp #$69 ;i - info
