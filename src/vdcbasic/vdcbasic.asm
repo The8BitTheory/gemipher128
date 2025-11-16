@@ -58,24 +58,29 @@ release_vdb = 0
 ; zp
 linnum  = $16 ; uint16 for POKE, PEEK(), etc.
 
-arg1  = $83 ; actually colors and scale factors for graphics
-arg2  = $85 ; word
-arg3  = $87 ; word
-arg4  = $89 ; word - used as byte by VMC for nr of repetitions and VMP for length of string
-arg5  = $8B ; word - by now only used by VMC for target address increase (only used as byte)
-arg6  = $8D ; word - by now only used by VMC for source address increase (only used as byte)
+offset_1        = $7b   ;byte
+offset_2        = $7c   ;byte
+arg_bank        = $7d   ;byte
+arg_loop        = $7e   ;byte
+vms_alpha       = $7f   ;byte
 
-arg_address     = $3f ; word. target position of VMP output and address to read VCL from
-arg_address2    = $77 ; word. used to hold target offset of VMS
+arg_address = $80   ; word. target position of VMP output and address to read VCL from
+arg_address2 = $82  ; word. used to hold target offset of VMS
+
+arg1  = $84 ; actually colors and scale factors for graphics
+arg2  = $86 ; word
+arg3  = $88 ; word
+arg4  = $8a ; word - used as byte by VMC for nr of repetitions and VMP for length of string
+arg5  = $8c ; word - by now only used by VMC for target address increase (only used as byte)
+arg6  = $8e ; word - by now only used by VMC for source address increase (only used as byte)
+
+;arg_address     = $3f ; word. target position of VMP output and address to read VCL from
+;arg_address2    = $77 ; word. used to hold target offset of VMS
 
 
 
 ;$26-$2c should also be safely available. 7 bytes
-offset_1        = $26   ;byte
-offset_2        = $27   ;byte
-arg_bank        = $28   ;byte
-arg_loop        = $29   ;byte
-vms_alpha       = $2a   ;byte
+
 
 ; basic
 b_skip_comma      = $795c ; if comma: skip, otherwise: syntax error
@@ -847,6 +852,7 @@ vmb
 
 ; todo: check all parameter values that are passed to VMC_execute.
 ;       and compare them to the basic execution to print text
+
 vmp
     
     ;parse target address (where to render the text to)
@@ -879,7 +885,7 @@ vmp_prepare
     ;parse_string ($877b) writes string address to $24/$25
     ; prepare for indirect FETCH
     lda #$24
-    sta $02aa
+    sta c_fetch_zp
 
     ;arg3(count16) is not changed in VMC, so we can set it here already
     lda arg_charset_width

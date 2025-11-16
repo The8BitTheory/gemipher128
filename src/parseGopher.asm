@@ -95,11 +95,6 @@ parseGopher
 .selectNextParseMode
     sta .parseMode
 
-    ;jsr .storePointerInLinkTable    ; this stores the pointer to the link
-    pha
-    jsr .readNextByte
-    jsr .storePointerInLinkTable
-    pla
     cmp #$69 ;i - info
     beq .handleVisible
     cmp #$30 ; 0 - textfile
@@ -140,10 +135,10 @@ parseGopher
     beq .handleVisible
 ;    cmp #$9 ;tab
 ;    beq .handleVisible
-    lda #$12 ;reverse on
-    jsr bsout
-    lda #'x'
-    jsr bsout
+;    lda #$12 ;reverse on
+;    jsr bsout
+;    lda #'x'
+;    jsr bsout
     rts
 
 
@@ -166,9 +161,9 @@ parseGopher
 .handleTypeText
 .handleTypeMenu
 .handleInfo
+.handleVisible
     jsr .readNextByte
     
-.handleVisible
     cmp #9  ; tab. end ascii output
     bne +
 ;    lda #$0d    ; some color

@@ -20,7 +20,7 @@ LINKTABLE_ADDRESS = $f700
 ;  speed is not essential, so I guess we'll go with indirect routines
 ;  will need to either copy data to bank 0 for VDC-related things, or make VDC libs interact with bank 1
 
-; zero page addresses. we use $0a-$8f ($80 and up is used by vdc-basic)
+; zero page addresses. we use $0a-$8f ($7a and up is used by vdc-basic)
 zp_contentAddress = $0a
 zp_linecount = $0c
 zp_tempX = $0e      ; used to hold x register when working with FAR routines
@@ -28,6 +28,11 @@ zp_tempY = $0f    ; used to hold y register when working with FAR routines
 
 zp_contentBank  = $10
 zp_linkTablePosition = $11 ; and $12
+
+; used by display.asm
+; textdisplay
+zp_currentLinkTablePtr = $13; and $14
+zp_currentLine = $15
 
 ; next available is $13
 
@@ -108,7 +113,6 @@ main
 ; load from network
     jsr loadGopherPage
 
-
 ; do the processing
     lda #$0d
     jsr bsout
@@ -117,6 +121,12 @@ main
     jsr doSlow
 
 ; display page on top
+    jsr displayTextmode
+    ;lda (zp_linkTablePosition)
+    ; vmp needs :
+    ; - arg_address for vram address
+    ; - 
+
 
 ; get user input to see what to do next
 
@@ -200,6 +210,7 @@ recoverZp
 !src "src/vdc.asm"
 !src "src/network/networkWic.asm"
 !src "src/parseGopher.asm"
+!src "src/display.asm"
 !src "src/wic64/wic64.asm"
 
 ; these are the mappings from basic's bank command to the actual mmu config-register values

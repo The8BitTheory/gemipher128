@@ -1,96 +1,178 @@
-    lda .parseMode
+!zone textdisplay
+
+; zp_linkTablePosition will always point to the beginning of the current line
+; zp_linkTablePointer will point to the index inside of the current line
+; this way we should be able to work with a single byte for offset (just y)
+displayTextmode
+    ldx #CONTENT_BANK
+    lda mmuBankConfig,X
+    sta zp_contentBank
+    
+    jsr initLinkTableAddress
+
+    ; load type
+    ldx #20
+    stx zp_tempX
+-   jsr .displayVisibleContent
+
+    clc
+    lda zp_linkTablePosition
+    adc #8
+    sta zp_linkTablePosition
+    bcc +
+    inc zp_linkTablePosition+1
+
++   lda #$0d
+    jsr bsout
+
+    dec zp_tempX
+    bpl -
+
+
+
+
+
+    ; format output accordingly
+;    jsr .handleType
+
+    rts
+
+.displayVisibleContent
+    ; double the y-offset
+    ;sty zp_tempY
+    ;tya
+    ;adc zp_tempY
+    ;tay
+    ldy #0
+
+    lda #zp_linkTablePosition
+    sta c_fetch_zp
+    
+    ldx zp_contentBank
+    jsr c_fetch
+    sta zp_currentLinkTablePtr
+    
+    iny
+    ldx zp_contentBank
+    jsr c_fetch
+    sta zp_currentLinkTablePtr+1
+
+    lda #zp_currentLinkTablePtr
+    sta c_fetch_zp
+    ldy #0
+    ldx zp_contentBank
+    jsr c_fetch 
+    
+    ; A now contains the type of the line
+    jsr .handleType
+
+    ; go on reading the text content of the line
+-   ldx zp_contentBank
+    iny
+    jsr c_fetch
+    cmp #9
+    beq +
+    jsr bsout
+    jmp -
+
++   
+    rts
+    nop
+
+.handleType
     cmp #$69 ;i - info
     bne +
     lda #$5     ;white
     jsr bsout
-    jmp .handleInfo
+    rts
 
 +   cmp #$30 ; 0 - textfile
     bne +
     lda #$9c    ; purple
     jsr bsout
-    jmp .handleTypeText
+    rts
 
 +   cmp #$31 ; 1 - menu / directory
     bne +
     lda #$1e    ; green
     jsr bsout
-    jmp .handleTypeMenu
+    rts
 
 +   cmp #$32 ; 2 - cso phonebook
     bne +
     lda #$9a ;light blue
     jsr bsout
-    jmp .handleTypePhonebook
+    rts
 
 +   cmp #$33 ; 3 - error/info
     bne +
-    jmp .handleTypeError
+    brk
+    rts
 
 +   cmp #$34 ; 4 - binary
     bne +
-    jmp .handleTypeBinary
+    rts
 
 +   cmp #$35 ; 5 - dos binary
     bne +
-    jmp .handleTypeDosBinary
+    rts
 
 +   cmp #$36 ; 6 - uuencoded text (probably a binary?)
     bne +
-    jmp .handleTypeUUenc
+    rts
 
 +   cmp #$37 ; 7 - error/info
     bne +
-    jmp .handleTypeSearch
+    rts
 
 +   cmp #$38 ; 8 - Telnet
     bne +
-    jmp .handleTypeTelnet
+    rts
 
 +   cmp #$39 ; 9 - generic binary
     bne +
-    jmp .handleTypeGenericBinary
+    rts
 
 +   cmp #'+' ; + - gopher + info
     bne +
-    jmp .handleTypePlus
+    rts
 
 +   cmp #'g' ; G - GIF
     bne +
-    jmp .handleTypeGif
+    rts
 
 +   cmp #'l' ; L - generic image
     bne +
-    jmp .handleTypeGenericImage
+    rts
 
 +   cmp #'h' ; H - Hyperlink
     bne +
     lda #$9e    ; $9e=yellow, $81=dark purple (should be orange, which is not a vdc-color)
     jsr bsout
-    jmp .handleTypeHyperlink
+    rts
 
 +   cmp #'s' ; s - audio
     bne +
-    jmp .handleTypeAudio
+    rts
 
 +   cmp #'M' ; m - multipart mime
     bne +
-    jmp .handleTypeMime
+    rts
 
 +   cmp #'D' ; d - document. mostly pdf
     bne +
-    jmp .handleTypeDoc
+    rts
 
 +   cmp #'T' ; t - terminal connection tn3270
     bne +
-    jmp .handleTypeTerminal
+    rts
 
 +   cmp #$9 ;tab
     bne +
-    jmp .handleTab
+    rts
 
-+   lda #$12 ;reverse on
-    jsr bsout
-    lda #'x'
-    jsr bsout
++   ;lda #$12 ;reverse on
+    ;jsr bsout
+    ;lda #'x'
+    ;jsr bsout
     rts
