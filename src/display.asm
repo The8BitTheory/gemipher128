@@ -48,7 +48,6 @@ displayTextmode
     stx zp_tempX
 
     jsr .clearScreen
-    ;jsr .waitForSync
 
 ;setup block copy
 ; set register bit for BLOCK COPY:
@@ -71,7 +70,7 @@ displayTextmode
     jsr .incLinkTableReadPosition
     jsr .incOutputLineNumber
 
-    dec zp_tempX
+    ldx zp_tempX
     bne -
 
     rts
@@ -113,7 +112,11 @@ displayTextmode
 +   rts
 
 .incOutputLineNumber
-    clc
+    dec zp_tempX
+    bne +
+    rts
+
++   clc
     lda zp_vram_screenram
     adc #80
     sta zp_vram_screenram
@@ -130,9 +133,34 @@ displayTextmode
 .displayLine
     jsr .readVisibleLength
     ; low-byte in A
-    ldy #0  ; high-byte in Y
+-   cmp #75
+    bcc +   
+    ; line longer than 75 characters
+    sec
+    sbc #75
+    sta zp_visibleLength
+    lda #75
+    jmp ++
+
+    ; line shorter thann 75 characters
++   ldy #0
+    sty zp_visibleLength
+
     ; this implies a maximum line-width of 255 visible characters
-    jmp vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
+    ;ldy #0  ; high-byte in Y is zero anyways, coming out of jsr .readVisibleLength above
+++  jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
+
+    lda zp_visibleLength
+    beq +
+    ldx zp_tempX    ;contains the nr of lines left to print
+    cpx #1
+    beq +           ;if this is the last line, don't print the next line
+    jsr .incOutputLineNumber
+    lda zp_visibleLength
+    jmp -
+
++   rts
+
 
 .readVisibleLength
     ldy #0

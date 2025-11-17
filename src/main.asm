@@ -31,6 +31,7 @@ zp_tempY = $0f    ; used to hold y register when working with FAR routines
 
 zp_contentBank  = $10   
 zp_linkTablePosition = $11 ; and $12
+zp_fastmode = $1b
 
 ; used by parseGopher.asm
 zp_visibleLength = $13  ;also used by display.asm
@@ -42,6 +43,7 @@ zp_currentLinkTablePtr = $14; and $15
 zp_vram_content_addr = $16 ; and $17 ;  also used by copytovram.asm
 zp_vram_screenram = $18 ; and $19
 zp_linenumber_start = $1a
+
 
 ; used by copytovram.asm
 ; zp_vram_content_addr
@@ -165,7 +167,18 @@ main
     sta zp_linenumber_start
     jmp .updateDisplay
 
-+   cmp #'X'
++   cmp #'S'; speed
+    bne ++
+    lda zp_fastmode
+    beq +
+    jsr doSlow
+    dec zp_fastmode
+    jmp -
++   jsr doFast
+    inc zp_fastmode
+    jmp -
+
+++  cmp #'X'
     bne -
 
 ; we're done, clean the campground before leaving
