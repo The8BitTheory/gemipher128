@@ -1,153 +1,139 @@
 !zone textdisplay
 
 ; zp_linkTablePosition will always point to the beginning of the current line
-; zp_linkTablePointer will point to the index inside of the current line
+; zp_currentLinkTablePtr will point to the index inside of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
     lda #$93 ; clear screen
     jsr bsout
 
+; bank 1
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
     sta zp_contentBank
     
+; pointer to beginning of link table
     jsr initLinkTableAddress
-    lda #0
-    sta zp_vram_address
-    sta zp_vram_address+1
 
-;    ldx #10
-;    jsr .gotoLineNumber
+    clc
+    lda zp_linkTablePosition
+    adc #2
+    sta zp_linkTablePosition
+    bcc +
+    inc zp_linkTablePosition+1
+
+; read start position of current line from link-table
++   lda #zp_linkTablePosition
+    sta c_fetch_zp
+
+; vram target to zero
+    lda #0
+    sta zp_vram_screenram
+    sta zp_vram_screenram+1
+
+; set register bit for BLOCK COPY:
+    ldx #24
+    jsr vdc_reg_X_to_A
+    ora #128
+    jsr A_to_vdc_reg_X
+
+; setup the read-position in vram_content area
+    jsr .gotoLineNumber
+
+; block copy source (HB/LB order)
++   ldy zp_vram_content_addr
+    lda zp_vram_content_addr+1
+    ldx #32
+    jsr AY_to_vdc_regs_Xp1
+
+    jsr .writeVramAddress
+
+    ; vram read address is taken from link-table
+    ; when not starting display at the first line, we're adding up visible-lengths until we're there
+    ; with each line displayed, the read address is just increased by the amount of the previous line.
+    ; the write address starts at zero and increments 80 bytes for each line
+
+    ; block copy source address is automatically increased, so we only need to set it once for 25 lines
+    ; each copy operation only requires setting target address (increments of 80, unless line-length is longer)
+    ;  and nr of characters to copy
 
     ; load type
-    ldx #20
+    ldx #23
     stx zp_tempX
--   jsr .displayVisibleContent
+ -  jsr .displayLine
 
-    jsr .incLineNumber
+    jsr .incLinkTableReadPosition
     jsr .incOutputLineNumber
-
-+   ;lda #$0d
-    ;jsr bsout
 
     dec zp_tempX
     bne -
-
 
     rts
     nop
 
 .gotoLineNumber
-    jsr .incLineNumber
-    dex
-    bne .gotoLineNumber
+    lda #<VRAM_CONTENT
+    sta zp_vram_content_addr
+    lda #>VRAM_CONTENT
+    sta zp_vram_content_addr+1
+
+    ldx zp_linenumber_start
+    bne +
     rts
 
-.incLineNumber
++   stx zp_tempX
+
+    ; read contentlength
+-   jsr .readVisibleLength
+    ; A holds visible length of current line
+    clc
+    adc zp_vram_content_addr
+    sta zp_vram_content_addr
+    bcc +
+    inc zp_vram_content_addr+1
+
++   jsr .incLinkTableReadPosition
+    dec zp_tempX
+    bne -
+    rts
+
+.incLinkTableReadPosition
     clc
     lda zp_linkTablePosition
     adc #9
     sta zp_linkTablePosition
     bcc +
     inc zp_linkTablePosition+1
-
 +   rts
 
 .incOutputLineNumber
     clc
-    lda zp_vram_address
+    lda zp_vram_screenram
     adc #80
-    sta zp_vram_address
-    bcc +
-    inc zp_vram_address+1
-    
-+   rts
+    sta zp_vram_screenram
+    bcc .writeVramAddress
+    inc zp_vram_screenram+1
 
-.displayVisibleContent
+; the vram target address. within the visible area of screen ram
+.writeVramAddress
+    ldy zp_vram_screenram
+    lda zp_vram_screenram+1
+    
+    jmp AY_to_vdc_regs_18_19
+
+.displayLine
+    jsr .readVisibleLength
+    ; low-byte in A
+    ldy #0  ; high-byte in Y
+    ; this implies a maximum line-width of 255 visible characters
+    jmp vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
+
+.readVisibleLength
     ldy #0
-
-; read start position of current line from link-table
-    lda #zp_linkTablePosition
-    sta c_fetch_zp
-    
-    ldx zp_contentBank
-    jsr c_fetch
-    sta zp_currentLinkTablePtr
-    iny
-    ldx zp_contentBank
-    jsr c_fetch
-    sta zp_currentLinkTablePtr+1
-    iny
     ldx zp_contentBank
     jsr c_fetch
     sta zp_visibleLength
-
-; read first character of current line from content area (holds the line type)
-    lda #zp_currentLinkTablePtr
-    sta c_fetch_zp
-    ldy #0
-    ldx zp_contentBank
-    jsr c_fetch 
-    
-    ; A now contains the type of the line
-    jsr .handleType
-
-    lda zp_vram_address
-    sta arg2
-    lda zp_vram_address+1
-    sta arg2+1
-    
-    jsr .myRtv
-
-    ; go on reading the text content of the line
-;-   ldx zp_contentBank
-;    iny
-;    jsr c_fetch
-;    cmp #9
-;   beq +
-;    jsr bsout
-;    jmp -
-
-;+   
     rts
-    nop
-
-.myRtv   ; copy RAM to VRAM
-
-    ldy arg2
-    lda arg2 + 1
-    jsr rtv_vtr_swp_shared_setup
-
-    ldy #0
-    
--   ldx zp_contentBank
-    iny
-    jsr c_fetch
-
-    cmp #9
-    beq .rtvDone
-
-    cmp #65 ;A  
-    bmi .rtvWrite       ; < A (so, must be a digit. don't change)
-
-    cmp #97 ;a  ; < a (so, must be an uppercase letter. subtract 64
-    bpl +
-    sec
-    sbc #64
-    jmp .rtvWrite
-
-+   cmp #123 ; <z (so, must be a lowercase letter)
-    bpl .rtvWrite
-    sec
-    sbc #32
-
-; write byte to VRAM
-.rtvWrite
-    +vdc_sta
-	jmp -
-
-.rtvDone
-    jmp complex_instruction_shared_exit
 
 .handleType
     cmp #$69 ;i - info

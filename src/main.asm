@@ -11,6 +11,9 @@ CONTENT_ADDRESS = $0400
 
 LINKTABLE_ADDRESS = $f700
 
+VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
+
+
 ; bank 1 used for data
 ;  content data starts at $0400 and goes up.
 ;  link tables are expected to have 2kb and start at $f700
@@ -26,7 +29,7 @@ zp_linecount = $0c
 zp_tempX = $0e      ; used to hold x register when working with FAR routines
 zp_tempY = $0f    ; used to hold y register when working with FAR routines
 
-zp_contentBank  = $10
+zp_contentBank  = $10   
 zp_linkTablePosition = $11 ; and $12
 
 ; used by parseGopher.asm
@@ -36,9 +39,20 @@ zp_visibleLength = $13  ;also used by display.asm
 ; textdisplay
 ; also using zp_visibleLength
 zp_currentLinkTablePtr = $14; and $15
-zp_vram_address = $16 ; and $17
+zp_vram_content_addr = $16 ; and $17 ;  also used by copytovram.asm
+zp_vram_screenram = $18 ; and $19
+zp_linenumber_start = $1a
 
-; next available is $13
+; used by copytovram.asm
+; zp_vram_content_addr
+; zp_linecount
+; zp_tempX
+; zp_visibleLength
+; zp_currentLinkTablePtr
+; zp_linkTablePosition
+; zp_contentBank
+
+; next available is $1b
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -124,16 +138,35 @@ main
     jsr parseGopher
     jsr doSlow
 
-; display page on top
-    jsr displayTextmode
-    ;lda (zp_linkTablePosition)
-    ; vmp needs :
-    ; - arg_address for vram address
-    ; - 
+; copy visible content to vram
+;    lda #$93 ; clear screen
+;    jsr bsout
+    
+    jsr copyVisibleContentToVram
 
+; display page on top
+.updateDisplay
+    jsr displayTextmode
 
 ; get user input to see what to do next
+-   jsr k_getin
+    beq -
 
+    cmp #17     ;cursor down
+    bne +
+    inc zp_linenumber_start
+    jmp .updateDisplay
+
++   cmp #145 ; cursor up
+    bne +
+    dec zp_linenumber_start
+    bpl .updateDisplay
+    lda #0
+    sta zp_linenumber_start
+    jmp .updateDisplay
+
++   cmp #'X'
+    bne -
 
 ; we're done, clean the campground before leaving
     jsr recoverZp
@@ -214,6 +247,7 @@ recoverZp
 !src "src/vdc.asm"
 !src "src/network/networkWic.asm"
 !src "src/parseGopher.asm"
+!src "src/copytovram.asm"
 !src "src/display.asm"
 !src "src/wic64/wic64.asm"
 

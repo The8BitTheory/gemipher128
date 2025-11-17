@@ -1,0 +1,129 @@
+; this is responsible for copying the visible content to vram (a part that's not visible on screen)
+; in contrast to the content area in bank 1, this
+; - is in screencode, not in ascii format
+; - only contains visible text. no type, no selector, no host, no port. these stay in bank 1
+; - text is also stored gapless/condensed here
+; - all visible lines are copied via block copy to the visible screen area
+
+; vram memory map
+; $0000-$07ff screen ram
+; $0800-$0fff attribute ram
+; $1000-$2fff invisible content area (we're copying to this area) - 8 kB for 16 kB VRAM setup
+; $3000-$3fff character set
+
+!zone RAMTOVRAM
+
+copyVisibleContentToVram
+    ldx #CONTENT_BANK
+    lda mmuBankConfig,X
+    sta zp_contentBank
+    
+    jsr initLinkTableAddress
+    
+    lda #<VRAM_CONTENT
+    sta zp_vram_content_addr
+    lda #>VRAM_CONTENT
+    sta zp_vram_content_addr+1
+
+    ldy zp_vram_content_addr
+    lda zp_vram_content_addr+1
+    
+    jsr AY_to_vdc_regs_18_19
+    ldx #31 ; VRAM register
+    stx vdc_reg
+
+    ; load type
+    ldx zp_linecount
+    stx zp_tempX
+-   jsr .copyLineToVram
+
+    jsr .incLineNumber
+    ;jsr .incOutputLineNumber
+
+    dec zp_tempX
+    bne -
+
+    rts
+
+.copyLineToVram
+    ldy #0
+
+; read start position of current line from link-table
+    lda #zp_linkTablePosition
+    sta c_fetch_zp
+    
+    ldx zp_contentBank
+    jsr c_fetch
+    sta zp_currentLinkTablePtr
+    iny
+    ldx zp_contentBank
+    jsr c_fetch
+    sta zp_currentLinkTablePtr+1
+    iny
+    ldx zp_contentBank
+    jsr c_fetch
+    sta zp_visibleLength
+
+; read first character of current line from content area (holds the line type)
+    lda #zp_currentLinkTablePtr
+    sta c_fetch_zp
+    ldy #0
+    ldx zp_contentBank
+    jsr c_fetch 
+    
+    ; A now contains the type of the line
+    ;jsr .handleType
+
+
+    
+    jsr .myRtv
+
+    rts
+    nop
+
+.myRtv   ; copy RAM to VRAM
+
+    ldy #0
+    
+-   ldx zp_contentBank
+    iny
+    jsr c_fetch
+
+    cmp #9
+    beq .rtvDone
+
+    cmp #65 ;A  
+    bmi .rtvWrite       ; < A (so, must be a digit. don't change)
+
+    cmp #97 ;a  ; < a (so, must be an uppercase letter. subtract 64
+    bpl +
+    sec
+    sbc #64
+    jmp .rtvWrite
+
++   cmp #123 ; <z (so, must be a lowercase letter)
+    bpl .rtvWrite
+    sec
+    sbc #32
+
+; write byte to VRAM
+.rtvWrite
+    +vdc_sta
+	jmp -
+
+.rtvDone
+    jmp complex_instruction_shared_exit
+
+
+.incLineNumber
+    clc
+    lda zp_linkTablePosition
+    adc #9
+    sta zp_linkTablePosition
+    bcc +
+    inc zp_linkTablePosition+1
+
++   rts
+
+
+
