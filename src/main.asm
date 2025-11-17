@@ -12,7 +12,7 @@ CONTENT_ADDRESS = $0400
 LINKTABLE_ADDRESS = $f700
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
-
+VISIBLE_LINES = 23
 
 ; bank 1 used for data
 ;  content data starts at $0400 and goes up.
@@ -148,7 +148,7 @@ main
     bne +
     clc
     lda zp_linenumber_start
-    adc #25
+    adc #VISIBLE_LINES
     cmp zp_linecount
     bpl -
     inc zp_linenumber_start

@@ -27,8 +27,9 @@ displayTextmode
     sta c_fetch_zp
 
 ; vram target to zero
-    lda #0
+    lda #81
     sta zp_vram_screenram
+    lda #0
     sta zp_vram_screenram+1
 
 ; setup the read-position in vram_content area
@@ -44,7 +45,7 @@ displayTextmode
     ;  and nr of characters to copy
 
     ; load type
-    ldx #25
+    ldx #VISIBLE_LINES
     stx zp_tempX
 
     jsr .clearScreen
