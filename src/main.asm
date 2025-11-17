@@ -13,6 +13,8 @@ LINKTABLE_ADDRESS = $f700
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
 VISIBLE_LINES = 23
+FIRST_LINE = 1
+LAST_LINE = FIRST_LINE+VISIBLE_LINES-1
 
 ; bank 1 used for data
 ;  content data starts at $0400 and goes up.
@@ -42,8 +44,10 @@ zp_visibleLength = $13  ;also used by display.asm
 zp_currentLinkTablePtr = $14; and $15
 zp_vram_content_addr = $16 ; and $17 ;  also used by copytovram.asm
 zp_vram_screenram = $18 ; and $19
-zp_linenumber_start = $1a
-
+zp_linenumber_start = $1a   ; this is the scrolling position
+zp_cursorLineContent = $1c         ; this is the cursor line relative to the content
+zp_cursorPosScreen = $1d ; and $1e   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
+zp_cursorLineScreen = $1f   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
 
 ; used by copytovram.asm
 ; zp_vram_content_addr
@@ -131,34 +135,29 @@ main
     jsr doSlow
 
 ; copy visible content to vram
-;    lda #$93 ; clear screen
-;    jsr bsout
-    
     jsr copyVisibleContentToVram
+
+    lda #0
+    sta zp_cursorLineContent
 
 ; display page on top
 .updateDisplay
     jsr displayTextmode
 
 ; get user input to see what to do next
+.getUserinput
 -   jsr k_getin
     beq -
 
     cmp #17     ;cursor down
     bne +
-    clc
-    lda zp_linenumber_start
-    adc #VISIBLE_LINES
-    cmp zp_linecount
-    bpl -
-    inc zp_linenumber_start
-    jmp .updateDisplay
+    jmp .tryCursorDown
+    ;jmp .tryLineScrollDown
 
 +   cmp #145 ; cursor up
     bne +
-    dec zp_linenumber_start
-    bpl .updateDisplay
-    jmp .goToFirstLine
+    jmp .tryCursorUp
+    ;jmp .tryLineScrollUp
 
 +   cmp #19 ;home
     bne +
@@ -186,6 +185,63 @@ main
     rts
     nop ; only for debugging purposes to give breakpoints a safe spot
 
+.tryCursorDown
+    jsr .calcCursorLineScreen
+    cmp #LAST_LINE
+    bne +   ; not on the last visible line, draw one line below
+
+    ; on the last visible line, check if we can scroll down
+    jmp .tryLineScrollDown
+
++   jsr .drawCursorOneBelow
+    jmp .getUserinput
+
+.drawCursorOneBelow
+    jsr removeCursor
+    inc zp_cursorLineContent
+    jmp drawCursor
+
+.tryCursorUp
+    jsr .calcCursorLineScreen
+    cmp #FIRST_LINE
+    bne +
+
+    jmp .tryLineScrollUp
+
++   jsr .drawCursorOneAbove
+    jmp .getUserinput
+
+.drawCursorOneAbove
+    jsr removeCursor
+    dec zp_cursorLineContent
+    jmp drawCursor
+
+.tryLineScrollDown
+    clc
+    lda zp_linenumber_start
+    adc #VISIBLE_LINES
+    cmp zp_linecount
+    bpl .getUserinput
+    inc zp_linenumber_start
+
+    jmp .updateDisplay
+
+.tryLineScrollUp
+    dec zp_linenumber_start
+    bpl +
+    jmp .goToFirstLine
++   jmp .updateDisplay
+
+.calcCursorLineScreen
+    clc
+    lda #1
+    adc zp_cursorLineContent
+    sta zp_cursorLineScreen
+
+    sec
+    sbc zp_linenumber_start
+    sta zp_cursorLineScreen
+    rts
 
 ; set the relevant content pointers to their initial position
 ; this is done when writing downloaded data and when starting to parse

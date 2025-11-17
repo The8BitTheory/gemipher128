@@ -48,6 +48,8 @@ displayTextmode
     ldx #VISIBLE_LINES
     stx zp_tempX
 
+; clear screen sets register bit to block fill and vram address (18/19 to $0000)
+; this also waits for the next vblank period
     jsr .clearScreen
 
 ;setup block copy
@@ -74,8 +76,51 @@ displayTextmode
     ldx zp_tempX
     bne -
 
-    rts
+drawCursor
+    ; set cursor display position to topmost screenline (80)
+    jsr calcCursorScreenPos
+
+    lda #62 ; >
+    ldx zp_cursorPosScreen+1
+    ldy zp_cursorPosScreen
+    jsr A_to_vram_XXYY
+
+    ;write attribute-ram color
+    ldy zp_cursorPosScreen
+    lda zp_cursorPosScreen+1
+    adc #$08
+    tax
+    lda #$0f
+    jmp A_to_vram_XXYY
+
     nop
+
+removeCursor
+    jsr calcCursorScreenPos
+
+    lda #$20 ; >
+    ldx zp_cursorPosScreen+1
+    ldy zp_cursorPosScreen
+    jmp A_to_vram_XXYY
+
+calcCursorScreenPos
+    lda #80
+    sta zp_cursorPosScreen
+    lda #0
+    sta zp_cursorPosScreen+1
+
+    ldx zp_cursorLineContent
+    beq ++
+-   clc
+    lda #80
+    adc zp_cursorPosScreen
+    sta zp_cursorPosScreen 
+    bcc +
+    inc zp_cursorPosScreen+1
++   dex
+    bne -
+
+++  rts
 
 .gotoLineNumber
     lda #<VRAM_CONTENT
