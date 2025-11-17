@@ -167,11 +167,9 @@ parseGopher
     jsr .readNextByte
     cmp #9
     beq +
-;    jsr bsout
+
     jmp .handleSelector
-+   ;lda #$92 ;reverse off
-    ;jsr bsout
-    jmp .handleTab
++   jmp .handleTab
 
 .handleHost
     jsr .readNextByte

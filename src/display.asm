@@ -4,8 +4,8 @@
 ; zp_currentLinkTablePtr will point to the index inside of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
-    lda #$93 ; clear screen
-    jsr bsout
+;    lda #$93 ; clear screen
+;    jsr bsout
 
 ; bank 1
     ldx #CONTENT_BANK
@@ -31,22 +31,8 @@ displayTextmode
     sta zp_vram_screenram
     sta zp_vram_screenram+1
 
-; set register bit for BLOCK COPY:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    ora #128
-    jsr A_to_vdc_reg_X
-
 ; setup the read-position in vram_content area
     jsr .gotoLineNumber
-
-; block copy source (HB/LB order)
-+   ldy zp_vram_content_addr
-    lda zp_vram_content_addr+1
-    ldx #32
-    jsr AY_to_vdc_regs_Xp1
-
-    jsr .writeVramAddress
 
     ; vram read address is taken from link-table
     ; when not starting display at the first line, we're adding up visible-lengths until we're there
@@ -58,8 +44,28 @@ displayTextmode
     ;  and nr of characters to copy
 
     ; load type
-    ldx #23
+    ldx #25
     stx zp_tempX
+
+    jsr .clearScreen
+    ;jsr .waitForSync
+
+;setup block copy
+; set register bit for BLOCK COPY:
+    ldx #24
+    jsr vdc_reg_X_to_A
+    ora #128
+    jsr A_to_vdc_reg_X
+
+; target address
+    jsr .writeVramAddress
+
+; block copy source (HB/LB order)
+    ldy zp_vram_content_addr
+    lda zp_vram_content_addr+1
+    ldx #32
+    jsr AY_to_vdc_regs_Xp1
+
  -  jsr .displayLine
 
     jsr .incLinkTableReadPosition
@@ -134,6 +140,36 @@ displayTextmode
     jsr c_fetch
     sta zp_visibleLength
     rts
+
+.clearScreen
+;   wait until we are in text window (in case we're in a sync state right now)
+-   lda vdc_state
+    and #$20
+    bne -
+
+    ; wait until we are out of text window
+-   lda vdc_state
+    and #$20
+    beq -
+
+    ; clear BLOCK COPY register bit to get BLOCK WRITE:
+    ldx #24
+    jsr vdc_reg_X_to_A
+    and #$7f
+    jsr A_to_vdc_reg_X
+
+    lda #$20
+    ldy zp_vram_screenram
+    ldx zp_vram_screenram+1
+    jsr A_to_vram_XXYY
+
+    ;set count
+    lda #$ff    ;lowbyte
+    ldy #$07    ;highbyte
+    jsr vdc_do_YYAA_cycles
+    
+    rts
+
 
 .handleType
     cmp #$69 ;i - info

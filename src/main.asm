@@ -94,22 +94,6 @@ bsout = $ffd2
 }
 
 *=$1c01
-;!byte $1c,$1c,$0a,$00
-;!byte $fe,$11,$22,$56,$44,$43,$42,$41,$53,$49,$43,$32
-;!byte $47,$2e,$31,$33,$30,$30,$22,$2c,$42,$30,$00   ;bload vdcbasic
-;!byte $2c,$1c,$14,$00
-;!byte $9e,$20,$d1,$28,$22,$31,$33,$30,$30,$22,$29,$00   ; sys dec("1300")
-;!byte $49,$1c,$19,$00
-;!byte $fe,$11,$22,$41,$53,$43,$49,$49,$32   
-;!byte $2e,$43,$48,$52,$22,$2c,$42,$30           ;bload ascii2
-;!byte $2c,$50,$31,$36,$33,$38,$34,$00
-;!byte $63,$1c,$1e,$00
-;!byte $fe,$31,$20,$31,$36,$33,$38,$34,$2c
-;!byte $d1,$28,$22,$33,$30,$30,$30,$22
-;!byte $29,$2c,$39,$36,$00                       ;vcc
-;!byte $6e,$1c,$b5
-;!byte $07,$9e,$20,$37,$34,$32,$34,$00       ;sys 7424
-;!byte $00,$00
 !byte $0b,$1c,$b5,$07,$9e,$20,$37,$34,$32,$34,$00,$00,$00
 
 *=$1d00
@@ -118,6 +102,8 @@ main
 ;    !pet "pet klein GROSS",0
 ;    jsr k_primm
 ;    !text "ascii klein GROSS",0
+    lda #$93 ; clear screen
+    jsr bsout
 
     jsr disableBasicRom
 
@@ -130,6 +116,10 @@ main
 
 ; load from network
     jsr loadGopherPage
+
+    lda #$93 ; clear screen
+    jsr bsout
+
 
 ; do the processing
     lda #$0d
@@ -154,6 +144,11 @@ main
 
     cmp #17     ;cursor down
     bne +
+    clc
+    lda zp_linenumber_start
+    adc #25
+    cmp zp_linecount
+    bpl -
     inc zp_linenumber_start
     jmp .updateDisplay
 
@@ -161,6 +156,11 @@ main
     bne +
     dec zp_linenumber_start
     bpl .updateDisplay
+    jmp .goToFirstLine
+
++   cmp #19 ;home
+    bne +
+.goToFirstLine
     lda #0
     sta zp_linenumber_start
     jmp .updateDisplay
