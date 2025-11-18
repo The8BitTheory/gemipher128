@@ -142,7 +142,9 @@ main
 ; copy visible content to vram
     jsr copyVisibleContentToVram
 
+.resetDisplay
     lda #0
+    sta zp_linenumber_start
     sta zp_cursorLineContent
     lda #FIRST_LINE
     sta zp_cursorLineScreen
@@ -169,12 +171,7 @@ main
 +   cmp #19 ;home
     bne +
 .goToFirstLine
-    lda #0
-    sta zp_linenumber_start
-    sta zp_cursorLineContent
-    lda #FIRST_LINE
-    sta zp_cursorLineScreen
-    jmp .updateDisplay
+    jmp .resetDisplay
 
 +   cmp #'S'; speed
     bne ++
@@ -254,11 +251,11 @@ main
     jmp drawCursor
 
 .tryLineScrollUp
-    dec zp_linenumber_start
-    bpl +
-    jmp .goToFirstLine
-
-+   dec zp_cursorLineContent
+    lda zp_linenumber_start
+    bne +
+    jmp .getUserinput
++   dec zp_linenumber_start
+    dec zp_cursorLineContent
     jmp .updateDisplay
 
 .calcCursorLineScreen

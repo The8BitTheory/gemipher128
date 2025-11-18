@@ -85,14 +85,6 @@ drawCursor
     ldy zp_cursorPosScreen
     jsr A_to_vram_XXYY
 
-    ;write attribute-ram color
-    ldy zp_cursorPosScreen
-    lda zp_cursorPosScreen+1
-    adc #$08
-    tax
-    lda #$0f
-    jsr A_to_vram_XXYY
-
 ; print debug info to last line
     lda zp_cursorLineScreen
     jsr .makeItHex
@@ -216,11 +208,11 @@ calcCursorScreenPos
 -   cmp #75
     bcc +   
     ; line longer than 75 characters
-    sec
-    sbc #75
-    sta zp_visibleLength
+    ;sec
+    ;sbc #75
+    ;sta zp_visibleLength
     lda #75
-    jmp ++
+    ;jmp ++
 
     ; line shorter thann 75 characters
 +   ldy #0
@@ -268,18 +260,28 @@ calcCursorScreenPos
     and #$7f
     jsr A_to_vdc_reg_X
 
+; screen-ram
     lda #$20
-    ldy zp_vram_screenram
-    ldx zp_vram_screenram+1
+    ldy #0
+    ldx #0
     jsr A_to_vram_XXYY
 
     ;set count
-    lda #$ff    ;lowbyte
+    lda #$af    ;lowbyte
     ldy #$07    ;highbyte
     jsr vdc_do_YYAA_cycles
-    
-    rts
 
+; attribute-ram
+    ldy #0
+    ldx #$08
+    lda #%10001111
+    jsr A_to_vram_XXYY
+
+    ;set count
+    lda #$af    ;lowbyte
+    ldy #$07    ;highbyte
+    jmp vdc_do_YYAA_cycles
+    
 
 .handleType
     cmp #$69 ;i - info
