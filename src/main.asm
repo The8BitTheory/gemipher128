@@ -48,6 +48,7 @@ zp_linenumber_start = $1a   ; this is the scrolling position
 zp_cursorLineContent = $1c         ; this is the cursor line relative to the content
 zp_cursorPosScreen = $1d ; and $1e   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
 zp_cursorLineScreen = $1f   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
+zp_lastLine = $20       ; this is #LAST_LINE when all content lines fit screen lines. is reduced by one for each multi-line
 
 ; used by copytovram.asm
 ; zp_vram_content_addr
@@ -206,7 +207,7 @@ main
 
 .tryCursorDown
     jsr .calcCursorLineScreen
-    cmp #LAST_LINE ; is cursor on last screen-line?
+    cmp zp_lastLine ; is cursor on last screen-line?
     bne +   ; not on the last screen-line, draw one line below
 
     ; on the last visible line, check if we can scroll down
@@ -218,7 +219,7 @@ main
 .drawCursorOneBelow
     jsr removeCursor
     inc zp_cursorLineContent
-    inc zp_cursorLineScreen
+    ;inc zp_cursorLineScreen
     jmp drawCursor
 
 .tryLineScrollDown
@@ -247,7 +248,7 @@ main
 .drawCursorOneAbove
     jsr removeCursor
     dec zp_cursorLineContent
-    dec zp_cursorLineScreen
+    ;dec zp_cursorLineScreen
     jmp drawCursor
 
 .tryLineScrollUp

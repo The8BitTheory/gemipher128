@@ -4,9 +4,13 @@
 ; zp_currentLinkTablePtr will point to the index inside of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
+    ldy #LAST_LINE
+    sty zp_lastLine
+
 ;    lda #$93 ; clear screen
 ;    jsr bsout
 
+.reDisplayTextmode
 ; bank 1
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
@@ -14,13 +18,6 @@ displayTextmode
     
 ; pointer to beginning of link table
     jsr initLinkTableAddress
-
-;    clc
-;    lda zp_linkTablePosition
-;    adc #2
-;    sta zp_linkTablePosition
-;    bcc +
-;    inc zp_linkTablePosition+1
 
 ; read length of current line from link-table
 +   lda #zp_linkTablePosition
@@ -68,17 +65,38 @@ displayTextmode
     ldx #32
     jsr AY_to_vdc_regs_Xp1
 
- -  jsr .displayLine
+    ldy #0
+    sty zp_tempY    ; we use zp_tempY to count the current displayline. we'll use that for calculating cursor position offsets
 
-    jsr .incLinkTableReadPosition
+ -  jsr .displayLine
+    bcc +
+    inc zp_linenumber_start
+    ;dec zp_lastLine
+    ;inc zp_cursorLineScreen
+    jmp .reDisplayTextmode
+
++   jsr .incLinkTableReadPosition
     jsr .incOutputLineNumber
+    inc zp_tempY
+    jsr .calculateCursorOffset
 
     ldx zp_tempX
     bne -
 
 drawCursor
-    ; set cursor display position to topmost screenline (80)
-    jsr calcCursorScreenPos
+    sec
+    lda zp_cursorLineContent
+    sbc zp_linenumber_start
+    sta zp_tempY
+    clc
+    adc zp_tempY
+    tax
+
+    lda .cursorOffsets,x
+    sta zp_cursorPosScreen
+    inx
+    lda .cursorOffsets,x
+    sta zp_cursorPosScreen+1
 
     lda #62 ; >
     ldx zp_cursorPosScreen+1
@@ -123,30 +141,13 @@ drawCursor
     rts
 
 removeCursor
-    jsr calcCursorScreenPos
+    ; zp_cursorPosScreen should be up-to-date at this point
+    ; if not, do a calcCursorScreenPos
 
     lda #$20 ; >
     ldx zp_cursorPosScreen+1
     ldy zp_cursorPosScreen
     jmp A_to_vram_XXYY
-
-calcCursorScreenPos
-    lda #0
-    sta zp_cursorPosScreen
-    sta zp_cursorPosScreen+1
-
-    ldx zp_cursorLineScreen
-    beq ++
--   clc
-    lda #80
-    adc zp_cursorPosScreen
-    sta zp_cursorPosScreen 
-    bcc +
-    inc zp_cursorPosScreen+1
-+   dex
-    bne -
-
-++  rts
 
 .gotoLineNumber
     lda #<VRAM_CONTENT
@@ -202,36 +203,61 @@ calcCursorScreenPos
     
     jmp AY_to_vdc_regs_18_19
 
+
+; this is first calculated for the second line. the first line will always be 80 (see comment at the bottom of this file)
+.calculateCursorOffset
+    clc
+    lda zp_tempY
+    adc zp_tempY
+    tax
+
+    sec    
+    lda zp_vram_screenram
+    sbc #1
+    sta .cursorOffsets,x
+    inx
+    lda zp_vram_screenram+1
+    sta .cursorOffsets,x
+
+    rts
+
 .displayLine
     jsr .readVisibleLength
+
     ; low-byte in A
 -   cmp #75
-    bcc +   
+    bcc +
+
     ; line longer than 75 characters
-    ;sec
-    ;sbc #75
-    ;sta zp_visibleLength
+    sec
+    sbc #75
+    sta zp_visibleLength
     lda #75
-    ;jmp ++
+    jmp ++
 
     ; line shorter thann 75 characters
 +   ldy #0
     sty zp_visibleLength
 
     ; this implies a maximum line-width of 255 visible characters
-    ;ldy #0  ; high-byte in Y is zero anyways, coming out of jsr .readVisibleLength above
-++  jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
-
+++  ldy #0  ; high-byte in Y is zero anyways, coming out of jsr .readVisibleLength above
+    jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
+    
     lda zp_visibleLength
-    beq +
+    beq ++
+    dec zp_lastLine
     ldx zp_tempX    ;contains the nr of lines left to print
     cpx #1
-    beq +           ;if this is the last line, don't print the next line
-    jsr .incOutputLineNumber
+    bne +       ; not on the last line, keep going
+    sec
+    rts       ; we are on the last line. set carry flag to trigger re-print of full page one line below
+    
++   jsr .incOutputLineNumber
     lda zp_visibleLength
     jmp -
 
-+   rts
+++  clc
+    rts
 
 
 .readVisibleLength
@@ -380,3 +406,10 @@ calcCursorScreenPos
     ;lda #'x'
     ;jsr bsout
     rts
+
+
+; cursorOffsets holds the vram-offset for each cursor position
+; this is required to keep track of multi-line text. otherwise we'd just go in incs of 80
+; 25 lines, two bytes each. 23 sould be sufficient, but we can always reduce that
+.cursorOffsets  !word 80    ; first offset is always 80 (as long as we're starting in second screenline)
+                !fill 48
