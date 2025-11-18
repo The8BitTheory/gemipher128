@@ -6,11 +6,9 @@
 displayTextmode
     ldy #LAST_LINE
     sty zp_lastLine
-
 ;    lda #$93 ; clear screen
 ;    jsr bsout
 
-.reDisplayTextmode
 ; bank 1
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
@@ -69,13 +67,20 @@ displayTextmode
     sty zp_tempY    ; we use zp_tempY to count the current displayline. we'll use that for calculating cursor position offsets
 
  -  jsr .displayLine
-    bcc +
+    bcc ++
+    lda zp_scrollDirectionUp
+    beq +
+    ; scroll direction down ()
     inc zp_linenumber_start
-    ;dec zp_lastLine
-    ;inc zp_cursorLineScreen
-    jmp .reDisplayTextmode
+    inc zp_cursorLineScreen
+    jmp displayTextmode
 
-+   jsr .incLinkTableReadPosition
+    ; scroll direction up (scroll )
++   dec zp_linenumber_start
+    dec zp_cursorLineScreen
+    jmp displayTextmode
+
+++  jsr .incLinkTableReadPosition
     jsr .incOutputLineNumber
     inc zp_tempY
     jsr .calculateCursorOffset

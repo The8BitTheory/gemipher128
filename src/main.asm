@@ -49,7 +49,7 @@ zp_cursorLineContent = $1c         ; this is the cursor line relative to the con
 zp_cursorPosScreen = $1d ; and $1e   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
 zp_cursorLineScreen = $1f   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
 zp_lastLine = $20       ; this is #LAST_LINE when all content lines fit screen lines. is reduced by one for each multi-line
-
+zp_scrollDirectionUp = $21  ; 0=up, else=down
 ; used by copytovram.asm
 ; zp_vram_content_addr
 ; zp_linecount
@@ -59,7 +59,7 @@ zp_lastLine = $20       ; this is #LAST_LINE when all content lines fit screen l
 ; zp_linkTablePosition
 ; zp_contentBank
 
-; next available is $1b
+
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -161,11 +161,15 @@ main
 
     cmp #17     ;cursor down
     bne +
+    lda #1
+    sta zp_scrollDirectionUp
     jmp .tryCursorDown
     ;jmp .tryLineScrollDown
 
 +   cmp #145 ; cursor up
     bne +
+    lda #0
+    sta zp_scrollDirectionUp
     jmp .tryCursorUp
     ;jmp .tryLineScrollUp
 
