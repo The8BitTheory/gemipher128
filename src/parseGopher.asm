@@ -10,9 +10,9 @@
 ; 
 
 ; LINK TABLE
-; 10 bytes per line of gopher content (data from network, not characters on screen)
+; 9 bytes per line of gopher content (data from network, not characters on screen)
 ;  each entry contains a pointer to that line's respective information
-; type, text, selector, host, port
+; text,length, selector, host, port
 ; this could be kept at 4kb below I/O space at $c000 (2kb of table space is good for 200 lines)
 
 

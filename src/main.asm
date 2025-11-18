@@ -126,6 +126,11 @@ main
     lda #$93 ; clear screen
     jsr bsout
 
+    lda #27
+    jsr bsout
+    lda #'X'
+    jsr bsout
+
 
 ; do the processing
     lda #$0d
@@ -139,6 +144,8 @@ main
 
     lda #0
     sta zp_cursorLineContent
+    lda #FIRST_LINE
+    sta zp_cursorLineScreen
 
 ; display page on top
 .updateDisplay
@@ -164,6 +171,9 @@ main
 .goToFirstLine
     lda #0
     sta zp_linenumber_start
+    sta zp_cursorLineContent
+    lda #FIRST_LINE
+    sta zp_cursorLineScreen
     jmp .updateDisplay
 
 +   cmp #'S'; speed
@@ -181,14 +191,26 @@ main
     bne -
 
 ; we're done, clean the campground before leaving
+    lda #27
+    jsr bsout
+    lda #'X'
+    jsr bsout
     jsr recoverZp
     rts
     nop ; only for debugging purposes to give breakpoints a safe spot
 
+; ---------------------
+; navigation logic
+; ---------------------
+; cursor down:
+; - when above last display line (eg 23), just move cursor down 1 line. ie screen-line +1 and content-line +1
+; - when at last display line, check scroll position: above bottom: content-line+1, screen-line stays, linenumber+1
+;                                                     bottom: do nothing
+
 .tryCursorDown
     jsr .calcCursorLineScreen
-    cmp #LAST_LINE
-    bne +   ; not on the last visible line, draw one line below
+    cmp #LAST_LINE ; is cursor on last screen-line?
+    bne +   ; not on the last screen-line, draw one line below
 
     ; on the last visible line, check if we can scroll down
     jmp .tryLineScrollDown
@@ -199,38 +221,45 @@ main
 .drawCursorOneBelow
     jsr removeCursor
     inc zp_cursorLineContent
+    inc zp_cursorLineScreen
     jmp drawCursor
+
+.tryLineScrollDown
+    clc
+    lda #VISIBLE_LINES
+    adc zp_linenumber_start
+    cmp zp_linecount    ; is the last visible line also the last content line?
+    bpl .getUserinput   ; yes. don't do anything, get next input from user
+
+    inc zp_cursorLineContent
+    inc zp_linenumber_start ; no. increase linenumber and update display. ie scroll down
+    jmp .updateDisplay
+
 
 .tryCursorUp
     jsr .calcCursorLineScreen
-    cmp #FIRST_LINE
-    bne +
-
+    cmp #FIRST_LINE     ; is cursor on first line on screen?
+    bne +               ; no
+    ;yes. try to scroll up
     jmp .tryLineScrollUp
 
+    ;no. just draw cursor one line above
 +   jsr .drawCursorOneAbove
     jmp .getUserinput
 
 .drawCursorOneAbove
     jsr removeCursor
     dec zp_cursorLineContent
+    dec zp_cursorLineScreen
     jmp drawCursor
-
-.tryLineScrollDown
-    clc
-    lda zp_linenumber_start
-    adc #VISIBLE_LINES
-    cmp zp_linecount
-    bpl .getUserinput
-    inc zp_linenumber_start
-
-    jmp .updateDisplay
 
 .tryLineScrollUp
     dec zp_linenumber_start
     bpl +
     jmp .goToFirstLine
-+   jmp .updateDisplay
+
++   dec zp_cursorLineContent
+    jmp .updateDisplay
 
 .calcCursorLineScreen
     clc

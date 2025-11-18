@@ -15,14 +15,14 @@ displayTextmode
 ; pointer to beginning of link table
     jsr initLinkTableAddress
 
-    clc
-    lda zp_linkTablePosition
-    adc #2
-    sta zp_linkTablePosition
-    bcc +
-    inc zp_linkTablePosition+1
+;    clc
+;    lda zp_linkTablePosition
+;    adc #2
+;    sta zp_linkTablePosition
+;    bcc +
+;    inc zp_linkTablePosition+1
 
-; read start position of current line from link-table
+; read length of current line from link-table
 +   lda #zp_linkTablePosition
     sta c_fetch_zp
 
@@ -91,8 +91,33 @@ drawCursor
     adc #$08
     tax
     lda #$0f
-    jmp A_to_vram_XXYY
+    jsr A_to_vram_XXYY
 
+; print debug info to last line
+    lda zp_cursorLineScreen
+    adc #64
+    ldx #7
+    ldy #$80
+    jsr A_to_vram_XXYY
+
+    lda zp_cursorLineContent
+    lsr
+    lsr
+    lsr
+    lsr
+    adc #64
+    ldx #7
+    ldy #$82
+    jsr A_to_vram_XXYY
+
+    lda zp_cursorLineContent
+    and #%00001111
+    adc #64
+    ldx #7
+    ldy #$83
+    jsr A_to_vram_XXYY
+
+    rts
     nop
 
 removeCursor
@@ -104,12 +129,11 @@ removeCursor
     jmp A_to_vram_XXYY
 
 calcCursorScreenPos
-    lda #80
-    sta zp_cursorPosScreen
     lda #0
+    sta zp_cursorPosScreen
     sta zp_cursorPosScreen+1
 
-    ldx zp_cursorLineContent
+    ldx zp_cursorLineScreen
     beq ++
 -   clc
     lda #80
@@ -209,11 +233,13 @@ calcCursorScreenPos
 
 
 .readVisibleLength
-    ldy #0
+    ldy #2
     ldx zp_contentBank
     jsr c_fetch
     sta zp_visibleLength
     rts
+
+.read
 
 .clearScreen
 ;   wait until we are in text window (in case we're in a sync state right now)
