@@ -118,6 +118,11 @@ main
 
     jsr initVdc
 
+; disable case switching via Shift-Commodore
+    lda #11
+    jsr bsout
+
+; switch to lower-case charset
     lda #14
     jsr bsout
 
@@ -126,12 +131,6 @@ main
 
     lda #$93 ; clear screen
     jsr bsout
-
-;    lda #27
-;    jsr bsout
-;    lda #'X'
-;    jsr bsout
-
 
 ; do the processing
     lda #$0d

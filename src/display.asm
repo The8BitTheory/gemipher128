@@ -6,8 +6,6 @@
 displayTextmode
     ldy #LAST_LINE
     sty zp_lastLine
-;    lda #$93 ; clear screen
-;    jsr bsout
 
 ; bank 1
     ldx #CONTENT_BANK
