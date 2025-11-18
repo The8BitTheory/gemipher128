@@ -66,7 +66,7 @@ displayTextmode
     ldy #0
     sty zp_tempY    ; we use zp_tempY to count the current displayline. we'll use that for calculating cursor position offsets
 
- -  jsr .displayLine
+-   jsr .displayLine
     bcc ++
     lda zp_scrollDirectionUp
     beq +
