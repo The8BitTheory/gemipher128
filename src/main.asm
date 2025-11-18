@@ -126,10 +126,10 @@ main
     lda #$93 ; clear screen
     jsr bsout
 
-    lda #27
-    jsr bsout
-    lda #'X'
-    jsr bsout
+;    lda #27
+;    jsr bsout
+;    lda #'X'
+;    jsr bsout
 
 
 ; do the processing
@@ -191,10 +191,10 @@ main
     bne -
 
 ; we're done, clean the campground before leaving
-    lda #27
-    jsr bsout
-    lda #'X'
-    jsr bsout
+;    lda #27
+;    jsr bsout
+;    lda #'X'
+;    jsr bsout
     jsr recoverZp
     rts
     nop ; only for debugging purposes to give breakpoints a safe spot

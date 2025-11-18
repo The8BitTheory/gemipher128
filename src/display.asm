@@ -95,7 +95,7 @@ drawCursor
 
 ; print debug info to last line
     lda zp_cursorLineScreen
-    adc #64
+    jsr .makeItHex
     ldx #7
     ldy #$80
     jsr A_to_vram_XXYY
@@ -105,20 +105,30 @@ drawCursor
     lsr
     lsr
     lsr
-    adc #64
+    jsr .makeItHex
     ldx #7
     ldy #$82
     jsr A_to_vram_XXYY
 
     lda zp_cursorLineContent
     and #%00001111
-    adc #64
+    jsr .makeItHex
     ldx #7
     ldy #$83
     jsr A_to_vram_XXYY
 
     rts
     nop
+
+.makeItHex
+    clc
+    cmp #10
+    bpl +
+    adc #$30
+    rts
+
++   adc #54
+    rts
 
 removeCursor
     jsr calcCursorScreenPos
