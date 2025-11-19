@@ -168,21 +168,37 @@ drawCursor
     sta c_fetch_zp
 
     ; load line type
-    ldx zp_contentBank
     ldy #0
-    jsr c_fetch
-    sta zp_textPointer
-    iny
-    ldx zp_contentBank
-    jsr c_fetch
-    sta zp_textPointer+1
+    jsr .fetchFromContentBankOffsetY
+    sta zp_currentTypePtr
+    jsr .fetchFromContentBankOffsetY
+    sta zp_currentTypePtr+1
 
-    lda #zp_textPointer
+    iny ;skip currentLength
+
+    jsr .fetchFromContentBankOffsetY
+    sta zp_currentSelectorPtr
+    jsr .fetchFromContentBankOffsetY
+    sta zp_currentSelectorPtr+1
+
+    jsr .fetchFromContentBankOffsetY
+    sta zp_currentHostPtr
+    jsr .fetchFromContentBankOffsetY
+    sta zp_currentHostPtr+1
+
+    jsr .fetchFromContentBankOffsetY
+    sta zp_currentPortPtr
+    jsr .fetchFromContentBankOffsetY
+    sta zp_currentPortPtr+1
+
+    lda #zp_currentTypePtr
     sta c_fetch_zp
     ldy #0
     ldx zp_contentBank
     jsr c_fetch
-    pha
+    sta zp_currentType
+
+
 
 ; zp_tempY is used to clear remains of previous status-line
     ldy #64
@@ -191,7 +207,8 @@ drawCursor
     ldx #24
     ldy #7
     jsr k_plot
-    pla
+    
+    lda zp_currentType
     jsr bsout
 
     cmp #$30 ;0 -> textfile
@@ -200,34 +217,36 @@ drawCursor
     beq +
     jmp ++
 
-+   lda #zp_currentLinkTablePtr
-    sta c_fetch_zp
-
-    ldx zp_contentBank
-    ldy #3
-    jsr c_fetch
-    sta zp_textPointer
-    iny
-    ldx zp_contentBank
-    jsr c_fetch
-    sta zp_textPointer+1
-
-    ldx #24
++   ldx #24
     ldy #5
     jsr k_plot
 
-    lda #zp_textPointer
-    sta c_fetch_zp
-
-    ldy #0
--   ldx zp_contentBank
-    jsr c_fetch
-    cmp #9
-    beq ++
+    lda #' '
     jsr bsout
-    dec zp_tempX
-    iny
-    jmp -
+
+    lda #zp_currentHostPtr
+    sta c_fetch_zp
+    jsr .printStatusLineUntilTab
+
+    lda #':'
+    jsr bsout
+
+    lda #zp_currentPortPtr
+    sta c_fetch_zp
+    jsr .printStatusLineUntilTab
+
+    lda #'/'
+    jsr bsout
+    
+    lda zp_currentType
+    jsr bsout
+
+    lda #zp_currentSelectorPtr
+    sta c_fetch_zp
+    jsr .printStatusLineUntilTab
+
+
+
 
 ++  lda #' '
 -   jsr bsout
@@ -236,6 +255,26 @@ drawCursor
 
     pla
     sta c_fetch_zp
+    rts
+
+.printStatusLineUntilTab
+    ldy #0
+-   ldx zp_contentBank
+    jsr c_fetch
+    cmp #9
+    beq +
+    cmp #$d
+    beq +
+    jsr bsout
+    dec zp_tempX
+    iny
+    jmp -
++   rts    
+
+.fetchFromContentBankOffsetY
+    ldx zp_contentBank
+    jsr c_fetch
+    iny
     rts
 
 .makeItHex

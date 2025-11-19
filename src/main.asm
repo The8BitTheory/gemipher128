@@ -58,7 +58,11 @@ zp_scrollDirectionUp = $21  ; 0=up, else=down
 ; zp_currentLinkTablePtr
 ; zp_linkTablePosition
 ; zp_contentBank
-zp_textPointer = $22; and $23
+zp_currentType = $22
+zp_currentSelectorPtr = $23 ; and $24
+zp_currentHostPtr = $25 ; and $26
+zp_currentPortPtr = $27 ; and $28
+zp_currentTypePtr = $29 ; and $2a
 
 
 ; common memory area below $0400
