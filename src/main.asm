@@ -132,7 +132,11 @@ main
     jsr bsout
 
 ; load from network
-    jsr loadGopherPage
+    jsr detectAndInitializeWic64
+    jsr setInitialGopherHostSelector
+
+.requestNewGopherSite
+    jsr requestGopherSite
 
     lda #$93 ; clear screen
     jsr bsout
@@ -168,14 +172,24 @@ main
     lda #1
     sta zp_scrollDirectionUp
     jmp .tryCursorDown
-    ;jmp .tryLineScrollDown
 
 +   cmp #145 ; cursor up
     bne +
     lda #0
     sta zp_scrollDirectionUp
     jmp .tryCursorUp
-    ;jmp .tryLineScrollUp
+
++   cmp #13 ;return key
+    bne +
+    lda zp_currentType
+    cmp #$30
+    beq .prepareRequest
+    cmp #$31
+    beq .prepareRequest
+    jmp -
+.prepareRequest
+    jsr setNewGopherHostSelector
+    jmp .requestNewGopherSite
 
 +   cmp #19 ;home
     bne +

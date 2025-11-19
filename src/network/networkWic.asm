@@ -5,7 +5,115 @@ wic64_optimize_for_size = 0
 
 !src "src/wic64/wic64.h"
 
-loadGopherPage
+setInitialGopherHostSelector
+    ldx #0
+    sta tcpOpenSizeL
+    sta tcpOpenSizeH
+
+-   lda startGopher,x
+    beq +
+    sta tcpOpenHostPort,x
+    inx
+    inc tcpOpenSizeL
+    bne -
+    inc tcpOpenSizeH
+    jmp -
+
++   ldx #0
+    sta tcpWriteSizeL
+    sta tcpWriteSizeH
+
+-   lda startSelector,x
+    beq +
+    sta tcpWriteSelector,x
+    inx
+    inc tcpWriteSizeL
+    bne -
+    inc tcpWriteSizeH
+    jmp -
+
++   rts
+
+setNewGopherHostSelector
+    ldy #1
+    sty tcpOpenSizeL
+    sty tcpWriteSizeL
+
+    ldy #0
+    sty tcpOpenSizeH
+    sty tcpWriteSizeH
+    sty zp_tempX
+
+    lda #zp_currentHostPtr
+    sta c_fetch_zp
+
+-   ldx zp_contentBank
+    jsr c_fetch
+    cmp #9
+    beq +
+    ldx zp_tempX
+    sta tcpOpenHostPort,x
+    inc zp_tempX
+    iny
+    inc tcpOpenSizeL
+    bne -
+    inc tcpOpenSizeH
+    jmp -
+
++   lda #':'
+    ldx zp_tempX
+    sta tcpOpenHostPort,x
+    inc zp_tempX
+
+    ldy #0
+    lda #zp_currentPortPtr
+    sta c_fetch_zp
+
+-   ldx zp_contentBank
+    jsr c_fetch
+    cmp #$0d
+    beq +
+    ldx zp_tempX
+    sta tcpOpenHostPort,x
+    inc zp_tempX
+    iny
+    inc tcpOpenSizeL
+    bne -
+    inc tcpOpenSizeH
+    jmp -
+
++   ldy #0
+    sty zp_tempX
+    lda #zp_currentSelectorPtr
+    sta c_fetch_zp
+
+-   ldx zp_contentBank
+    jsr c_fetch
+    cmp #9
+    beq +
+    ldx zp_tempX
+    sta tcpWriteSelector,x
+    inc zp_tempX
+    iny
+    inc tcpWriteSizeL
+    bne -
+    inc tcpWriteSizeH
+    jmp -
+
++   ldy #0
+-   lda startSelector,y
+    beq +
+    sta tcpWriteSelector,x
+    inc zp_tempX
+    iny
+    inc tcpWriteSizeL
+    bne -
+    inc tcpWriteSizeH
+    jmp -
+
++   rts
+
+detectAndInitializeWic64
     +print txtDetect
     +wic64_detect
     +print txtDone
@@ -20,7 +128,7 @@ loadGopherPage
     bne .notConnected
 
     +print txtDone
-    jmp .sendRequest
+    rts
 
 .connTimeout
     +print txtTimeout
@@ -47,8 +155,10 @@ loadGopherPage
     jmp .connTimeout
 +   rts
 
+requestGopherSite
+    lda #$93 ; clear screen
+    jsr bsout
 
-.sendRequest
     jsr initContentAddress
     
     lda #0
@@ -171,15 +281,18 @@ txtTcpClose         !text "TCP Close... ", 0
 txtTcpAvlbl         !text "TCP Available... ",0
 txtDone             !text "done",$d,0
 
-tcpOpen             !byte "R", WIC64_TCP_OPEN, <hostPort_size, >hostPort_size
-hostPort            !text "gopher.floodgap.com:70",0
-hostPort_size = *-hostPort
+tcpOpen             !byte "R", WIC64_TCP_OPEN
+tcpOpenSizeL        !byte 0
+tcpOpenSizeH        !byte 0
+tcpOpenHostPort     !fill 256
 
 tcpAvailable        !byte "R", WIC64_TCP_AVAILABLE, $00, $00
 tcpRead             !byte "R", WIC64_TCP_READ, $00, $00
-tcpWrite            !byte "R", WIC64_TCP_WRITE, <url_size, >url_size
-url                 !text "\r\n",0
-url_size = *-url
+
+tcpWrite            !byte "R", WIC64_TCP_WRITE
+tcpWriteSizeL       !byte 0
+tcpWriteSizeH       !byte 0
+tcpWriteSelector    !fill 256
 
 tcpClose            !byte "R", WIC64_TCP_CLOSE, $00, $00
 
@@ -200,3 +313,5 @@ statusResponse      !fill 40
 responseSize        !word 0
 response            !fill 256
 
+startGopher         !text "gopher.floodgap.com:70",0
+startSelector       !text "\r\n",0
