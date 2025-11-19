@@ -95,22 +95,20 @@ setNewGopherHostSelector
     sta tcpWriteSelector,x
     inc zp_tempX
     iny
-    inc tcpWriteSizeL
-    bne -
-    inc tcpWriteSizeH
+    jsr .incWriteSize
     jmp -
 
-+   ldy #0
--   lda startSelector,y
-    beq +
++   ldx zp_tempX
+    lda #$0d
     sta tcpWriteSelector,x
-    inc zp_tempX
-    iny
-    inc tcpWriteSizeL
-    bne -
-    inc tcpWriteSizeH
-    jmp -
+    inx
+    lda #$0a
+    sta tcpWriteSelector,x
 
+.incWriteSize
+    inc tcpWriteSizeL
+    bne +
+    inc tcpWriteSizeH
 +   rts
 
 detectAndInitializeWic64
