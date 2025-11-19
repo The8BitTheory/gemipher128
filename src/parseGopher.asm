@@ -64,7 +64,7 @@ parseGopher
     jsr .storePointerInLinkTable
     jmp .handleType
 
- +  cmp #1
++   cmp #1
     bne +
     jsr .storePointerInLinkTable
     jmp .handleSelector

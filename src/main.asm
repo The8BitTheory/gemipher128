@@ -58,7 +58,7 @@ zp_scrollDirectionUp = $21  ; 0=up, else=down
 ; zp_currentLinkTablePtr
 ; zp_linkTablePosition
 ; zp_contentBank
-
+zp_textPointer = $22; and $23
 
 
 ; common memory area below $0400
@@ -79,6 +79,7 @@ b_slow = $77c4
 ; i/o $d000-$dfff
 
 ; kernal $e000-$ffff
+k_plot = $fff0
 k_primm = $ff7d
 k_getin = $eeeb
 bsout = $ffd2
@@ -361,6 +362,21 @@ fileOpError         !byte 0
 filenameCharset     !pet "ascii2.chr"
 filenameLength=*-filenameCharset
 
+; memory map
+; bank 1
+; $0400 content from gopher server. unmodified
+; $7f00 linktable. each line of gopher content is represented here with a 9 byte long entry.
+; - 2 bytes for offset to linestart. relative to $0400
+; - 1 byte for length of visible content
+; - 2 bytes for offset to selector
+; - 2 bytes for offset to host
+; - 2 bytes for offset to port
 
+; vdc-ram
+; $0000 screen ram
+; $0800 attribute ram
+; $1000 visible content in a condensed form (from eg $1:7f01 to next tab)
+;       this is block copied to screen by using the $1:7f00 entry of the line (first offset +1) and the length (offset 3 in linktable)
+;       to copy lines 10-32 (23 lines), the code will add up all the lengths until line 10 and then copy each line
 
 

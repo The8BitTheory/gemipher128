@@ -107,11 +107,11 @@ drawCursor
     jsr A_to_vram_XXYY
 
 ; print debug info to last line
-    lda zp_cursorLineScreen
-    jsr .makeItHex
-    ldx #7
-    ldy #$80
-    jsr A_to_vram_XXYY
+    ;lda zp_cursorLineScreen
+    ;jsr .makeItHex
+    ;ldx #7
+    ;ldy #$80
+    ;jsr A_to_vram_XXYY
 
     lda zp_cursorLineContent
     lsr
@@ -130,8 +130,113 @@ drawCursor
     ldy #$83
     jsr A_to_vram_XXYY
 
+; display selector
+; read offset to string in $1:0400 from $1.f700 (logical line x 9). offset from that is 3
+;    jmp .drawStatusLine
+;    rts
+;    nop
+
+;.drawStatusLine
+    lda c_fetch_zp
+    pha
+
+    lda #0
+    sta zp_currentLinkTablePtr+1
+
+    lda zp_cursorLineContent
+    sta zp_currentLinkTablePtr
+
+    ldx #8
+-   clc
+    lda zp_currentLinkTablePtr
+    adc zp_cursorLineContent
+    sta zp_currentLinkTablePtr
+    bcc +
+    inc zp_currentLinkTablePtr+1
++   dex
+    bne -
+
+    clc
+    adc #<LINKTABLE_ADDRESS
+    sta zp_currentLinkTablePtr
+    
+    lda #>LINKTABLE_ADDRESS
+    adc zp_currentLinkTablePtr+1
+    sta zp_currentLinkTablePtr+1
+
+    lda #zp_currentLinkTablePtr
+    sta c_fetch_zp
+
+    ; load line type
+    ldx zp_contentBank
+    ldy #0
+    jsr c_fetch
+    sta zp_textPointer
+    iny
+    ldx zp_contentBank
+    jsr c_fetch
+    sta zp_textPointer+1
+
+    lda #zp_textPointer
+    sta c_fetch_zp
+    ldy #0
+    ldx zp_contentBank
+    jsr c_fetch
+    pha
+
+; zp_tempY is used to clear remains of previous status-line
+    ldy #64
+    sty zp_tempX
+
+    ldx #24
+    ldy #7
+    jsr k_plot
+    pla
+    jsr bsout
+
+    cmp #$30 ;0 -> textfile
+    beq +
+    cmp #$31 ;1 -> directory
+    beq +
+    jmp ++
+
++   lda #zp_currentLinkTablePtr
+    sta c_fetch_zp
+
+    ldx zp_contentBank
+    ldy #3
+    jsr c_fetch
+    sta zp_textPointer
+    iny
+    ldx zp_contentBank
+    jsr c_fetch
+    sta zp_textPointer+1
+
+    ldx #24
+    ldy #5
+    jsr k_plot
+
+    lda #zp_textPointer
+    sta c_fetch_zp
+
+    ldy #0
+-   ldx zp_contentBank
+    jsr c_fetch
+    cmp #9
+    beq ++
+    jsr bsout
+    dec zp_tempX
+    iny
+    jmp -
+
+++  lda #' '
+-   jsr bsout
+    dec zp_tempX
+    bne -
+
+    pla
+    sta c_fetch_zp
     rts
-    nop
 
 .makeItHex
     clc
