@@ -237,7 +237,7 @@ drawCursor
 
     lda #'/'
     jsr bsout
-    
+
     lda zp_currentType
     jsr bsout
 
@@ -245,7 +245,8 @@ drawCursor
     sta c_fetch_zp
     jsr .printStatusLineUntilTab
 
-
+    lda zp_tempX
+    beq +
 
 
 ++  lda #' '
@@ -253,7 +254,7 @@ drawCursor
     dec zp_tempX
     bne -
 
-    pla
++   pla
     sta c_fetch_zp
     rts
 
@@ -267,9 +268,11 @@ drawCursor
     beq +
     jsr bsout
     dec zp_tempX
+    beq +
     iny
     jmp -
-+   rts    
++   rts
+    nop
 
 .fetchFromContentBankOffsetY
     ldx zp_contentBank
