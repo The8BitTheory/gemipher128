@@ -2,14 +2,15 @@
 ; memory map
 ; ------------
 ; $0.1c01 - $0.bfff: programcode. only enable basic-rom when needed. close to 41kB
-; $1.0400 - $1.ff00: data
+; $1.0400 - $1.f700: data --> 62 kB
+; $1.f700 - $1.ff00: link table -> 2 kB
 
 ; configuration constants
 ; CONTENT describes one full gopher page
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
 
-LINKTABLE_ADDRESS = $f700
+LINKTABLE_ADDRESS = $f000
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
 VISIBLE_LINES = 23
@@ -64,8 +65,9 @@ zp_currentHostPtr = $25 ; and $26
 zp_currentPortPtr = $27 ; and $28
 zp_currentTypePtr = $29 ; and $2a
 zp_linkTableIncr = $2b      ; link table has entries of different sizes (gopher=9 bytes, plain text = 3 bytes)
-zp_responseSize = $2c ; and $2d
+zp_responseSize = $2c ; and $2d ; the nr of bytes we counted for response. upfront information should be in zp_contentLength
 zp_scrollModeCrsr = $2e ; 0=cursor movement, else=just scroll screen lines
+zp_contentLength = $2f; and $30 ; the content length that's reported by the server. zp_responseSize holds the nr bytes we counted
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -185,11 +187,14 @@ main
 
 ; get user input to see what to do next
 ; useful special function keys might be
-; go to top of page
-; go to root selector
-; page up/down
-; previous page (in history)
-; next page (in history)
+; - go to top of page           - Home
+; - go to root selector         - F1
+; - go to defined start gopher  - F3
+; - previous page (in history)  - commodore + cursor left
+
+; - next page (in history)      - commodore + cursor right
+; - page up/down                - commodore + up/down
+
 .getUserinput
 -   jsr k_getin
     beq -
@@ -231,6 +236,10 @@ main
     bne +
 .goToFirstLine
     jmp .resetDisplay
+
++   cmp #'R' ;reload
+    bne +
+    jmp .requestNewContent
 
 +   cmp #'S'; speed
     bne ++

@@ -13,7 +13,14 @@
 
 !zone txtRamToVram
 
+.VRAM_LEFT = 2000
+
 copyTextToVram
+    lda #<.VRAM_LEFT
+    sta .vramLeft
+    lda #>.VRAM_LEFT
+    sta .vramLeft+1
+
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
     sta zp_contentBank
@@ -36,13 +43,14 @@ copyTextToVram
     ldx zp_linecount
     stx zp_tempX
 -   jsr .copyLineToVram
+    bcs +
 
     jsr .incLineNumber
 
     dec zp_tempX
     bne -
 
-    rts
++   rts
 
 .copyLineToVram
     ldy #0
@@ -101,10 +109,17 @@ copyTextToVram
 ; write byte to VRAM
 .rtvWrite
     +vdc_sta
-    dec zp_visibleLength
+    dec .vramLeft
+    bne +
+    dec .vramLeft +1
+    bpl +
+    sec
+    rts
++   dec zp_visibleLength
     bne -
 
 .rtvDone
+    clc
     jmp complex_instruction_shared_exit
 
 
@@ -118,5 +133,5 @@ copyTextToVram
 
 +   rts
 
-
+.vramLeft       !word 0
 

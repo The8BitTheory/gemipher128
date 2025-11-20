@@ -48,7 +48,10 @@ parsePlainText
 
 .finishLine
     inc zp_linecount
-    lda zp_visibleLength
+    bne +
+    inc zp_linecount+1
+    
++   lda zp_visibleLength
     jsr .storeValueInLinkTable
     lda #0
     sta zp_visibleLength

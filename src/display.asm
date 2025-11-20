@@ -135,12 +135,6 @@ drawCursor
     ldy #$83
     jsr A_to_vram_XXYY
 
-; display selector
-; read offset to string in $1:0400 from $1.f700 (logical line x 9). offset from that is 3
-;    jmp .drawStatusLine
-;    rts
-;    nop
-
 ;.drawStatusLine
     ; this is using jsr bsout right now, should be changed to direct VRAM writes later (for consistency with charset, etc)
     lda c_fetch_zp
@@ -245,9 +239,6 @@ drawCursor
     jsr .printStatusLineUntilTab
 
     lda #'/'
-    jsr bsout
-
-    lda zp_currentType
     jsr bsout
 
     lda #zp_currentSelectorPtr
@@ -484,105 +475,6 @@ removeCursor
     ldy #$00    ;highbyte
     jmp vdc_do_YYAA_cycles
     
-
-.handleType
-    cmp #$69 ;i - info
-    bne +
-    lda #$5     ;white
-    jsr bsout
-    rts
-
-+   cmp #$30 ; 0 - textfile
-    bne +
-    lda #$9c    ; purple
-    jsr bsout
-    rts
-
-+   cmp #$31 ; 1 - menu / directory
-    bne +
-    lda #$1e    ; green
-    jsr bsout
-    rts
-
-+   cmp #$32 ; 2 - cso phonebook
-    bne +
-    lda #$9a ;light blue
-    jsr bsout
-    rts
-
-+   cmp #$33 ; 3 - error/info
-    bne +
-    brk
-    rts
-
-+   cmp #$34 ; 4 - binary
-    bne +
-    rts
-
-+   cmp #$35 ; 5 - dos binary
-    bne +
-    rts
-
-+   cmp #$36 ; 6 - uuencoded text (probably a binary?)
-    bne +
-    rts
-
-+   cmp #$37 ; 7 - error/info
-    bne +
-    rts
-
-+   cmp #$38 ; 8 - Telnet
-    bne +
-    rts
-
-+   cmp #$39 ; 9 - generic binary
-    bne +
-    rts
-
-+   cmp #'+' ; + - gopher + info
-    bne +
-    rts
-
-+   cmp #'g' ; G - GIF
-    bne +
-    rts
-
-+   cmp #'l' ; L - generic image
-    bne +
-    rts
-
-+   cmp #'h' ; H - Hyperlink
-    bne +
-    lda #$9e    ; $9e=yellow, $81=dark purple (should be orange, which is not a vdc-color)
-    jsr bsout
-    rts
-
-+   cmp #'s' ; s - audio
-    bne +
-    rts
-
-+   cmp #'M' ; m - multipart mime
-    bne +
-    rts
-
-+   cmp #'D' ; d - document. mostly pdf
-    bne +
-    rts
-
-+   cmp #'T' ; t - terminal connection tn3270
-    bne +
-    rts
-
-+   cmp #$9 ;tab
-    bne +
-    rts
-
-+   ;lda #$12 ;reverse on
-    ;jsr bsout
-    ;lda #'x'
-    ;jsr bsout
-    rts
-
 .clearInvisibleContentArea
     ; clear BLOCK COPY register bit to get BLOCK WRITE:
     ldx #24

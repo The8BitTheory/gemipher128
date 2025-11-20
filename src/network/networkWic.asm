@@ -194,8 +194,44 @@ requestContent
     lda availableResponse+1
     beq .waitForIncomingData
 
-+   lda #$d
++   lda availableResponse
+    sta zp_contentLength
+    lda availableResponse+1
+    sta zp_contentLength+1
+
+    lda #$d
     jsr bsout
+
+    lda #'$'
+    jsr bsout
+
+    lda zp_contentLength+1
+    lsr
+    lsr
+    lsr
+    lsr 
+    jsr .makeItHex
+    jsr bsout
+    
+    lda zp_contentLength+1
+    jsr .makeItHex
+    jsr bsout
+
+    lda zp_contentLength
+    lsr
+    lsr
+    lsr
+    lsr
+    jsr .makeItHex
+    jsr bsout
+    
+    lda zp_contentLength
+    jsr .makeItHex
+    jsr bsout
+
+    lda #$d
+    jsr bsout
+
     +print txtTcpRead
 .readResponsePart
 
@@ -260,6 +296,18 @@ requestContent
 
 +   rts
 
+.makeItHex
+    and #%00001111
+
+    clc
+    cmp #10
+    bpl +
+    adc #$30
+    rts
+
++   adc #54
+    rts
+
 .storeInBank1
 
     
@@ -268,6 +316,39 @@ requestContent
 .allResponseRead
     lda #$0d
     jsr bsout
+
+    lda #'$'
+    jsr bsout
+
+    lda zp_responseSize+1
+    lsr
+    lsr
+    lsr
+    lsr 
+    jsr .makeItHex
+    jsr bsout
+    
+    lda zp_responseSize+1
+    jsr .makeItHex
+    jsr bsout
+
+    lda zp_responseSize
+    lsr
+    lsr
+    lsr
+    lsr
+    jsr .makeItHex
+    jsr bsout
+    
+    lda zp_responseSize
+    jsr .makeItHex
+    jsr bsout
+
+    lda #$d
+    jsr bsout
+
+;-   jsr k_getin
+;    beq -
 
 .closeConnection
     +print txtTcpClose
