@@ -11,9 +11,9 @@
 ; $1000-$2fff invisible content area (we're copying to this area) - 8 kB available in a 16 kB VRAM setup
 ; $3000-$3fff character set (uppercase/lowercase)
 
-!zone RAMTOVRAM
+!zone txtRamToVram
 
-copyVisibleContentToVram
+copyTextToVram
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
     sta zp_contentBank
@@ -66,9 +66,6 @@ copyVisibleContentToVram
 ; read first character of current line from content area (holds the line type)
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp
-    ldy #0
-    ldx zp_contentBank
-    jsr c_fetch 
     
     jsr .myRtv
 
@@ -80,11 +77,9 @@ copyVisibleContentToVram
     ldy #0
     
 -   ldx zp_contentBank
-    iny
     jsr c_fetch
-
-    cmp #9
-    beq .rtvDone
+    iny
+    beq .rtvDone    ; copy 255 chars max (as a guardrail)
 
     cmp #65 ;A  
     bmi .rtvWrite       ; < A (so, must be a digit. don't change)
@@ -103,7 +98,8 @@ copyVisibleContentToVram
 ; write byte to VRAM
 .rtvWrite
     +vdc_sta
-	jmp -
+    dec zp_visibleLength
+    bne -
 
 .rtvDone
     jmp complex_instruction_shared_exit

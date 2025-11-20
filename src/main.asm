@@ -1,8 +1,8 @@
 ; ------------
 ; memory map
 ; ------------
-; $0.1c01 - $0.bfff: programcode. only enable basic-rom when needed
-
+; $0.1c01 - $0.bfff: programcode. only enable basic-rom when needed. close to 41kB
+; $1.0400 - $1.ff00: data
 
 ; configuration constants
 ; CONTENT describes one full gopher page
@@ -63,7 +63,9 @@ zp_currentSelectorPtr = $23 ; and $24
 zp_currentHostPtr = $25 ; and $26
 zp_currentPortPtr = $27 ; and $28
 zp_currentTypePtr = $29 ; and $2a
-
+zp_linkTableIncr = $2b      ; link table has entries of different sizes (gopher=9 bytes, plain text = 3 bytes)
+zp_responseSize = $2c ; and $2d
+zp_scrollModeCrsr = $2e ; 0=cursor movement, else=just scroll screen lines
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -135,8 +137,8 @@ main
     jsr detectAndInitializeWic64
     jsr setInitialGopherHostSelector
 
-.requestNewGopherSite
-    jsr requestGopherSite
+.requestNewContent
+    jsr requestContent
 
     lda #$93 ; clear screen
     jsr bsout
@@ -145,11 +147,30 @@ main
     lda #$0d
     jsr bsout
     jsr doFast
+
+    lda zp_currentType
+    cmp #$30    ;text file
+    bne +
+    jsr parsePlainText
+    lda #3
+    sta zp_linkTableIncr
+    jsr copyTextToVram
+    lda #1
+    sta zp_scrollModeCrsr
+    jmp .doneProcessing
+
++   cmp #$31    ;gopher file
+    bne .doneProcessing
     jsr parseGopher
+    lda #9
+    sta zp_linkTableIncr
+    jsr copyVisibleContentToVram
+    lda #0
+    sta zp_scrollModeCrsr
+.doneProcessing
     jsr doSlow
 
-; copy visible content to vram
-    jsr copyVisibleContentToVram
+    
 
 .resetDisplay
     lda #0
@@ -163,6 +184,12 @@ main
     jsr displayTextmode
 
 ; get user input to see what to do next
+; useful special function keys might be
+; go to top of page
+; go to root selector
+; page up/down
+; previous page (in history)
+; next page (in history)
 .getUserinput
 -   jsr k_getin
     beq -
@@ -173,11 +200,20 @@ main
     sta zp_scrollDirectionUp
     jmp .tryCursorDown
 
+; cursor up and down should know two different operation modes
+; for gopher directories, do cursor movement
+; for document display, scroll full lines
+
 +   cmp #145 ; cursor up
     bne +
     lda #0
     sta zp_scrollDirectionUp
     jmp .tryCursorUp
+
+;+   cmp #19   ;home
+;    bne +
+;    jsr setInitialGopherHostSelector
+;    jmp .requestNewContent
 
 +   cmp #13 ;return key
     bne +
@@ -189,7 +225,7 @@ main
     jmp -
 .prepareRequest
     jsr setNewGopherHostSelector
-    jmp .requestNewGopherSite
+    jmp .requestNewContent
 
 +   cmp #19 ;home
     bne +
@@ -228,7 +264,11 @@ main
 ;                                                     bottom: do nothing
 
 .tryCursorDown
-    jsr .calcCursorLineScreen
+    lda zp_scrollModeCrsr
+    beq +
+    jmp .tryLineScrollDown
+
++   jsr .calcCursorLineScreen
     cmp zp_lastLine ; is cursor on last screen-line?
     bne +   ; not on the last screen-line, draw one line below
 
@@ -249,15 +289,20 @@ main
     lda #VISIBLE_LINES
     adc zp_linenumber_start
     cmp zp_linecount    ; is the last visible line also the last content line?
-    bpl .getUserinput   ; yes. don't do anything, get next input from user
+    bmi +
+    jmp .getUserinput   ; yes. don't do anything, get next input from user
 
-    inc zp_cursorLineContent
++   inc zp_cursorLineContent
     inc zp_linenumber_start ; no. increase linenumber and update display. ie scroll down
     jmp .updateDisplay
 
 
 .tryCursorUp
-    jsr .calcCursorLineScreen
+    lda zp_scrollModeCrsr
+    beq +
+    jmp .tryLineScrollUp
+
++   jsr .calcCursorLineScreen
     cmp #FIRST_LINE     ; is cursor on first line on screen?
     bne +               ; no
     ;yes. try to scroll up
@@ -364,8 +409,10 @@ recoverZp
 !src "src/file/load.asm"
 !src "src/vdc.asm"
 !src "src/network/networkWic.asm"
-!src "src/parseGopher.asm"
+!src "src/parsers/parseGopher.asm"
+!src "src/parsers/parsePlainText.asm"
 !src "src/copytovram.asm"
+!src "src/copyTxtToVram.asm"
 !src "src/display.asm"
 !src "src/wic64/wic64.asm"
 
@@ -396,5 +443,5 @@ filenameLength=*-filenameCharset
 ; $1000 visible content in a condensed form (from eg $1:7f01 to next tab)
 ;       this is block copied to screen by using the $1:7f00 entry of the line (first offset +1) and the length (offset 3 in linktable)
 ;       to copy lines 10-32 (23 lines), the code will add up all the lengths until line 10 and then copy each line
-
+; $3000 charset (4kb)
 

@@ -6,6 +6,12 @@ wic64_optimize_for_size = 0
 !src "src/wic64/wic64.h"
 
 setInitialGopherHostSelector
+    lda #$31
+    sta zp_currentType
+
+    lda #0
+    sta zp_scrollModeCrsr
+
     ldx #0
     sta tcpOpenSizeL
     sta tcpOpenSizeH
@@ -54,10 +60,7 @@ setNewGopherHostSelector
     ldx zp_tempX
     sta tcpOpenHostPort,x
     inc zp_tempX
-    iny
-    inc tcpOpenSizeL
-    bne -
-    inc tcpOpenSizeH
+    jsr .incOpenSize
     jmp -
 
 +   lda #':'
@@ -76,10 +79,7 @@ setNewGopherHostSelector
     ldx zp_tempX
     sta tcpOpenHostPort,x
     inc zp_tempX
-    iny
-    inc tcpOpenSizeL
-    bne -
-    inc tcpOpenSizeH
+    jsr .incOpenSize
     jmp -
 
 +   ldy #0
@@ -109,6 +109,13 @@ setNewGopherHostSelector
     inc tcpWriteSizeL
     bne +
     inc tcpWriteSizeH
++   rts
+
+.incOpenSize
+    iny
+    inc tcpOpenSizeL
+    bne +
+    inc tcpOpenSizeH
 +   rts
 
 detectAndInitializeWic64
@@ -153,15 +160,15 @@ detectAndInitializeWic64
     jmp .connTimeout
 +   rts
 
-requestGopherSite
+requestContent
     lda #$93 ; clear screen
     jsr bsout
 
     jsr initContentAddress
     
     lda #0
-    sta responseSize
-    sta responseSize+1
+    sta zp_responseSize
+    sta zp_responseSize+1
 
     +wic64_execute wic64TransferTimeout
     +wic64_execute wic64RemoteTimeout
@@ -246,10 +253,10 @@ requestGopherSite
 
 +   clc
     tya
-    adc responseSize
-    sta responseSize
+    adc zp_responseSize
+    sta zp_responseSize
     bcc +
-    inc responseSize+1
+    inc zp_responseSize+1
 
 +   rts
 
@@ -308,7 +315,6 @@ packBytes           !byte 0
 connectResponse     !byte 0
 statusResponse      !fill 40
 
-responseSize        !word 0
 response            !fill 256
 
 startGopher         !text "gopher.floodgap.com:70",0

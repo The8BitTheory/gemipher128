@@ -4,6 +4,8 @@
 ; zp_currentLinkTablePtr will point to the index inside of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
+;    jsr .clearInvisibleContentArea
+
     ldy #LAST_LINE
     sty zp_lastLine
 
@@ -39,7 +41,10 @@ displayTextmode
 
     ; load type
     ldx #VISIBLE_LINES
-    stx zp_tempX
+    cpx zp_linecount
+    bmi +
+    ldx zp_linecount
++   stx zp_tempX
 
 ; clear screen sets register bit to block fill and vram address (18/19 to $0000)
 ; this also waits for the next vblank period
@@ -137,6 +142,7 @@ drawCursor
 ;    nop
 
 ;.drawStatusLine
+    ; this is using jsr bsout right now, should be changed to direct VRAM writes later (for consistency with charset, etc)
     lda c_fetch_zp
     pha
 
@@ -207,6 +213,9 @@ drawCursor
     ldx #24
     ldy #7
     jsr k_plot
+
+    lda #$12 ;rvs on
+    jsr bsout
     
     lda zp_currentType
     jsr bsout
@@ -254,7 +263,9 @@ drawCursor
     dec zp_tempX
     bne -
 
-+   pla
++   lda #$92    ;rvs off
+    jsr bsout
+    pla
     sta c_fetch_zp
     rts
 
@@ -328,7 +339,7 @@ removeCursor
 .incLinkTableReadPosition
     clc
     lda zp_linkTablePosition
-    adc #9
+    adc zp_linkTableIncr
     sta zp_linkTablePosition
     bcc +
     inc zp_linkTablePosition+1
@@ -375,14 +386,14 @@ removeCursor
     jsr .readVisibleLength
 
     ; low-byte in A
--   cmp #75
+-   cmp #79
     bcc +
 
     ; line longer than 75 characters
     sec
-    sbc #75
+    sbc #79
     sta zp_visibleLength
-    lda #75
+    lda #79
     jmp ++
 
     ; line shorter thann 75 characters
@@ -450,12 +461,22 @@ removeCursor
 ; attribute-ram
     ldy #0
     ldx #$08
-    lda #%10001111
+    lda #%10000000
     jsr A_to_vram_XXYY
 
     ;set count
     lda #$af    ;lowbyte
     ldy #$07    ;highbyte
+    jsr vdc_do_YYAA_cycles
+
+; set last line of attribute ram to inverse
+    ldy #$80
+    ldx #$07
+    lda #%11001111
+    jsr A_to_vram_XXYY
+    ;set count
+    lda #$50    ;lowbyte
+    ldy #$00    ;highbyte
     jmp vdc_do_YYAA_cycles
     
 
@@ -556,6 +577,23 @@ removeCursor
     ;lda #'x'
     ;jsr bsout
     rts
+
+.clearInvisibleContentArea
+    ; clear BLOCK COPY register bit to get BLOCK WRITE:
+    ldx #24
+    jsr vdc_reg_X_to_A
+    and #$7f
+    jsr A_to_vdc_reg_X
+
+    lda #0
+    ldy #$00
+    ldx #$10
+    jsr A_to_vram_XXYY
+
+    ;set count
+    lda #$ff    ;lowbyte
+    ldy #$0f    ;highbyte
+    jmp vdc_do_YYAA_cycles
 
 
 ; cursorOffsets holds the vram-offset for each cursor position

@@ -44,12 +44,10 @@ parseGopher
     sta zp_linecount
     sta zp_linecount+1
 
-    lda responseSize
+    lda zp_responseSize
     sta .leftToParse
-    lda responseSize+1
+    lda zp_responseSize+1
     sta .leftToParse+1
-
-    jmp .decideOnParseSeq
 
 ; which section of the line are we parsing?
 ; 0=type and visible content
@@ -98,7 +96,7 @@ parseGopher
 .selectNextParseMode
     sta .parseMode
 
-    cmp #$69 ;i - info
+    cmp #$69 ; i - info
     beq .handleVisible
     cmp #$30 ; 0 - textfile
     beq .handleVisible
@@ -124,9 +122,9 @@ parseGopher
     beq .handleVisible
     cmp #'g' ; G - GIF
     beq .handleVisible
-    cmp #'l' ; L - generic image
+    cmp #$49 ; $49, I - generic image (upper-case i)
     beq .handleVisible
-    cmp #'h' ; H - Hyperlink
+    cmp #$68 ; H - Hyperlink
     beq .handleVisible
     cmp #'s' ; s - audio
     beq .handleVisible
@@ -136,9 +134,14 @@ parseGopher
     beq .handleVisible
     cmp #'T' ; t - terminal connection tn3270
     beq .handleVisible
+    cmp #$2e    ; dot. end of menu
+    beq .parsingDone
+    
+    
+.parsingDone
 
     rts
-
+    nop
 
 .handleVisible
     jsr .readNextByte
