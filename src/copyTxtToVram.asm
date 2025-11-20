@@ -63,7 +63,6 @@ copyTextToVram
     jsr c_fetch
     sta zp_visibleLength
 
-; read first character of current line from content area (holds the line type)
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp
     
@@ -78,6 +77,10 @@ copyTextToVram
     
 -   ldx zp_contentBank
     jsr c_fetch
+    cmp #$0d
+    beq .rtvDone
+    cmp #$0a
+    beq .rtvDone
     iny
     beq .rtvDone    ; copy 255 chars max (as a guardrail)
 

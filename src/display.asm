@@ -384,6 +384,10 @@ removeCursor
 
 .displayLine
     jsr .readVisibleLength
+    beq +
+    ;jsr .incOutputLineNumber
+    ;lda zp_visibleLength
+    ;jmp .displayDone
 
     ; low-byte in A
 -   cmp #79
@@ -396,7 +400,7 @@ removeCursor
     lda #79
     jmp ++
 
-    ; line shorter thann 75 characters
+    ; line shorter than 75 characters
 +   ldy #0
     sty zp_visibleLength
 
@@ -405,7 +409,7 @@ removeCursor
     jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
     
     lda zp_visibleLength
-    beq ++
+    beq .displayDone
     dec zp_lastLine
     ldx zp_tempX    ;contains the nr of lines left to print
     cpx #1
@@ -417,7 +421,8 @@ removeCursor
     lda zp_visibleLength
     jmp -
 
-++  clc
+.displayDone
+    clc
     rts
 
 
