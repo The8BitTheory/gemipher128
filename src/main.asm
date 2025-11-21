@@ -31,7 +31,7 @@ LAST_LINE = FIRST_LINE+VISIBLE_LINES-1
 
 ; zero page addresses. we use $0a-$8f ($7a and up is used by vdc-basic)
 zp_contentAddress = $0a
-zp_linecount = $0c
+zp_linecount = $0c  ; the number of lines in the file/directory/... (might be more than what fits RAM or VRAM)
 zp_tempX = $0e      ; used to hold x register when working with FAR routines
 zp_tempY = $0f    ; used to hold y register when working with FAR routines
 
@@ -52,8 +52,9 @@ zp_linenumber_start = $1a   ; and $1b ; this is the scrolling position. ie the n
 zp_cursorLineContent = $1c         ; this is the cursor line relative to the content
 zp_cursorPosScreen = $1d ; and $1e   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
 zp_cursorLineScreen = $1f   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
-zp_lastLine = $20       ; this is #LAST_LINE when all content lines fit screen lines. is reduced by one for each multi-line
+zp_lastLine = $20       ; this is #LAST_LINE when all content lines fit screen lines. is reduced by one for each multi-line. refers to the screen, not the file
 zp_scrollDirectionUp = $21  ; 0=up, else=down
+
 ; used by copytovram.asm
 ; zp_vram_content_addr
 ; zp_linecount
@@ -79,6 +80,8 @@ zp_historyStackAddress = $33; and $34. holds the address of the current entry (i
 zp_navModeHistory = $35     ; 0=navigation via history stack (cursor keys), else=navigation via return key
                             ; (0 means no stack updates, only changing stack position, 1 means push new page to stack)
 zp_tempCalc     = $36 ; and $37
+
+zp_lastVramContentLine = $38 ; and $39. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -335,10 +338,10 @@ main
     sta zp_tempCalc+1
 
     lda zp_tempCalc
-    cmp zp_linecount
+    cmp zp_lastVramContentLine
     bne +
     lda zp_tempCalc+1
-    cmp zp_linecount+1
+    cmp zp_lastVramContentLine+1
     bmi +
 
     jmp .getUserinput   ; yes. don't do anything, get next input from user

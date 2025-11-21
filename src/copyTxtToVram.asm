@@ -16,6 +16,10 @@
 .VRAM_LEFT = 8000
 
 copyTextToVram
+    lda #0
+    sta zp_lastVramContentLine
+    sta zp_lastVramContentLine+1
+    
     lda #<.VRAM_LEFT
     sta .vramLeft
     lda #>.VRAM_LEFT
@@ -26,7 +30,14 @@ copyTextToVram
     sta zp_contentBank
     
     jsr initLinkTableAddress
-    
+
+    clc
+    lda zp_linecount
+    sta .linesLeftToCopy
+    lda zp_linecount+1
+    sta .linesLeftToCopy+1
+
+continueCopyToVram     ; when we left off before due to vram full    
     lda #<VRAM_CONTENT
     sta zp_vram_content_addr
     lda #>VRAM_CONTENT
@@ -38,17 +49,17 @@ copyTextToVram
     jsr AY_to_vdc_regs_18_19
     ldx #31 ; VRAM register
     stx vdc_reg
+    
 
-    ; load type
-    ldx zp_linecount
-    stx zp_tempX
 -   jsr .copyLineToVram
     bcs +
 
     jsr .incLineNumber
 
-    dec zp_tempX
+    dec .linesLeftToCopy
     bne -
+    dec .linesLeftToCopy+1
+    bpl -
 
 +   rts
 
@@ -113,7 +124,8 @@ copyTextToVram
     dec .vramLeft +1
     bpl +
     sec
-    rts
+    rts ; no more vram left. leave
+
 +   dec zp_visibleLength
     bne -
 
@@ -130,7 +142,10 @@ copyTextToVram
     bcc +
     inc zp_linkTablePosition+1
 
++   inc zp_lastVramContentLine
+    bne +
+    inc zp_lastVramContentLine+1
 +   rts
 
 .vramLeft       !word 0
-
+.linesLeftToCopy    !word 0

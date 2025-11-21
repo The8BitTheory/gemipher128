@@ -101,7 +101,7 @@ displayTextmode
 drawCursor
     lda zp_scrollModeCrsr
     beq +
-    rts
+    jmp .drawPlainTextStatusline
 
 +   sec
     lda zp_cursorLineContent
@@ -130,21 +130,7 @@ drawCursor
     ;jsr A_to_vram_XXYY
 
     lda zp_cursorLineContent
-    lsr
-    lsr
-    lsr
-    lsr
-    jsr .makeItHex
-    ldx #7
-    ldy #$82
-    jsr A_to_vram_XXYY
-
-    lda zp_cursorLineContent
-    and #%00001111
-    jsr .makeItHex
-    ldx #7
-    ldy #$83
-    jsr A_to_vram_XXYY
+    jsr .drawCurrentLine
 
 .drawStatusLine
     ; this is using jsr bsout right now, should be changed to direct VRAM writes later (for consistency with charset, etc)
@@ -271,6 +257,25 @@ drawCursor
     sta c_fetch_zp
     rts
 
+.drawCurrentLine
+    pha 
+
+    lsr
+    lsr
+    lsr
+    lsr
+    jsr .makeItHex
+    ldx #7
+    ldy #$82
+    jsr A_to_vram_XXYY
+
+    pla
+    and #%00001111
+    jsr .makeItHex
+    ldx #7
+    ldy #$83
+    jmp A_to_vram_XXYY
+
 .printStatusLineUntilTab
     ldy #0
 -   ldx zp_contentBank
@@ -291,6 +296,13 @@ drawCursor
     ldx zp_contentBank
     jsr c_fetch
     iny
+    rts
+
+.drawPlainTextStatusline
+    ; draw logical line, total nr of lines, start and end vram offset (from $1000)
+    lda zp_linenumber_start
+    jsr .drawCurrentLine
+
     rts
 
 .makeItHex
