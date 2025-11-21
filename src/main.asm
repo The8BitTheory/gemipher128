@@ -489,7 +489,7 @@ zpStore             !fill 134
 
 
 fileOpError         !byte 0
-filenameCharset     !pet "ascii2.chr"
+filenameCharset     !pet "retrofan.chr"
 filenameLength=*-filenameCharset
 
 ; memory map
