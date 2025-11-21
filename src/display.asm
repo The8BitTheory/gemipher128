@@ -75,24 +75,35 @@ displayTextmode
     beq +
     ; scroll direction down ()
     inc zp_linenumber_start
+    lda zp_scrollModeCrsr
+    bne +
     inc zp_cursorLineScreen
-    jmp displayTextmode
++   jmp displayTextmode
 
     ; scroll direction up (scroll )
 +   dec zp_linenumber_start
+    lda zp_scrollModeCrsr
+    bne +
     dec zp_cursorLineScreen
-    jmp displayTextmode
++   jmp displayTextmode
 
 ++  jsr .incLinkTableReadPosition
     jsr .incOutputLineNumber
     inc zp_tempY
+
+    lda zp_scrollModeCrsr
+    bne +
     jsr .calculateCursorOffset
 
-    ldx zp_tempX
++   ldx zp_tempX
     bne -
 
 drawCursor
-    sec
+    lda zp_scrollModeCrsr
+    beq +
+    rts
+
++   sec
     lda zp_cursorLineContent
     sbc zp_linenumber_start
     sta zp_tempY
@@ -135,7 +146,7 @@ drawCursor
     ldy #$83
     jsr A_to_vram_XXYY
 
-;.drawStatusLine
+.drawStatusLine
     ; this is using jsr bsout right now, should be changed to direct VRAM writes later (for consistency with charset, etc)
     lda c_fetch_zp
     pha

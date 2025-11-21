@@ -40,7 +40,7 @@ zp_linkTablePosition = $11 ; and $12
 zp_fastmode = $1b
 
 ; used by parseGopher.asm
-zp_visibleLength = $13  ;also used by display.asm
+zp_visibleLength = $13  ; length of visible text in current line. also used by display.asm
 
 ; used by display.asm
 ; textdisplay
@@ -313,8 +313,10 @@ main
     bmi +
     jmp .getUserinput   ; yes. don't do anything, get next input from user
 
-+   inc zp_cursorLineContent
-    inc zp_linenumber_start ; no. increase linenumber and update display. ie scroll down
++   lda zp_scrollModeCrsr
+    bne +
+    inc zp_cursorLineContent
++   inc zp_linenumber_start ; no. increase linenumber and update display. ie scroll down
     jmp .updateDisplay
 
 

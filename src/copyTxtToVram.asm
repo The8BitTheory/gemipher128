@@ -13,7 +13,7 @@
 
 !zone txtRamToVram
 
-.VRAM_LEFT = 2000
+.VRAM_LEFT = 8000
 
 copyTextToVram
     lda #<.VRAM_LEFT
@@ -80,7 +80,6 @@ copyTextToVram
     nop
 
 .myRtv   ; copy RAM to VRAM
-
     ldy #0
     
 -   ldx zp_contentBank

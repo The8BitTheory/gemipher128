@@ -80,7 +80,7 @@ parsePlainText
 +   lda .leftToParse
     bne +
     lda .leftToParse+1
-    bne +
+    bpl +
     sec ; set carry means we reached end of file
     pla
     rts
