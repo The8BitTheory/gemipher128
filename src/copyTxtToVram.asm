@@ -102,16 +102,16 @@ continueCopyToVram     ; when we left off before due to vram full
     iny
     beq .rtvDone    ; copy 255 chars max (as a guardrail)
 
-    cmp #65 ;A  
+    cmp #64 ; @ (before A )
     bmi .rtvWrite       ; < A (so, must be a digit. don't change)
 
-    cmp #97 ;a  ; < a (so, must be an uppercase letter. subtract 64
+    cmp #96 ;a  ; < a (so, must be an uppercase letter. subtract 64
     bpl +
     sec
     sbc #64
     jmp .rtvWrite
 
-+   cmp #123 ; <z (so, must be a lowercase letter)
++   cmp #127 ; <tilde (so, must be a lowercase letter)
     bpl .rtvWrite
     sec
     sbc #32

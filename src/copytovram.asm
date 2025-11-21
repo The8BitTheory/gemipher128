@@ -86,16 +86,16 @@ copyVisibleContentToVram
     cmp #9
     beq .rtvDone
 
-    cmp #65 ;A  
+    cmp #64 ;A  
     bmi .rtvWrite       ; < A (so, must be a digit. don't change)
 
-    cmp #97 ;a  ; < a (so, must be an uppercase letter. subtract 64
+    cmp #96 ;a  ; < a (so, must be an uppercase letter. subtract 64
     bpl +
     sec
     sbc #64
     jmp .rtvWrite
 
-+   cmp #123 ; <z (so, must be a lowercase letter)
++   cmp #127 ; <z (so, must be a lowercase letter)
     bpl .rtvWrite
     sec
     sbc #32

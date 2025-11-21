@@ -235,9 +235,6 @@ drawCursor
     sta c_fetch_zp
     jsr .printStatusLineUntilTab
 
-    lda #'/'
-    jsr bsout
-
     lda #zp_currentSelectorPtr
     sta c_fetch_zp
     jsr .printStatusLineUntilTab
