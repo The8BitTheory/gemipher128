@@ -12,33 +12,31 @@ setInitialGopherHostSelector
     lda #0
     sta zp_scrollModeCrsr
 
+    lda #<startGopher
+    sta zp_currentHostPtr
+    lda #>startGopher
+    sta zp_currentHostPtr+1
+
+    lda #<startPort
+    sta zp_currentPortPtr
+    lda #>startPort
+    sta zp_currentPortPtr+1
+
+    lda #<startSelector
+    sta zp_currentSelectorPtr
+    lda #>startSelector
+    sta zp_currentSelectorPtr+1
+
     ldx #0
-    sta tcpOpenSizeL
-    sta tcpOpenSizeH
+    lda mmuBankConfig,x
+    sta zp_contentBank
 
--   lda startGopher,x
-    beq +
-    sta tcpOpenHostPort,x
-    inx
-    inc tcpOpenSizeL
-    bne -
-    inc tcpOpenSizeH
-    jmp -
-
-+   ldx #0
-    sta tcpWriteSizeL
-    sta tcpWriteSizeH
-
--   lda startSelector,x
-    beq +
-    sta tcpWriteSelector,x
-    inx
-    inc tcpWriteSizeL
-    bne -
-    inc tcpWriteSizeH
-    jmp -
-
-+   rts
+    jsr setNewGopherHostSelector
+    
+    ldx #1
+    lda mmuBankConfig,X
+    sta zp_contentBank
+    rts
 
 setNewGopherHostSelector
     ldy #1
@@ -398,5 +396,6 @@ statusResponse      !fill 40
 
 response            !fill 256
 
-startGopher         !text "gopher.floodgap.com:70",0
+startGopher         !text "gopher.floodgap.com",$9
+startPort           !text "70\r\n"
 startSelector       !text "\r\n",0

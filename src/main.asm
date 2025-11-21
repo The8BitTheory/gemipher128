@@ -1,13 +1,14 @@
 ; ------------
 ; memory map
 ; ------------
-; $0.1c01 - $0.bfff: programcode. only enable basic-rom when needed. close to 41kB
+; $0.1c01 - $0.afff: programcode. only enable basic-rom when needed. close to 41kB
 ; $1.0400 - $1.f700: data --> 62 kB
 ; $1.f700 - $1.ff00: link table -> 2 kB
 
 ; configuration constants
 
-HISTORY_STACK = $c000
+HISTORY_TABLE = $b000   ; room for 128 entries
+HISTORY_STACK = $b100   
 
 ; CONTENT describes one full gopher page
 CONTENT_BANK = 1
@@ -77,11 +78,12 @@ zp_contentLength = $2f; and $30 ; the content length that's reported by the serv
 zp_historyStackPos = $31    ; the position (entry) in the history stack. (multiply x 12 to get stack offset per entry)
 zp_historyStackSize = $32   ; the nr of entries in the history stack. (multiply x 12 to get stack offset per entry)
 zp_historyStackAddress = $33; and $34. holds the address of the current entry (ie HISTORY_STACK + stackpos*12)
-zp_navModeHistory = $35     ; 0=navigation via history stack (cursor keys), else=navigation via return key
-                            ; (0 means no stack updates, only changing stack position, 1 means push new page to stack)
-zp_tempCalc     = $36 ; and $37
 
-zp_lastVramContentLine = $38 ; and $39. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
+zp_navModeHistory = $37     ; 0=navigation via history stack (cursor keys), else=navigation via return key
+                            ; (0 means no stack updates, only changing stack position, 1 means push new page to stack)
+zp_tempCalc     = $38 ; and $39
+
+zp_lastVramContentLine = $3a ; and $3b. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -149,11 +151,15 @@ main
     lda #14
     jsr bsout
 
+    
     jsr initHistoryStack
+    jsr disableBasicRom
 
 ; load from network
     jsr detectAndInitializeWic64
     jsr setInitialGopherHostSelector
+    lda #1
+    sta zp_navModeHistory
 
 .requestNewContent
     jsr requestContent
