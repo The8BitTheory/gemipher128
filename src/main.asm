@@ -48,7 +48,7 @@ zp_visibleLength = $13  ; length of visible text in current line. also used by d
 zp_currentLinkTablePtr = $14; and $15
 zp_vram_content_addr = $16 ; and $17 ;  also used by copytovram.asm
 zp_vram_screenram = $18 ; and $19
-zp_linenumber_start = $1a   ; and $1b ; this is the scrolling position
+zp_linenumber_start = $1a   ; and $1b ; this is the scrolling position. ie the number of the first visible line (in context of the document, not the visible lines)
 zp_cursorLineContent = $1c         ; this is the cursor line relative to the content
 zp_cursorPosScreen = $1d ; and $1e   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
 zp_cursorLineScreen = $1f   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
@@ -78,6 +78,7 @@ zp_historyStackSize = $32   ; the nr of entries in the history stack. (multiply 
 zp_historyStackAddress = $33; and $34. holds the address of the current entry (ie HISTORY_STACK + stackpos*12)
 zp_navModeHistory = $35     ; 0=navigation via history stack (cursor keys), else=navigation via return key
                             ; (0 means no stack updates, only changing stack position, 1 means push new page to stack)
+zp_tempCalc     = $36 ; and $37
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -183,8 +184,10 @@ main
     sta zp_scrollModeCrsr
 .doneProcessing
 ; history stack only if "active" navigation, not going back and forth on stack
-    ;jsr pushToHistoryStack
-    jsr doSlow
+    lda zp_navModeHistory
+    beq +
+    jsr pushToHistoryStack  ; only push to stack when not navigating in history
++   jsr doSlow
 
 .resetDisplay
     lda #0
@@ -232,8 +235,22 @@ main
 ;    jsr setInitialGopherHostSelector
 ;    jmp .requestNewContent
 
++   cmp #157 ;cursor left - previous page in history, if available
+    bne +
+    lda #0
+    sta zp_navModeHistory
+    jmp .prevHistoryPage
+
++   cmp #29 ;cursor right - next page in history, if available
+    bne +
+    lda #0
+    sta zp_navModeHistory
+    jmp .nextHistoryPage
+
 +   cmp #13 ;return key
     bne +
+    lda #1
+    sta zp_navModeHistory   ; not navigating in history
     lda zp_currentType
     cmp #$30
     beq .prepareRequest
@@ -302,22 +319,37 @@ main
 .drawCursorOneBelow
     jsr removeCursor
     inc zp_cursorLineContent
-    ;inc zp_cursorLineScreen
     jmp drawCursor
 
 .tryLineScrollDown
+;    clc
+;    lda #VISIBLE_LINES
+;    adc zp_linenumber_start
+;    cmp zp_linecount    ; is the last visible line also the last content line?
+
     clc
     lda #VISIBLE_LINES
     adc zp_linenumber_start
-    cmp zp_linecount    ; is the last visible line also the last content line?
+    sta zp_tempCalc
+    lda zp_linenumber_start+1
+    sta zp_tempCalc+1
+
+    lda zp_tempCalc
+    cmp zp_linecount
+    bne +
+    lda zp_tempCalc+1
+    cmp zp_linecount+1
     bmi +
+
     jmp .getUserinput   ; yes. don't do anything, get next input from user
 
 +   lda zp_scrollModeCrsr
     bne +
     inc zp_cursorLineContent
 +   inc zp_linenumber_start ; no. increase linenumber and update display. ie scroll down
-    jmp .updateDisplay
+    bne +
+    inc zp_linenumber_start+1
++   jmp .updateDisplay
 
 
 .tryCursorUp
@@ -338,7 +370,6 @@ main
 .drawCursorOneAbove
     jsr removeCursor
     dec zp_cursorLineContent
-    ;dec zp_cursorLineScreen
     jmp drawCursor
 
 .tryLineScrollUp
@@ -358,6 +389,13 @@ main
     sec
     sbc zp_linenumber_start
     sta zp_cursorLineScreen
+    rts
+
+.nextHistoryPage
+
+    rts
+
+.prevHistoryPage
     rts
 
 ; set the relevant content pointers to their initial position
