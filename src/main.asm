@@ -6,6 +6,9 @@
 ; $1.f700 - $1.ff00: link table -> 2 kB
 
 ; configuration constants
+
+HISTORY_STACK = $c000
+
 ; CONTENT describes one full gopher page
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
@@ -45,7 +48,7 @@ zp_visibleLength = $13  ;also used by display.asm
 zp_currentLinkTablePtr = $14; and $15
 zp_vram_content_addr = $16 ; and $17 ;  also used by copytovram.asm
 zp_vram_screenram = $18 ; and $19
-zp_linenumber_start = $1a   ; this is the scrolling position
+zp_linenumber_start = $1a   ; and $1b ; this is the scrolling position
 zp_cursorLineContent = $1c         ; this is the cursor line relative to the content
 zp_cursorPosScreen = $1d ; and $1e   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
 zp_cursorLineScreen = $1f   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
@@ -68,6 +71,13 @@ zp_linkTableIncr = $2b      ; link table has entries of different sizes (gopher=
 zp_responseSize = $2c ; and $2d ; the nr of bytes we counted for response. upfront information should be in zp_contentLength
 zp_scrollModeCrsr = $2e ; 0=cursor movement, else=just scroll screen lines
 zp_contentLength = $2f; and $30 ; the content length that's reported by the server. zp_responseSize holds the nr bytes we counted
+
+; history.asm
+zp_historyStackPos = $31    ; the position (entry) in the history stack. (multiply x 12 to get stack offset per entry)
+zp_historyStackSize = $32   ; the nr of entries in the history stack. (multiply x 12 to get stack offset per entry)
+zp_historyStackAddress = $33; and $34. holds the address of the current entry (ie HISTORY_STACK + stackpos*12)
+zp_navModeHistory = $35     ; 0=navigation via history stack (cursor keys), else=navigation via return key
+                            ; (0 means no stack updates, only changing stack position, 1 means push new page to stack)
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -135,6 +145,8 @@ main
     lda #14
     jsr bsout
 
+    jsr initHistoryStack
+
 ; load from network
     jsr detectAndInitializeWic64
     jsr setInitialGopherHostSelector
@@ -170,9 +182,9 @@ main
     lda #0
     sta zp_scrollModeCrsr
 .doneProcessing
+; history stack only if "active" navigation, not going back and forth on stack
+    ;jsr pushToHistoryStack
     jsr doSlow
-
-    
 
 .resetDisplay
     lda #0
@@ -370,18 +382,18 @@ disableBasicRom
     rts
 
 ; used for slow/fast
-enableBasicLo
+enableBasicRom
     lda #%00000000
     sta $ff00
     rts
 
 doFast
-    jsr enableBasicLo
+    jsr enableBasicRom
     jsr b_fast
     jmp disableBasicRom
 
 doSlow
-    jsr enableBasicLo
+    jsr enableBasicRom
     jsr b_slow
     jmp disableBasicRom
 
@@ -424,6 +436,7 @@ recoverZp
 !src "src/copyTxtToVram.asm"
 !src "src/display.asm"
 !src "src/wic64/wic64.asm"
+!src "src/history.asm"
 
 ; these are the mappings from basic's bank command to the actual mmu config-register values
 mmuBankConfig       !byte $3F,$7F,$BF,$FF,$16,$56,$96,$D6,$2A,$6A,$AA,$EA,$06,$0A,$01,$00
@@ -437,6 +450,9 @@ filenameCharset     !pet "ascii2.chr"
 filenameLength=*-filenameCharset
 
 ; memory map
+; bank 0 - $1c01 programcode
+; bank 0 - $c000 history stack (usually screen editor and monitor)
+
 ; bank 1
 ; $0400 content from gopher server. unmodified
 ; $7f00 linktable. each line of gopher content is represented here with a 9 byte long entry.
