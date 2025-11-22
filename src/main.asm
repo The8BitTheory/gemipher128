@@ -32,7 +32,7 @@ LAST_LINE = FIRST_LINE+VISIBLE_LINES-1
 
 ; zero page addresses. we use $0a-$8f ($7a and up is used by vdc-basic)
 zp_contentAddress = $0a
-zp_linecount = $0c  ; the number of lines in the file/directory/... (might be more than what fits RAM or VRAM)
+zp_linecount = $0c  ; and $0d. the number of lines in the file/directory/... (might be more than what fits RAM or VRAM)
 zp_tempX = $0e      ; used to hold x register when working with FAR routines
 zp_tempY = $0f    ; used to hold y register when working with FAR routines
 

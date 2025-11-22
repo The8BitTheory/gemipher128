@@ -253,7 +253,7 @@ requestContent
     lda wic64_bytes_to_transfer
     sta packBytes
     jsr .storeInPerm
-
+    bcs ++  ; if carry flag is set, we're out of RAM and stop reading
     
 .handleResponse
     +wic64_execute tcpAvailable, availableResponse, 5
@@ -297,6 +297,14 @@ requestContent
     bcc +
     inc zp_contentAddress+1
 
+; check if we reached the end of available RAM
++   lda #>LINKTABLE_ADDRESS
+    cmp zp_contentAddress+1
+    
+    bmi +
+    sec
+    rts
+
 +   clc
     tya
     adc zp_responseSize
@@ -304,7 +312,8 @@ requestContent
     bcc +
     inc zp_responseSize+1
 
-+   rts
++   clc
+    rts
 
 .makeItHex
     and #%00001111
@@ -318,9 +327,7 @@ requestContent
 +   adc #54
     rts
 
-.storeInBank1
-
-    
+.storeInBank1    
     rts
 
 .allResponseRead
@@ -357,8 +364,6 @@ requestContent
     lda #$d
     jsr bsout
 
-;-   jsr k_getin
-;    beq -
 
 .closeConnection
     +print txtTcpClose

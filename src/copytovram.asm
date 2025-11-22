@@ -117,6 +117,9 @@ copyVisibleContentToVram
     bcc +
     inc zp_linkTablePosition+1
 
++   inc zp_lastVramContentLine
+    bne +
+    inc zp_lastVramContentLine+1
 +   rts
 
 

@@ -42,7 +42,7 @@ displayTextmode
     ; load type
     ldx #VISIBLE_LINES
     cpx zp_linecount
-    bmi +
+    bcc +
     ldx zp_linecount
 +   stx zp_tempX
 
@@ -78,14 +78,14 @@ displayTextmode
     lda zp_scrollModeCrsr
     bne +
     inc zp_cursorLineScreen
-+   jmp displayTextmode
++   jmp displayTextmode ;restart building screen one content line later
 
     ; scroll direction up (scroll )
 +   dec zp_linenumber_start
     lda zp_scrollModeCrsr
     bne +
     dec zp_cursorLineScreen
-+   jmp displayTextmode
++   jmp displayTextmode ;restart building screen one content line earlier
 
 ++  jsr .incLinkTableReadPosition
     jsr .incOutputLineNumber
@@ -195,9 +195,6 @@ drawCursor
     jsr c_fetch
     sta zp_currentType
 
-
-
-; zp_tempY is used to clear remains of previous status-line
     ldy #64
     sty zp_tempX
 
