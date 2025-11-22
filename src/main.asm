@@ -514,7 +514,7 @@ zpStore             !fill 134
 
 
 fileOpError         !byte 0
-filenameCharset     !pet "retrofan.chr"
+filenameCharset     !pet "latin9ui.char"
 filenameLength=*-filenameCharset
 
 ; memory map
