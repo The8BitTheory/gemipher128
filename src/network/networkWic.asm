@@ -29,21 +29,31 @@ setInitialGopherHostSelector
 
     ldx #0
     lda mmuBankConfig,x
-    sta zp_contentBank
-
-    jsr setNewGopherHostSelector
-    
-    ldx #1
-    lda mmuBankConfig,X
-    sta zp_contentBank
-    rts
+    sta zp_hostSelBank
+    jmp  ++
 
 setNewGopherHostSelector
-    ldy #1
+;    jsr pushToHistoryStack ; here we'll need to write cursor position and stuff to history
+
+    lda zp_navModeHistory
+    beq +
+; we're navigating from a content entry
+; pointers go to bank 1
+
+    ldx #1
+    lda mmuBankConfig,x
+    sta zp_hostSelBank
+    jmp ++
+
+; we're navigating from a history entry
+; pointers go to bank 0
++   ldx #0
+    lda mmuBankConfig,x
+    sta zp_hostSelBank
+    
+++  ldy #0
     sty tcpOpenSizeL
     sty tcpWriteSizeL
-
-    ldy #0
     sty tcpOpenSizeH
     sty tcpWriteSizeH
     sty zp_tempX
@@ -51,7 +61,7 @@ setNewGopherHostSelector
     lda #zp_currentHostPtr
     sta c_fetch_zp
 
--   ldx zp_contentBank
+-   ldx zp_hostSelBank
     jsr c_fetch
     cmp #9
     beq +
@@ -65,12 +75,13 @@ setNewGopherHostSelector
     ldx zp_tempX
     sta tcpOpenHostPort,x
     inc zp_tempX
+    jsr .incOpenSize
 
     ldy #0
     lda #zp_currentPortPtr
     sta c_fetch_zp
 
--   ldx zp_contentBank
+-   ldx zp_hostSelBank
     jsr c_fetch
     cmp #$0d
     beq +
@@ -85,7 +96,7 @@ setNewGopherHostSelector
     lda #zp_currentSelectorPtr
     sta c_fetch_zp
 
--   ldx zp_contentBank
+-   ldx zp_hostSelBank
     jsr c_fetch
     cmp #9
     beq +
@@ -99,6 +110,7 @@ setNewGopherHostSelector
 +   ldx zp_tempX
     lda #$0d
     sta tcpWriteSelector,x
+    jsr .incWriteSize
     inx
     lda #$0a
     sta tcpWriteSelector,x
@@ -398,4 +410,4 @@ response            !fill 256
 
 startGopher         !text "gopher.floodgap.com",$9
 startPort           !text "70\r\n"
-startSelector       !text "\r\n",0
+startSelector       !text "\r\n",$9

@@ -78,12 +78,13 @@ zp_contentLength = $2f; and $30 ; the content length that's reported by the serv
 zp_historyStackPos = $31    ; the position (entry) in the history stack. (multiply x 12 to get stack offset per entry)
 zp_historyStackSize = $32   ; the nr of entries in the history stack. (multiply x 12 to get stack offset per entry)
 zp_historyStackAddress = $33; and $34. holds the address of the current entry (ie HISTORY_STACK + stackpos*12)
-
-zp_navModeHistory = $37     ; 0=navigation via history stack (cursor keys), else=navigation via return key
+zp_hostSelBank = $35        ; where to read host,port,selector from (1 for current page, 0 for history)
+zp_navModeHistory = $36     ; 0=navigation via history stack (cursor keys), else=navigation via return key
                             ; (0 means no stack updates, only changing stack position, 1 means push new page to stack)
-zp_tempCalc     = $38 ; and $39
+zp_tempCalc     = $37 ; and $38
 
-zp_lastVramContentLine = $3a ; and $3b. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
+zp_lastVramContentLine = $39 ; and $3a. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
+zp_memPtr   = $3b ; and $3c. can be used for any temporary indirect read or write memory operation
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -257,20 +258,22 @@ main
     jmp .nextHistoryPage
 
 +   cmp #13 ;return key
-    bne +
+    bne ++
     lda #1
     sta zp_navModeHistory   ; not navigating in history
     lda zp_currentType
     cmp #$30
-    beq .prepareRequest
+    beq +
     cmp #$31
-    beq .prepareRequest
+    beq +
     jmp -
++   inc zp_historyStackPos
 .prepareRequest
+    
     jsr setNewGopherHostSelector
     jmp .requestNewContent
 
-+   cmp #19 ;home
+++  cmp #19 ;home
     bne +
 .goToFirstLine
     jmp .resetDisplay
@@ -400,12 +403,28 @@ main
     sta zp_cursorLineScreen
     rts
 
+; when navigating through history entries, the pointers to host,port,selector refer to bank0
+;  as opposed to bank1 when navigating based on selection from the current page
 .nextHistoryPage
+    clc
+    lda zp_historyStackPos
+    adc #1
+    cmp zp_historyStackSize
+    bne +   
+    jmp .getUserinput   ; no next entry in stack
 
-    rts
++   inc zp_historyStackPos
+    jmp .commonHistoryPageHandling
 
 .prevHistoryPage
-    rts
+    lda zp_historyStackPos
+    bne +   
+    jmp .getUserinput   ; no previous entry in stack
+
++   dec zp_historyStackPos
+.commonHistoryPageHandling
+    jsr readFromStack
+    jmp .prepareRequest
 
 ; set the relevant content pointers to their initial position
 ; this is done when writing downloaded data and when starting to parse

@@ -24,6 +24,8 @@
 
 !zone historyStack
 
+; pushing to the history stack takes the data from tcpOpenHostPort and tcpWriteSelector from networkWic.asm
+;  these are in bank 0 and already in the format we'll want to re-use them.
 pushToHistoryStack
     ; HISTORY_TABLE is accessed via x-offset only (128 entries, 256 bytes max)
     ; HISTORY_STACK is accessed via (zp_historyStackAddress),y (pointing to the beginning of an entry)
@@ -32,19 +34,17 @@ pushToHistoryStack
     jsr .resetHistoryStackAddress
 
     ; get the offset in HISTORY_TABLE for stack entry to write
-    lda zp_historyStackPos  ; we load position, not size, because we might be in the middle of the history
-    beq .doWriting   ; stack empty, skip increasing address
+;    inc zp_historyStackPos
     clc
+    lda zp_historyStackPos  ; we load position, not size, because we might be in the middle of the history
     adc zp_historyStackPos
     tax
 
-    clc
+; set historystackaddress to $b100 + offset from history_table
     lda HISTORY_TABLE,x
-    adc zp_historyStackAddress
     sta zp_historyStackAddress
     inx
     lda HISTORY_TABLE,x
-    adc zp_historyStackAddress+1
     sta zp_historyStackAddress+1
 
 .doWriting
@@ -55,77 +55,105 @@ pushToHistoryStack
     tya
     iny
     sta (zp_historyStackAddress),y
-    ; skip 4 entries (reserved for content line and screenline-start)
     iny
+; skip 4 entries (reserved for content line and screenline-start)
+    lda #0
+    sta (zp_historyStackAddress),y
     iny
+    lda #0
+    sta (zp_historyStackAddress),y
     iny
+    lda #0
+    sta (zp_historyStackAddress),y
     iny
-    iny
-    sty zp_tempY
-
-; write host:port and selector to the history text-area
-    lda #zp_currentHostPtr
-    sta c_fetch_zp
-
-    jsr .writeToHistoryStack
-
-    ldy zp_tempY
-    iny
-    lda #':'
+    lda #0
     sta (zp_historyStackAddress),y
     iny
     sty zp_tempY
 
-    lda #zp_currentPortPtr
-    sta c_fetch_zp
+; write host:port and selector to the history text-area
+    lda #<tcpOpenHostPort
+    sta zp_memPtr  ;we're mis-using this here, as we're not doing indfet
+    lda #>tcpOpenHostPort
+    sta zp_memPtr+1
+
+    lda tcpOpenSizeL
+    sta zp_tempCalc
+    lda tcpOpenSizeH
+    sta zp_tempCalc+1
 
     jsr .writeToHistoryStack
-    jsr .writeZeroToHistoryStack
 
-    lda #zp_currentSelectorPtr
-    sta c_fetch_zp
+    jsr .writeCrByteToHistoryStack
 
+    lda #<tcpWriteSelector
+    sta zp_memPtr
+    lda #>tcpWriteSelector+1
+    sta zp_memPtr+1
+
+    lda tcpWriteSizeL
+    sta zp_tempCalc
+    lda tcpWriteSizeH
+    sta zp_tempCalc+1
+
+; write the selector
     jsr .writeToHistoryStack
-    jsr .writeZeroToHistoryStack
+    jsr .writeTabByteToHistoryStack
 
-    ldx #0
-    lda zp_tempY
-    sta HISTORY_TABLE,x
-    lda #0
-    sta HISTORY_TABLE,x
-
-    inc zp_historyStackPos
     lda zp_historyStackPos
     sta zp_historyStackSize
+    inc zp_historyStackSize
+
+; calculate offset for next table entry (2 bytes per entry)
+    clc
+    lda zp_historyStackSize
+    adc zp_historyStackSize
+    tax
+
+; add value of y (our write offset) to address of current entry
+;  and store it as next history table entry
+    clc
+    lda zp_historyStackAddress
+    adc zp_tempY
+    sta HISTORY_TABLE,x
+    lda zp_historyStackAddress+1
+    adc #0
+    inx
+    sta HISTORY_TABLE,x
+
+
 
     jmp disableBasicRom ; return to "regular" mmu setup for program execution
 
 .writeToHistoryStack
     ; use zp_tempX for the reading-y
-    ldy #0
-    sty zp_tempX
+    ldx #0
+    stx zp_tempX
 -   ldy zp_tempX
-    ldx zp_contentBank
-    jsr c_fetch
-    beq +
-    cmp #9
-    beq +
-    cmp #$0d
-    beq +
-    inc zp_tempX
-    ldy zp_tempY
+    lda (zp_memPtr),y
+    cmp #':'
+    bne +
+    lda #9  ;replace : with tab
++   ldy zp_tempY
     sta (zp_historyStackAddress),y
     inc zp_tempY
-    jmp -
-+   rts
+    inc zp_tempX
+    dec zp_tempCalc
+    bne -
+    rts
 
-.writeZeroToHistoryStack
+.writeCrByteToHistoryStack
     ldy zp_tempY
-    iny
-    lda #'0'
+    lda #$0d
     sta (zp_historyStackAddress),y
-    iny
-    sty zp_tempY
+    inc zp_tempY
+    rts
+
+.writeTabByteToHistoryStack
+    ldy zp_tempY
+    lda #$9
+    sta (zp_historyStackAddress),y
+    inc zp_tempY
     rts
 
 writeCursorPosToStack
@@ -133,6 +161,73 @@ writeCursorPosToStack
     rts
 
 readFromStack
+    clc
+    lda zp_historyStackPos
+    adc zp_historyStackPos
+    tax
+
+    lda HISTORY_TABLE,x
+    sta zp_historyStackAddress
+    lda HISTORY_TABLE+1,x
+    sta zp_historyStackAddress+1
+
+; byte 0-1: current type of page (0 for text, 1 for gopher, etc)
+    ldy #0
+    lda (zp_historyStackAddress),y
+    sta zp_currentType
+    iny
+
+;bytes 2-5: scroll and cursor position when we left (not implemented yet)
+    iny
+    iny
+    iny
+    iny
+    iny
+    
+    clc
+    tya
+    adc zp_historyStackAddress
+    sta zp_currentHostPtr
+    lda zp_historyStackAddress+1
+    sta zp_currentHostPtr+1
+
+; byte 6 until zero-byte is host:port
+    ldx #0
+-   lda (zp_historyStackAddress),y
+    cmp #9
+    beq +
+;    sta tcpOpenHostPort,x
+    inx
+    iny
+    jmp -
+
++   iny ; go past the ':'-byte from just before
+
+    clc
+    tya
+    adc zp_historyStackAddress
+    sta zp_currentPortPtr
+    lda zp_historyStackAddress+1
+    sta zp_currentPortPtr+1
+
+; read until $0d, which is the end of the port
+    ldx #0
+-   lda (zp_historyStackAddress),y
+;    sta tcpWriteSelector,x
+    cmp #$0d
+    beq +
+    inx
+    iny
+    jmp -
+
++   iny ; skip the separator
+    clc
+    tya
+    adc zp_historyStackAddress
+    sta zp_currentSelectorPtr
+    lda zp_historyStackAddress+1
+    sta zp_currentSelectorPtr+1
+
     rts
 
 initHistoryStack
@@ -148,6 +243,11 @@ initHistoryStack
 
 .resetHistoryStackAddress
     lda #<HISTORY_STACK
+    sta HISTORY_TABLE
+    lda #>HISTORY_STACK
+    sta HISTORY_TABLE +1
+
+    lda #<HISTORY_STACK
     sta zp_historyStackAddress
     lda #>HISTORY_STACK
     sta zp_historyStackAddress+1
@@ -161,3 +261,4 @@ initHistoryStack
 ;    sta $ff00
 ;    rts
 
+.stackInputAddr !word 0
