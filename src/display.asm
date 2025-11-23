@@ -48,8 +48,15 @@ displayTextmode
     ; each copy operation only requires setting target address (increments of 80, unless line-length is longer)
     ;  and nr of characters to copy
 
-    ; load type
-    ldx #VISIBLE_LINES
+; if we have two bytes line-count, visible lines are for sure #VISIBLE_LINES
+    lda zp_linecount+1
+    beq +
+    lda #VISIBLE_LINES
+    sta zp_tempX
+    jmp ++
+
+; only one byte line-count, check if we have less lines than what fits the screen
++   ldx #VISIBLE_LINES
     cpx zp_linecount
     bcc +
     ldx zp_linecount
@@ -57,7 +64,7 @@ displayTextmode
 
 ; clear screen sets register bit to block fill and vram address (18/19 to $0000)
 ; this also waits for the next vblank period
-    jsr .clearScreen
+++  jsr .clearScreen
 
 ;setup block copy
 ; set register bit for BLOCK COPY:
