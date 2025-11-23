@@ -13,7 +13,18 @@
 
 !zone RAMTOVRAM
 
+.VRAM_LEFT = 8191
+
 copyVisibleContentToVram
+    lda #0
+    sta zp_lastVramContentLine
+    sta zp_lastVramContentLine+1
+    
+    lda #<.VRAM_LEFT
+    sta .vramLeft
+    lda #>.VRAM_LEFT
+    sta .vramLeft+1
+    
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
     sta zp_contentBank
@@ -124,3 +135,5 @@ copyVisibleContentToVram
 
 
 
+.vramLeft       !word 0
+.linesLeftToCopy    !word 0

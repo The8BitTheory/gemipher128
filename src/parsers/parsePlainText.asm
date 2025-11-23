@@ -19,6 +19,8 @@ parsePlainText
     lda #zp_linkTablePosition
     sta c_stash_zp
 
+    jsr .clearLinkTable
+
 ; based on response-size, we can decide whether to overwrite the previous data, or keep it
     lda zp_responseSize
     sta .leftToParse
@@ -113,5 +115,47 @@ parsePlainText
     inc zp_linkTablePosition+1
 
 +   rts
+
+.clearLinkTable
+; this clears 8x256 bytes
+
+    ldy #0
+-   lda #0
+    ldx zp_contentBank
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    ldx zp_contentBank
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    ldx zp_contentBank
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    ldx zp_contentBank
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    ldx zp_contentBank
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    ldx zp_contentBank
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    ldx zp_contentBank
+    jsr c_stash
+    inc zp_linkTablePosition+1
+    lda #0
+    ldx zp_contentBank
+    jsr c_stash
+
+    jsr initLinkTableAddress
+    iny
+    bne -
+
+    jmp initLinkTableAddress
 
 .leftToParse    !word 0

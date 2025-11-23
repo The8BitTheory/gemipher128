@@ -31,30 +31,30 @@ LAST_LINE = FIRST_LINE+VISIBLE_LINES-1
 ;  will need to either copy data to bank 0 for VDC-related things, or make VDC libs interact with bank 1
 
 ; zero page addresses. we use $0a-$8f ($7a and up is used by vdc-basic)
-zp_contentAddress = $0a
+zp_contentAddress = $0a ; and $0b
 zp_linecount = $0c  ; and $0d. the number of lines in the file/directory/... (might be more than what fits RAM or VRAM)
 zp_tempX = $0e      ; used to hold x register when working with FAR routines
 zp_tempY = $0f    ; used to hold y register when working with FAR routines
 
 zp_contentBank  = $10   
 zp_linkTablePosition = $11 ; and $12
-zp_fastmode = $1b
+zp_fastmode = $13
 
 ; used by parseGopher.asm
-zp_visibleLength = $13  ; length of visible text in current line. also used by display.asm
+zp_visibleLength = $14  ; length of visible text in current line. also used by display.asm
 
 ; used by display.asm
 ; textdisplay
 ; also using zp_visibleLength
-zp_currentLinkTablePtr = $14; and $15
-zp_vram_content_addr = $16 ; and $17 ;  also used by copytovram.asm
-zp_vram_screenram = $18 ; and $19
-zp_linenumber_start = $1a   ; and $1b ; this is the scrolling position. ie the number of the first visible line (in context of the document, not the visible lines)
-zp_cursorLineContent = $1c         ; this is the cursor line relative to the content
-zp_cursorPosScreen = $1d ; and $1e   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
-zp_cursorLineScreen = $1f   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
-zp_lastLine = $20       ; this is #LAST_LINE when all content lines fit screen lines. is reduced by one for each multi-line. refers to the screen, not the file
-zp_scrollDirectionUp = $21  ; 0=up, else=down
+zp_currentLinkTablePtr = $15; and $16
+zp_vram_content_addr = $17 ; and $18 ;  also used by copytovram.asm
+zp_vram_screenram = $189 ; and $1a
+zp_linenumber_start = $1b   ; and $1c ; this is the scrolling position. ie the number of the first visible line (in context of the document, not the visible lines)
+zp_cursorLineContent = $1d    ; and $1e     ; this is the cursor line relative to the content
+zp_cursorPosScreen = $1f ; and $20   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
+zp_cursorLineScreen = $21   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
+zp_lastLine = $22       ; this is #LAST_LINE when all content lines fit screen lines. is reduced by one for each multi-line. refers to the screen, not the file
+zp_scrollDirectionUp = $23  ; 0=up, else=down
 
 ; used by copytovram.asm
 ; zp_vram_content_addr
@@ -64,27 +64,27 @@ zp_scrollDirectionUp = $21  ; 0=up, else=down
 ; zp_currentLinkTablePtr
 ; zp_linkTablePosition
 ; zp_contentBank
-zp_currentType = $22
-zp_currentSelectorPtr = $23 ; and $24
-zp_currentHostPtr = $25 ; and $26
-zp_currentPortPtr = $27 ; and $28
-zp_currentTypePtr = $29 ; and $2a
-zp_linkTableIncr = $2b      ; link table has entries of different sizes (gopher=9 bytes, plain text = 3 bytes)
-zp_responseSize = $2c ; and $2d ; the nr of bytes we counted for response. upfront information should be in zp_contentLength
-zp_scrollModeCrsr = $2e ; 0=cursor movement, else=just scroll screen lines
-zp_contentLength = $2f; and $30 ; the content length that's reported by the server. zp_responseSize holds the nr bytes we counted
+zp_currentType = $24
+zp_currentSelectorPtr = $25 ; and $26
+zp_currentHostPtr = $27 ; and $28
+zp_currentPortPtr = $29 ; and $2a
+zp_currentTypePtr = $2b ; and $2c
+zp_linkTableIncr = $2d      ; link table has entries of different sizes (gopher=9 bytes, plain text = 3 bytes)
+zp_responseSize = $2e ; and $2f ; the nr of bytes we counted for response. upfront information should be in zp_contentLength
+zp_scrollModeCrsr = $30 ; 0=cursor movement, else=just scroll screen lines
+zp_contentLength = $31; and $32 ; the content length that's reported by the server. zp_responseSize holds the nr bytes we counted
 
 ; history.asm
-zp_historyStackPos = $31    ; the position (entry) in the history stack. (multiply x 12 to get stack offset per entry)
-zp_historyStackSize = $32   ; the nr of entries in the history stack. (multiply x 12 to get stack offset per entry)
-zp_historyStackAddress = $33; and $34. holds the address of the current entry (ie HISTORY_STACK + stackpos*12)
-zp_hostSelBank = $35        ; where to read host,port,selector from (1 for current page, 0 for history)
-zp_navModeHistory = $36     ; 0=navigation via history stack (cursor keys), else=navigation via return key
+zp_historyStackPos = $33    ; the position (entry) in the history stack. (multiply x 12 to get stack offset per entry)
+zp_historyStackSize = $34   ; the nr of entries in the history stack. (multiply x 12 to get stack offset per entry)
+zp_historyStackAddress = $35; and $36. holds the address of the current entry (ie HISTORY_STACK + stackpos*12)
+zp_hostSelBank = $37        ; where to read host,port,selector from (1 for current page, 0 for history)
+zp_navModeHistory = $38     ; 0=navigation via history stack (cursor keys), else=navigation via return key
                             ; (0 means no stack updates, only changing stack position, 1 means push new page to stack)
-zp_tempCalc     = $37 ; and $38
+zp_tempCalc     = $39 ; and $3a
 
-zp_lastVramContentLine = $39 ; and $3a. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
-zp_memPtr   = $3b ; and $3c. can be used for any temporary indirect read or write memory operation
+zp_lastVramContentLine = $3b ; and $3c. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
+zp_memPtr   = $3d ; and $3e. can be used for any temporary indirect read or write memory operation
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -203,6 +203,7 @@ main
     lda #0
     sta zp_linenumber_start
     sta zp_cursorLineContent
+    sta zp_cursorLineContent+1
     lda #FIRST_LINE
     sta zp_cursorLineScreen
 
@@ -319,19 +320,29 @@ main
     jmp .tryLineScrollDown
 
 +   jsr .calcCursorLineScreen
-    cmp zp_lastLine ; is cursor on last screen-line?
-    bne +   ; not on the last screen-line, draw one line below
+
+    ldy zp_linecount+1
+    bne +       ; we have more content lines than what fits the screen. no need to check for lower cursor pos
+    cmp zp_linecount
+    bne +
+    jmp .getUserinput   ; less content than screen lines, and we reached the last content line
+
++   cmp zp_lastLine ; is cursor on last screen-line?
+    bne .cursorDown   ; not on the last screen-line, draw one line below
 
     ; on the last visible line, check if we can scroll down
     jmp .tryLineScrollDown
 
+.cursorDown
 +   jsr .drawCursorOneBelow
     jmp .getUserinput
 
 .drawCursorOneBelow
     jsr removeCursor
     inc zp_cursorLineContent
-    jmp drawCursor
+    bne +
+    inc zp_cursorLineContent+1
++   jmp drawCursor
 
 .tryLineScrollDown
 ;    clc
@@ -339,6 +350,7 @@ main
 ;    adc zp_linenumber_start
 ;    cmp zp_linecount    ; is the last visible line also the last content line?
 
+; is the last visible line also the last content line?
     clc
     lda #VISIBLE_LINES
     adc zp_linenumber_start
@@ -351,13 +363,15 @@ main
     bne +
     lda zp_tempCalc+1
     cmp zp_lastVramContentLine+1
-    bmi +
+    bcc +   ; 
 
     jmp .getUserinput   ; yes. don't do anything, get next input from user
 
 +   lda zp_scrollModeCrsr
     bne +
     inc zp_cursorLineContent
+    bne +
+    inc zp_cursorLineContent+1
 +   inc zp_linenumber_start ; no. increase linenumber and update display. ie scroll down
     bne +
     inc zp_linenumber_start+1
@@ -381,27 +395,48 @@ main
 
 .drawCursorOneAbove
     jsr removeCursor
-    dec zp_cursorLineContent
-    jmp drawCursor
+    sec
+    lda zp_cursorLineContent
+    sbc #1
+    sta zp_cursorLineContent
+    bcs +
+    dec zp_cursorLineContent+1
++   jmp drawCursor
 
 .tryLineScrollUp
     lda zp_linenumber_start
     bne +
     jmp .getUserinput
 +   dec zp_linenumber_start
-    dec zp_cursorLineContent
-    jmp .updateDisplay
+    sec
+    lda zp_cursorLineContent
+    sbc #1
+    sta zp_cursorLineContent
+    bcs +
+    dec zp_cursorLineContent+1
++   jmp .updateDisplay
 
 .calcCursorLineScreen
     clc
-    lda #1
+    lda #FIRST_LINE  ; second line on screen is top-most one
     adc zp_cursorLineContent
-    sta zp_cursorLineScreen
+    sta zp_tempCalc
+    lda zp_cursorLineContent+1
+    adc #0
+    sta zp_tempCalc+1
 
     sec
+    lda zp_tempCalc
     sbc zp_linenumber_start
+    sta zp_tempCalc
+    lda zp_tempCalc+1
+    sbc #0
+    sta zp_tempCalc+1
+
+    lda zp_tempCalc
     sta zp_cursorLineScreen
     rts
+    nop
 
 ; when navigating through history entries, the pointers to host,port,selector refer to bank0
 ;  as opposed to bank1 when navigating based on selection from the current page

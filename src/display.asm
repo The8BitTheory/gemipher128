@@ -4,9 +4,18 @@
 ; zp_currentLinkTablePtr will point to the index inside of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
-;    jsr .clearInvisibleContentArea
+    ; we run into infinite loops here if plain text content has less lines than available screen lines (23 usually)
+    ; this is because of we only check scroll-up yes or no. but not "no scroll"
+    ; this is a quick and dirty hack to get out of this loop
+    ldx #25
+    stx .retries
 
-    ldy #LAST_LINE
+.displayTextmodeRestart
+    dec .retries
+    bne +
+    rts
+
++   ldy #LAST_LINE
     sty zp_lastLine
 
 ; bank 1
@@ -78,14 +87,14 @@ displayTextmode
     lda zp_scrollModeCrsr
     bne +
     inc zp_cursorLineScreen
-+   jmp displayTextmode ;restart building screen one content line later
++   jmp .displayTextmodeRestart ;restart building screen one content line later
 
     ; scroll direction up (scroll )
 +   dec zp_linenumber_start
     lda zp_scrollModeCrsr
     bne +
     dec zp_cursorLineScreen
-+   jmp displayTextmode ;restart building screen one content line earlier
++   jmp .displayTextmodeRestart ;restart building screen one content line earlier
 
 ++  jsr .incLinkTableReadPosition
     jsr .incOutputLineNumber
@@ -506,7 +515,7 @@ removeCursor
 
     ;set count
     lda #$ff    ;lowbyte
-    ldy #$0f    ;highbyte
+    ldy #$01    ;highbyte
     jmp vdc_do_YYAA_cycles
 
 
@@ -515,3 +524,5 @@ removeCursor
 ; 25 lines, two bytes each. 23 sould be sufficient, but we can always reduce that
 .cursorOffsets  !word 80    ; first offset is always 80 (as long as we're starting in second screenline)
                 !fill 48
+
+.retries        !byte 0

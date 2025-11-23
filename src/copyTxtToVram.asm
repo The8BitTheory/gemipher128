@@ -13,7 +13,7 @@
 
 !zone txtRamToVram
 
-.VRAM_LEFT = 8000
+.VRAM_LEFT = 8191
 
 copyTextToVram
     lda #0

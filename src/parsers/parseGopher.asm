@@ -251,30 +251,39 @@ parseGopher
 +   rts
 
 .clearLinkTable
+; this clears 8x256 bytes
+
     ldy #0
-    ldx zp_contentBank
 -   lda #0
+    ldx zp_contentBank
     jsr c_stash
     inc zp_linkTablePosition+1
     lda #0
+    ldx zp_contentBank
     jsr c_stash
     inc zp_linkTablePosition+1
     lda #0
+    ldx zp_contentBank
     jsr c_stash
     inc zp_linkTablePosition+1
     lda #0
+    ldx zp_contentBank
     jsr c_stash
     inc zp_linkTablePosition+1
     lda #0
+    ldx zp_contentBank
     jsr c_stash
     inc zp_linkTablePosition+1
     lda #0
+    ldx zp_contentBank
     jsr c_stash
     inc zp_linkTablePosition+1
     lda #0
+    ldx zp_contentBank
     jsr c_stash
     inc zp_linkTablePosition+1
     lda #0
+    ldx zp_contentBank
     jsr c_stash
 
     jsr initLinkTableAddress
