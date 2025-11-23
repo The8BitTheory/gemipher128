@@ -202,6 +202,7 @@ main
 .resetDisplay
     lda #0
     sta zp_linenumber_start
+    sta zp_linenumber_start+1
     sta zp_cursorLineContent
     sta zp_cursorLineContent+1
     lda #FIRST_LINE
@@ -358,12 +359,12 @@ main
     lda zp_linenumber_start+1
     sta zp_tempCalc+1
 
-    lda zp_tempCalc
-    cmp zp_lastVramContentLine
-    bne +
     lda zp_tempCalc+1
     cmp zp_lastVramContentLine+1
     bcc +   ; 
+    lda zp_tempCalc
+    cmp zp_lastVramContentLine
+    bcc +
 
     jmp .getUserinput   ; yes. don't do anything, get next input from user
 
