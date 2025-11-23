@@ -146,7 +146,9 @@ drawCursor
     ;jsr A_to_vram_XXYY
 
     lda zp_cursorLineContent
-    jsr .drawCurrentLine
+    jsr .drawCurrentLine ; writes content line in status line
+
+    jsr .writeCurrentGopherToHeadline
 
 .drawStatusLine
     ; this is using jsr bsout right now, should be changed to direct VRAM writes later (for consistency with charset, etc)
@@ -214,15 +216,14 @@ drawCursor
     ldy #64
     sty zp_tempX
 
-    ldx #24
-    ldy #7
-    jsr k_plot
-
-    lda #$12 ;rvs on
-    jsr bsout
+    lda #$07
+    ldy #$85
+    jsr AY_to_vdc_regs_18_19
     
     lda zp_currentType
-    jsr bsout
+    jsr toScreencode
+    ldx #31
+    jsr A_to_vdc_reg_X
 
     cmp #$30 ;0 -> textfile
     beq +
@@ -230,19 +231,23 @@ drawCursor
     beq +
     jmp ++
 
-+   ldx #24
-    ldy #5
-    jsr k_plot
++   lda #$07
+    ldy #$87
+    jsr AY_to_vdc_regs_18_19
 
     lda #' '
-    jsr bsout
+    jsr toScreencode
+    ldx #31
+    jsr A_to_vdc_reg_X
 
     lda #zp_currentHostPtr
     sta c_fetch_zp
     jsr .printStatusLineUntilTab
 
     lda #':'
-    jsr bsout
+    jsr toScreencode
+    ldx #31
+    jsr A_to_vdc_reg_X
 
     lda #zp_currentPortPtr
     sta c_fetch_zp
@@ -257,13 +262,14 @@ drawCursor
 
 
 ++  lda #' '
--   jsr bsout
+-   jsr toScreencode
+    ldx #31
+    jsr A_to_vdc_reg_X
     dec zp_tempX
+
     bne -
 
-+   lda #$92    ;rvs off
-    jsr bsout
-    pla
++   pla
     sta c_fetch_zp
     rts
 
@@ -294,7 +300,11 @@ drawCursor
     beq +
     cmp #$d
     beq +
-    jsr bsout
+    ;jsr bsout
+    jsr toScreencode
+    ldx #31
+    jsr A_to_vdc_reg_X
+
     dec zp_tempX
     beq +
     iny
@@ -476,38 +486,75 @@ removeCursor
     and #$7f
     jsr A_to_vdc_reg_X
 
+; fill lines 1 - 23 with space character
 ; screen-ram
     lda #$20
-    ldy #0
-    ldx #0
+    ldy #$50
+    ldx #$00
     jsr A_to_vram_XXYY
 
     ;set count
-    lda #$af    ;lowbyte
+    lda #$30    ;lowbyte
     ldy #$07    ;highbyte
     jsr vdc_do_YYAA_cycles
 
+; fill lines 1-23 with charset 1
 ; attribute-ram
-    ldy #0
+    ldy #$50
     ldx #$08
     lda #%10000000
     jsr A_to_vram_XXYY
 
     ;set count
-    lda #$af    ;lowbyte
+    lda #$30    ;lowbyte
     ldy #$07    ;highbyte
     jsr vdc_do_YYAA_cycles
 
-; set last line of attribute ram to inverse
+; set line 0 of attribute ram to inverse
+    ldy #$00
+    ldx #$08
+    lda #%11000000  ;charset 1, reverse on
+    jsr A_to_vram_XXYY
+
+; set count (79 characters)
+    lda #$4f
+    ldy #$00
+    jsr vdc_do_YYAA_cycles
+
+; fill line 0 with spaces
+    ldy #$00
+    ldx #$00
+    lda #$20
+    jsr A_to_vram_XXYY
+    
+    ; set count (79 characters)
+    lda #$4f
+    ldy #$00
+    jsr vdc_do_YYAA_cycles
+
+; set line 24 of attribute ram to inverse
     ldy #$80
     ldx #$07
-    lda #%11001111
+    lda #%11000000   ;charset 1, reverse on
     jsr A_to_vram_XXYY
-    ;set count
-    lda #$50    ;lowbyte
+
+    ;set count (79 chars)
+    lda #$4f    ;lowbyte
     ldy #$00    ;highbyte
-    jmp vdc_do_YYAA_cycles
+    jsr vdc_do_YYAA_cycles
     
+; fill line 24 with spaces
+    ldy #$80
+    ldx #$07
+    lda #$20
+    jsr A_to_vram_XXYY
+    
+    ; set count (79 characters)
+    lda #$4f
+    ldy #$00
+    jmp vdc_do_YYAA_cycles
+
+
 .clearInvisibleContentArea
     ; clear BLOCK COPY register bit to get BLOCK WRITE:
     ldx #24
@@ -525,6 +572,40 @@ removeCursor
     ldy #$01    ;highbyte
     jmp vdc_do_YYAA_cycles
 
+toScreencode
+    cmp #64 ;A  
+    bmi .screencodeDone       ; < A (so, must be a digit. don't change)
+
+    cmp #96 ;a  ; < a (so, must be an uppercase letter. subtract 64
+    bpl +
+    sec
+    sbc #64
+    jmp .screencodeDone
+
++   cmp #127 ; <z (so, must be a lowercase letter)
+    bpl .screencodeDone
+    sec
+    sbc #32
+
+.screencodeDone
+    rts
+
+.writeCurrentGopherToHeadline
+    rts
+    ldy #00
+    lda #00
+    jsr AY_to_vdc_regs_18_19
+
+    lda #zp_currentHostPtr
+    sta c_fetch_zp
+
+    ldy #0
+    ldx zp_hostSelBank
+    lda #'A'
+    ldx #31
+    jsr A_to_vdc_reg_X
+
+    rts
 
 ; cursorOffsets holds the vram-offset for each cursor position
 ; this is required to keep track of multi-line text. otherwise we'd just go in incs of 80
