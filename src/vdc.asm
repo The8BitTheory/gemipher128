@@ -37,7 +37,7 @@ initVdc
     lda #$30
     sta arg2+1
 
-    lda #96
+    lda #98
     sta arg3
 
     jsr vcc

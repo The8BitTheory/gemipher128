@@ -609,6 +609,18 @@ writeCurrentGopherToHeadline
     ldy #$00
     jsr vdc_do_YYAA_cycles
 
+; print rounded corners top left and right
+    lda #96
+    ldy #$00
+    ldx #$00
+    jsr A_to_vram_XXYY
+
+    lda #97
+    ldy #$4f
+    ldx #$00
+    jsr A_to_vram_XXYY
+
+
     ldx #64
     stx zp_tempX
     ldy #10
