@@ -46,6 +46,7 @@ parsePlainText
 +   jsr .readNextByte
     cmp #$0a
     beq .finishLine
+
 .toNext
     inc zp_visibleLength
     jmp -
@@ -56,7 +57,15 @@ parsePlainText
     inc zp_linecount+1
     
 +   lda zp_visibleLength
-    jsr .storeValueInLinkTable
+    cmp #1
+    bne +
+;    lda zp_tempA
+;    cmp #'.'
+;    bne +
+
+;    jmp .doneParse  ;if we find a single dot on a line, this is the end of the file
+
++   jsr .storeValueInLinkTable
     lda #0
     sta zp_visibleLength
     jmp .parseLine
@@ -70,6 +79,7 @@ parsePlainText
     ldx zp_contentBank
     ldy #0
     jsr c_fetch
+    sta zp_tempA
     pha
 
     inc zp_contentAddress
