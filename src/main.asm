@@ -85,6 +85,7 @@ zp_tempCalc     = $39 ; and $3a
 
 zp_lastVramContentLine = $3b ; and $3c. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
 zp_memPtr   = $3d ; and $3e. can be used for any temporary indirect read or write memory operation
+zp_pageType = $3f ; keeps type of current page persistently loaded. we run into conflicts with "type of current cursor positon" otherwise
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -167,6 +168,9 @@ main
 
 .requestNewContent
     jsr requestContent
+
+    lda zp_currentType
+    sta zp_pageType
 
     lda #$93 ; clear screen
     jsr bsout

@@ -85,6 +85,9 @@ displayTextmode
     ldy #0
     sty zp_tempY    ; we use zp_tempY to count the current displayline. we'll use that for calculating cursor position offsets
 
+;-----------------------------------------
+; here, printing the line is triggered 
+;-----------------------------------------
 -   jsr .displayLine
     bcc ++
     lda zp_scrollDirectionUp
@@ -113,6 +116,13 @@ displayTextmode
 
 +   ldx zp_tempX
     bne -
+
+    lda zp_pageType
+    cmp #$31
+    bne drawCursor
+
+    jsr .doAttributeRam
+
 
 drawCursor
     lda zp_scrollModeCrsr
@@ -209,6 +219,7 @@ drawCursor
     ldy #0
     ldx zp_contentBank
     jsr c_fetch
+;    pha
     sta zp_currentType
 
     ldy #64
@@ -269,6 +280,71 @@ drawCursor
 
 +   pla
     sta c_fetch_zp
+
+    rts
+
+.doAttributeRam
+; write to attribute ram
+;  we don't write attribute ram with content lines, as we'd lose the auto-increment feature of the vdc chip
+;  also, writing content lines might start over if longer lines are involved.
+;  by writing attributes here, we are much more efficient
+
++   ldx #0
+    stx zp_tempX    ; we use zp_tempY to count the current displayline
+   
+    clc
+    lda #<LINKTABLE_ADDRESS
+    ;adc zp_linenumber_start
+    sta zp_currentLinkTablePtr
+    lda #>LINKTABLE_ADDRESS
+    ;adc zp_linenumber_start+1
+    sta zp_currentLinkTablePtr+1
+
+    ldx zp_linenumber_start
+    beq ++
+-   clc
+    lda zp_currentLinkTablePtr
+    adc #9
+    sta zp_currentLinkTablePtr
+    bcc +
+    inc zp_currentLinkTablePtr+1
++   dex
+    bne -
+
+    ; clear BLOCK COPY register bit to get BLOCK WRITE:
+++  ldx #24
+    jsr vdc_reg_X_to_A
+    and #$7f
+    jsr A_to_vdc_reg_X
+
+; set vram address to second line,second character (this is where content display starts)
+    ;ldy #81
+    ;sty zp_vram_screenram
+    ;lda #08
+    ;sta zp_vram_screenram+1
+    ;jsr AY_to_vdc_regs_18_19
+
+-   jsr .readLineType
+    cmp #$69 ; info line
+    bne +
+    jsr .makeLineBlack
+    jmp .incAddresses
+
++   jsr .makeLineGreen
+
+
+.incAddresses
+    clc
+    lda zp_currentLinkTablePtr
+    adc #9
+    sta zp_currentLinkTablePtr
+    bcc +
+    inc zp_currentLinkTablePtr+1
+
++   inc zp_tempX
+    ldx zp_tempX
+    cpx zp_lastLine
+    bne -
 
     rts
 
@@ -433,9 +509,6 @@ removeCursor
 .displayLine
     jsr .readVisibleLength
     beq +
-    ;jsr .incOutputLineNumber
-    ;lda zp_visibleLength
-    ;jmp .displayDone
 
     ; low-byte in A
 -   cmp #79
@@ -473,6 +546,65 @@ removeCursor
     clc
     rts
 
+.readLineType
+    lda #zp_currentLinkTablePtr
+    sta c_fetch_zp
+
+    ; load line type
+    ldy #0
+    jsr .fetchFromContentBankOffsetY
+    sta zp_memPtr
+    jsr .fetchFromContentBankOffsetY
+    sta zp_memPtr+1
+
+    lda #zp_memPtr
+    sta c_fetch_zp
+
+    ldy #0
+    jsr .fetchFromContentBankOffsetY
+    rts
+
+.setAttributeRamToScreenLine
+    clc
+    lda zp_tempX
+    adc zp_tempX
+    tax
+
+    lda .cursorOffsets,x
+    sta zp_memPtr
+    lda .cursorOffsets+1,x
+    sta zp_memPtr+1
+
+    clc
+    lda #1
+    adc zp_memPtr
+    sta zp_vram_screenram
+    tay
+    lda zp_memPtr+1
+    adc #$08
+    sta zp_vram_screenram+1
+    
+    jmp AY_to_vdc_regs_18_19
+
+.makeLineGreen
+    jsr .setAttributeRamToScreenLine
+    lda #%10000010
+    ldx #31
+    jsr A_to_vdc_reg_X
+
+    ldy #0
+    lda #78   
+    jmp vdc_do_YYAA_cycles
+
+.makeLineBlack
+    jsr .setAttributeRamToScreenLine
+    lda #%10000000
+    ldx #31
+    jsr A_to_vdc_reg_X
+
+    ldy #0
+    lda #78   
+    jmp vdc_do_YYAA_cycles
 
 .readVisibleLength
     ldy #2
@@ -510,17 +642,7 @@ removeCursor
     ldy #$07    ;highbyte
     jsr vdc_do_YYAA_cycles
 
-; fill lines 1-23 with charset 1
-; attribute-ram
-    ldy #$50
-    ldx #$08
-    lda #%10000000
-    jsr A_to_vram_XXYY
-
-    ;set count
-    lda #$30    ;lowbyte
-    ldy #$07    ;highbyte
-    jsr vdc_do_YYAA_cycles
+; not clearing lines 1-23 (content area) because every line writes to the attribute ram anyways
 
 ; set line 24 of attribute ram to inverse
     ldy #$80

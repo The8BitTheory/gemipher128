@@ -41,11 +41,13 @@ parsePlainText
 -   jsr .readNextByte
     bcs .doneParse
     cmp #$0d    ;line break?
-    bne +
-    jsr .readNextByte
+    beq +
+    jmp .toNext
++   jsr .readNextByte
     cmp #$0a
     beq .finishLine
-+   inc zp_visibleLength
+.toNext
+    inc zp_visibleLength
     jmp -
 
 .finishLine
