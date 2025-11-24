@@ -138,6 +138,9 @@ main
     lda #$93 ; clear screen
     jsr bsout
 
+    lda #0
+    sta zp_fastmode
+
     jsr disableBasicRom
 
     jsr saveZp
@@ -197,7 +200,7 @@ main
     lda zp_navModeHistory
     beq +
     jsr pushToHistoryStack  ; only push to stack when not navigating in history
-+   jsr doSlow
++   jsr writeCurrentGopherToHeadline
 
 .resetDisplay
     lda #0

@@ -148,8 +148,6 @@ drawCursor
     lda zp_cursorLineContent
     jsr .drawCurrentLine ; writes content line in status line
 
-    jsr .writeCurrentGopherToHeadline
-
 .drawStatusLine
     ; this is using jsr bsout right now, should be changed to direct VRAM writes later (for consistency with charset, etc)
     lda c_fetch_zp
@@ -271,6 +269,7 @@ drawCursor
 
 +   pla
     sta c_fetch_zp
+
     rts
 
 .drawCurrentLine
@@ -292,6 +291,22 @@ drawCursor
     ldy #$83
     jmp A_to_vram_XXYY
 
+.printHeaderLineUntilTab
+    ldy #0
+-   lda (zp_memPtr),y
+    cmp #$d
+    beq +
+    jsr toScreencode
+    ldx #31
+    jsr A_to_vdc_reg_X
+
+    dec zp_tempCalc
+    beq +
+    iny
+    jmp -
++   rts
+    nop
+
 .printStatusLineUntilTab
     ldy #0
 -   ldx zp_contentBank
@@ -300,7 +315,6 @@ drawCursor
     beq +
     cmp #$d
     beq +
-    ;jsr bsout
     jsr toScreencode
     ldx #31
     jsr A_to_vdc_reg_X
@@ -467,8 +481,6 @@ removeCursor
     sta zp_visibleLength
     rts
 
-.read
-
 .clearScreen
 ;   wait until we are in text window (in case we're in a sync state right now)
 -   lda vdc_state
@@ -508,28 +520,6 @@ removeCursor
     ;set count
     lda #$30    ;lowbyte
     ldy #$07    ;highbyte
-    jsr vdc_do_YYAA_cycles
-
-; set line 0 of attribute ram to inverse
-    ldy #$00
-    ldx #$08
-    lda #%11000000  ;charset 1, reverse on
-    jsr A_to_vram_XXYY
-
-; set count (79 characters)
-    lda #$4f
-    ldy #$00
-    jsr vdc_do_YYAA_cycles
-
-; fill line 0 with spaces
-    ldy #$00
-    ldx #$00
-    lda #$20
-    jsr A_to_vram_XXYY
-    
-    ; set count (79 characters)
-    lda #$4f
-    ldy #$00
     jsr vdc_do_YYAA_cycles
 
 ; set line 24 of attribute ram to inverse
@@ -590,22 +580,65 @@ toScreencode
 .screencodeDone
     rts
 
-.writeCurrentGopherToHeadline
-    rts
-    ldy #00
+writeCurrentGopherToHeadline
+    ; clear BLOCK COPY register bit to get BLOCK WRITE:
+    ldx #24
+    jsr vdc_reg_X_to_A
+    and #$7f
+    jsr A_to_vdc_reg_X
+
+; set line 0 of attribute ram to inverse
+    ldy #$00
+    ldx #$08
+    lda #%11000000  ;charset 1, reverse on
+    jsr A_to_vram_XXYY
+
+; set count (79 characters)
+    lda #$4f
+    ldy #$00
+    jsr vdc_do_YYAA_cycles
+
+; fill line 0 with spaces
+    ldy #$00
+    ldx #$00
+    lda #$20
+    jsr A_to_vram_XXYY
+    
+    ; set count (79 characters)
+    lda #$4f
+    ldy #$00
+    jsr vdc_do_YYAA_cycles
+
+    ldx #64
+    stx zp_tempX
+    ldy #10
     lda #00
     jsr AY_to_vdc_regs_18_19
 
-    lda #zp_currentHostPtr
-    sta c_fetch_zp
+    lda #<tcpOpenHostPort
+    sta zp_memPtr  ;we're mis-using this here, as we're not doing indfet
+    lda #>tcpOpenHostPort
+    sta zp_memPtr+1
 
-    ldy #0
-    ldx zp_hostSelBank
-    lda #'A'
-    ldx #31
-    jsr A_to_vdc_reg_X
+    lda tcpOpenSizeL
+    sta zp_tempCalc
+    lda tcpOpenSizeH
+    sta zp_tempCalc+1
 
-    rts
+    jsr .printHeaderLineUntilTab
+
+    lda #<tcpWriteSelector
+    sta zp_memPtr
+    lda #>tcpWriteSelector+1
+    sta zp_memPtr+1
+
+    lda tcpWriteSizeL
+    sta zp_tempCalc
+    lda tcpWriteSizeH
+    sta zp_tempCalc+1
+
+    jmp .printHeaderLineUntilTab
+    nop
 
 ; cursorOffsets holds the vram-offset for each cursor position
 ; this is required to keep track of multi-line text. otherwise we'd just go in incs of 80
