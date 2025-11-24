@@ -524,8 +524,8 @@ removeCursor
 
 ; set line 24 of attribute ram to inverse
     ldy #$80
-    ldx #$07
-    lda #%11000000   ;charset 1, reverse on
+    ldx #$0f
+    lda #%11000011   ;charset 1, reverse on
     jsr A_to_vram_XXYY
 
     ;set count (79 chars)
@@ -590,7 +590,7 @@ writeCurrentGopherToHeadline
 ; set line 0 of attribute ram to inverse
     ldy #$00
     ldx #$08
-    lda #%11000000  ;charset 1, reverse on
+    lda #%11000011  ;charset 1, reverse on, dark gray
     jsr A_to_vram_XXYY
 
 ; set count (79 characters)
