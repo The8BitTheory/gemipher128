@@ -157,8 +157,7 @@ drawCursor
     ;ldy #$80
     ;jsr A_to_vram_XXYY
 
-    lda zp_cursorLineContent
-    jsr .drawCurrentLine ; writes content line in status line
+    jsr .drawCurrentCursorLine ; writes content line in status line
 
 .drawStatusLine
     ; this is using jsr bsout right now, should be changed to direct VRAM writes later (for consistency with charset, etc)
@@ -228,7 +227,7 @@ drawCursor
     sty zp_tempX
 
     lda #$07
-    ldy #$85
+    ldy #$86
     jsr AY_to_vdc_regs_18_19
     
     lda zp_currentType
@@ -363,24 +362,31 @@ drawCursor
 
     rts
 
-.drawCurrentLine
-    pha 
+.drawCurrentCursorLine
+    lda zp_cursorLineContent+1
+    ldy #$81
+    jsr .writeHexValue
+    lda zp_cursorLineContent
+    ldy #$83
+    jmp .writeHexValue
 
+.writeHexValue
+    pha
     lsr
     lsr
     lsr
     lsr
     jsr .makeItHex
     ldx #7
-    ldy #$82
     jsr A_to_vram_XXYY
 
     pla
     and #%00001111
     jsr .makeItHex
     ldx #7
-    ldy #$83
+    iny
     jmp A_to_vram_XXYY
+
 
 .printHeaderLineUntilTab
     ldy #0
@@ -425,9 +431,12 @@ drawCursor
 
 .drawPlainTextStatusline
     ; draw logical line, total nr of lines, start and end vram offset (from $1000)
+    lda zp_linenumber_start+1
+    ldy #$81
+    jsr .writeHexValue
     lda zp_linenumber_start
-    jsr .drawCurrentLine
-
+    ldy #$83
+    jmp .writeHexValue
     rts
 
 .makeItHex
