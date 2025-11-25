@@ -36,20 +36,15 @@ parsePlainText
 ; this also allows us to make word-wrap a user-choice
 
 .parseLine
-    jsr .storePointerInLinkTable
+    jsr .storePointerInTxtLinkTable
 
 -   jsr .readNextByte
     bcs .doneParse
     cmp #$0d    ;line break?
-    beq +
+    beq -
     cmp #$0a    ; other line break
     beq .finishLine
-    jmp .toNext
-+   jsr .readNextByte
-    cmp #$0a
-    beq .finishLine
 
-.toNext
     inc zp_visibleLength
     jmp -
 
@@ -82,13 +77,15 @@ parsePlainText
     ; no. revert to stored values
 +   jsr .recoverValues  ; clean the campground
     lda zp_visibleLength
-++  jsr .storeValueInLinkTable
+++  jsr .storeValueInTxtLinkTable
     lda #0
     sta zp_visibleLength
     jmp .parseLine
 
 .doneParse
-    rts
+    jsr .storePointerInTxtLinkTable
+    lda zp_visibleLength
+    jmp .storeValueInTxtLinkTable
     nop
 
 .storeValues
@@ -161,22 +158,22 @@ parsePlainText
 
 
 
-.storeValueInLinkTable
+.storeValueInTxtLinkTable
     ldy #0
-    jsr .stashToLinkTable
+    jsr .stashToTxtLinkTable
     rts
 
-.storePointerInLinkTable
+.storePointerInTxtLinkTable
     ldy #0
     lda zp_contentAddress
-    jsr .stashToLinkTable
+    jsr .stashToTxtLinkTable
     lda zp_contentAddress+1
-    jsr .stashToLinkTable
+    jsr .stashToTxtLinkTable
 
 +   rts
 
 
-.stashToLinkTable
+.stashToTxtLinkTable
     ldx zp_contentBank
     ; y must be set accordingly at this point
     jsr c_stash

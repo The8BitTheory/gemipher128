@@ -312,7 +312,7 @@ main
 ;    lda #'X'
 ;    jsr bsout
     jsr recoverZp
-    rts
+    jmp enableBasicRom
     nop ; only for debugging purposes to give breakpoints a safe spot
 
 ; ---------------------
