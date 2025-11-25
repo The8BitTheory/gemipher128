@@ -49,7 +49,6 @@ continueCopyToVram     ; when we left off before due to vram full
     jsr AY_to_vdc_regs_18_19
     ldx #31 ; VRAM register
     stx vdc_reg
-    
 
 -   jsr .copyLineToVram
     bcs +
@@ -100,7 +99,6 @@ continueCopyToVram     ; when we left off before due to vram full
     jsr toScreencode
 
 ; write byte to VRAM
-.rtvWrite
     +vdc_sta
     dec .vramLeft
     bne +

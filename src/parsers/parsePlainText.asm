@@ -55,6 +55,7 @@ parsePlainText
     
     ; checking if the line consisted of a single .
 +   lda zp_visibleLength
+    jmp ++  ; disable check for single .
     cmp #1
     bne ++
     ; check if we found an end character (single . on a line)

@@ -374,7 +374,15 @@ main
     cmp zp_lastVramContentLine
     bcc +
 
-    jmp .getUserinput   ; yes. don't do anything, get next input from user
+    ;yes, last line. now check, if RAM holds more lines.
+    lda zp_lastVramContentLine+1
+    cmp zp_linecount+1
+    bcc .loadNextDataIntoVram
+    lda zp_lastVramContentLine
+    cmp zp_linecount
+    bcc .loadNextDataIntoVram
+
+    jmp .getUserinput   ; no. don't do anything, get next input from user
 
 +   lda zp_scrollModeCrsr
     bne +
@@ -386,6 +394,28 @@ main
     inc zp_linenumber_start+1
 +   jmp .updateDisplay
 
+.loadNextDataIntoVram
+    lda zp_pageType
+    cmp #$30    ;text file
+    bne +
+    lda #3
+    sta zp_linkTableIncr
+    jsr copyTextToVram
+    lda #1
+    sta zp_scrollModeCrsr
+    jmp .doneLoadOther
+
++   cmp #$31    ;gopher file
+    bne .doneLoadOther
+    lda #9
+    sta zp_linkTableIncr
+    jsr copyVisibleContentToVram
+    lda #0
+    sta zp_scrollModeCrsr
+
+.doneLoadOther
+    jmp .getUserinput
+    nop
 
 .tryCursorUp
     lda zp_scrollModeCrsr
@@ -439,7 +469,7 @@ main
     sbc zp_linenumber_start
     sta zp_tempCalc
     lda zp_tempCalc+1
-    sbc #0
+    sbc zp_linenumber_start+1
     sta zp_tempCalc+1
 
     lda zp_tempCalc

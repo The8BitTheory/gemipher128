@@ -30,7 +30,14 @@ copyVisibleContentToVram
     sta zp_contentBank
     
     jsr initLinkTableAddress
+
+    clc
+    lda zp_linecount
+    sta .linesLeftToCopy
+    lda zp_linecount+1
+    sta .linesLeftToCopy+1
     
+;continueCopyToVram     ; when we left off before due to vram full   
     lda #<VRAM_CONTENT
     sta zp_vram_content_addr
     lda #>VRAM_CONTENT
@@ -43,17 +50,17 @@ copyVisibleContentToVram
     ldx #31 ; VRAM register
     stx vdc_reg
 
-    ; load type
-    ldx zp_linecount
-    stx zp_tempX
 -   jsr .copyLineToVram
+    bcs +
 
     jsr .incLineNumber
-
-    dec zp_tempX
+    
+    dec .linesLeftToCopy
     bne -
+    dec .linesLeftToCopy+1
+    bpl -
 
-    rts
++   rts
 
 .copyLineToVram
     ldy #0
@@ -100,12 +107,20 @@ copyVisibleContentToVram
     jsr toScreencode
 
 ; write byte to VRAM
-.rtvWrite
     +vdc_sta
-	jmp -
+    dec .vramLeft
+    bne +
+    dec .vramLeft +1
+    bpl +
+    sec
+    rts ; no more vram left. leave
+
++   dec zp_visibleLength
+    bne -
 
 .rtvDone
-    jmp complex_instruction_shared_exit
+    clc
+    rts
 
 
 .incLineNumber
