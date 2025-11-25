@@ -56,16 +56,31 @@ parsePlainText
     bne +
     inc zp_linecount+1
     
+    ; checking if the line consisted of a single .
 +   lda zp_visibleLength
     cmp #1
+    bne ++
+    ; check if we found an end character (single . on a line)
+    jsr .storeValues
+
+    ; we need to go back 3 characters (parsing pointer is already after line break at this point)
+    sec
+    lda zp_contentAddress
+    sbc #3
+    sta zp_contentAddress
+    bcs +
+    dec zp_contentAddress+1
+
++   jsr .readNextByte
+    cmp #'.'        ;if we find a single dot on a line, this is the end of the file
     bne +
-;    lda zp_tempA
-;    cmp #'.'
-;    bne +
+    jsr .recoverValues  ; clean the campground
+    jmp .doneParse   ; yes. we're done
 
-;    jmp .doneParse  ;if we find a single dot on a line, this is the end of the file
-
-+   jsr .storeValueInLinkTable
+    ; no. revert to stored values
++   jsr .recoverValues  ; clean the campground
+    lda zp_visibleLength
+++  jsr .storeValueInLinkTable
     lda #0
     sta zp_visibleLength
     jmp .parseLine
@@ -73,6 +88,28 @@ parsePlainText
 .doneParse
     rts
     nop
+
+.storeValues
+    lda zp_contentAddress
+    sta .temp4
+    lda zp_contentAddress+1
+    sta .temp4+1
+    lda .leftToParse
+    sta .temp4+2
+    lda .leftToParse+1
+    sta .temp4+3
+    rts
+
+.recoverValues
+    lda .temp4
+    sta zp_contentAddress
+    lda .temp4+1
+    sta zp_contentAddress+1
+    lda .temp4+2
+    sta .leftToParse
+    lda .temp4+3
+    sta .leftToParse+1
+    rts
 
 .readNextByte
     ; read from bank 1
@@ -102,6 +139,25 @@ parsePlainText
 +   clc ; clear carry means we still have data left
     pla
     rts
+
+.checkEndChar
+; store values for if we're not at the end
+    lda zp_contentAddress
+    sta .temp4
+    lda zp_contentAddress+1
+    sta .temp4+1
+    lda .leftToParse
+    sta .temp4+2
+    lda .leftToParse+1
+    sta .temp4+3
+
+    jsr .readNextByte
+    cmp #'.'
+    bne +
+
+    jmp .doneParse  ;if we find a single dot on a line, this is the end of the file
+
+
 
 .storeValueInLinkTable
     ldy #0
@@ -171,3 +227,4 @@ parsePlainText
     jmp initLinkTableAddress
 
 .leftToParse    !word 0
+.temp4          !word 0,0
