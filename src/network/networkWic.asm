@@ -407,7 +407,7 @@ availableResponse   !word 0
 writeResponse       !word 0
 openResponse        !word 0
 
-packBytes           !byte 0
+packBytes           !byte 0     ; remaining bytes in this data package (240 bytes each, afaik)
 connectResponse     !byte 0
 statusResponse      !fill 40
 

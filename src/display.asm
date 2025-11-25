@@ -119,10 +119,12 @@ displayTextmode
 
     lda zp_pageType
     cmp #$31
-    bne drawCursor
+    bne +
+    jsr .doGopherAttributeRam
+    jmp drawCursor
 
-    jsr .doAttributeRam
-
+; handle attribute-ram for plain-text here (ie clear screen with black text)
++   jsr .doTextAttributeRam
 
 drawCursor
     lda zp_scrollModeCrsr
@@ -283,7 +285,27 @@ drawCursor
 
     rts
 
-.doAttributeRam
+.doTextAttributeRam
+    ; clear BLOCK COPY register bit to get BLOCK WRITE:
+    ldx #24
+    jsr vdc_reg_X_to_A
+    and #$7f
+    jsr A_to_vdc_reg_X
+
+; set lines 1 - 23 to charset1, text black data
+; screen-ram
+    lda #%10000000
+    ldy #$50
+    ldx #$08
+    jsr A_to_vram_XXYY
+
+    ;set count
+    lda #$30    ;lowbyte
+    ldy #$07    ;highbyte
+    jmp vdc_do_YYAA_cycles
+
+
+.doGopherAttributeRam
 ; write to attribute ram
 ;  we don't write attribute ram with content lines, as we'd lose the auto-increment feature of the vdc chip
 ;  also, writing content lines might start over if longer lines are involved.
@@ -316,13 +338,6 @@ drawCursor
     jsr vdc_reg_X_to_A
     and #$7f
     jsr A_to_vdc_reg_X
-
-; set vram address to second line,second character (this is where content display starts)
-    ;ldy #81
-    ;sty zp_vram_screenram
-    ;lda #08
-    ;sta zp_vram_screenram+1
-    ;jsr AY_to_vdc_regs_18_19
 
 -   jsr .readLineType
     cmp #$69 ; info line

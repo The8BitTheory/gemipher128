@@ -85,12 +85,7 @@ continueCopyToVram     ; when we left off before due to vram full
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp
     
-    jsr .myRtv
-
-    rts
-    nop
-
-.myRtv   ; copy RAM to VRAM
+; copy RAM to VRAM
     ldy #0
     
 -   ldx zp_contentBank
@@ -119,7 +114,7 @@ continueCopyToVram     ; when we left off before due to vram full
 
 .rtvDone
     clc
-    jmp complex_instruction_shared_exit
+    rts
 
 
 .incLineNumber
