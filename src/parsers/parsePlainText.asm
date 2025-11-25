@@ -42,6 +42,8 @@ parsePlainText
     bcs .doneParse
     cmp #$0d    ;line break?
     beq +
+    cmp #$0a    ; other line break
+    beq .finishLine
     jmp .toNext
 +   jsr .readNextByte
     cmp #$0a
