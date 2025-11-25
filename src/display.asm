@@ -52,7 +52,7 @@ displayTextmode
     lda zp_linecount+1
     beq +
     lda #VISIBLE_LINES
-    sta zp_tempX
+    sta zp_tempX    ; nr of visible lines on screen. is decremented as lines are printed
     jmp ++
 
 ; only one byte line-count, check if we have less lines than what fits the screen
@@ -60,7 +60,7 @@ displayTextmode
     cpx zp_linecount
     bcc +
     ldx zp_linecount
-+   stx zp_tempX
++   stx zp_tempX    ; nr of visible lines on screen. is decremented as lines are printed
 
 ; clear screen sets register bit to block fill and vram address (18/19 to $0000)
 ; this also waits for the next vblank period
@@ -466,9 +466,13 @@ removeCursor
 
     ldx zp_linenumber_start
     bne +
+    ldy zp_linenumber_start+1
+    bne +
     rts
 
 +   stx zp_tempX
+    ldy zp_linenumber_start+1
+    sty zp_tempY
 
     ; read contentlength
 -   jsr .readVisibleLength
@@ -482,6 +486,8 @@ removeCursor
 +   jsr .incLinkTableReadPosition
     dec zp_tempX
     bne -
+    dec zp_tempY
+    bpl -
     rts
 
 .incLinkTableReadPosition

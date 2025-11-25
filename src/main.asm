@@ -37,7 +37,7 @@ zp_tempX = $0e      ; used to hold x register when working with FAR routines
 zp_tempY = $0f    ; used to hold y register when working with FAR routines
 
 zp_contentBank  = $10   
-zp_linkTablePosition = $11 ; and $12
+zp_linkTablePosition = $11 ; and $12. contains one 2-byte entry per textline
 zp_fastmode = $13
 
 ; used by parseGopher.asm
@@ -375,12 +375,12 @@ main
     bcc +
 
     ;yes, last line. now check, if RAM holds more lines.
-    lda zp_lastVramContentLine+1
-    cmp zp_linecount+1
-    bcc .loadNextDataIntoVram
-    lda zp_lastVramContentLine
-    cmp zp_linecount
-    bcc .loadNextDataIntoVram
+    ;lda zp_lastVramContentLine+1
+    ;cmp zp_linecount+1
+    ;bcc .loadNextDataIntoVram
+    ;lda zp_lastVramContentLine
+    ;cmp zp_linecount
+    ;bcc .loadNextDataIntoVram
 
     jmp .getUserinput   ; no. don't do anything, get next input from user
 
