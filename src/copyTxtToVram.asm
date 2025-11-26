@@ -50,7 +50,13 @@ continueCopyToVram     ; when we left off before due to vram full
     ldx #31 ; VRAM register
     stx vdc_reg
 
--   jsr .copyLineToVram
+    lda #<VRAM_LINE_TABLE
+    sta zp_vramLineOffsets
+    lda #>VRAM_LINE_TABLE
+    sta zp_vramLineOffsets+1
+
+-   jsr writeVramLineOffset
+    jsr .copyLineToVram
     bcs +
 
     jsr .incLineNumber
@@ -107,6 +113,13 @@ continueCopyToVram     ; when we left off before due to vram full
     sec
     rts ; no more vram left. leave
 
+    ; increase vram address.
+    ; we use this to mirror the actual vram address
+    ; we could read from vdc regs, but that would auto-increment them
++   inc zp_vram_content_addr
+    bne +
+    inc zp_vram_content_addr+1
+
 +   dec zp_visibleLength
     bne -
 
@@ -114,6 +127,22 @@ continueCopyToVram     ; when we left off before due to vram full
     clc
     rts
 
+writeVramLineOffset
+    ldy #0
+    lda zp_vram_content_addr
+    sta (zp_vramLineOffsets),y
+    iny
+    lda zp_vram_content_addr+1
+    sta (zp_vramLineOffsets),y
+
+    clc
+    lda zp_vramLineOffsets
+    adc #2
+    sta zp_vramLineOffsets
+    bcc +
+    inc zp_vramLineOffsets+1
+
++   rts
 
 .incLineNumber
     clc

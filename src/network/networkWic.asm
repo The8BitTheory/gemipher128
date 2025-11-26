@@ -32,6 +32,57 @@ setInitialGopherHostSelector
     sta zp_hostSelBank
     jmp  ++
 
+setBkm1GopherHostSelector
+    lda #$31
+    sta zp_currentType
+
+    lda #0
+    sta zp_scrollModeCrsr
+    sta zp_navModeHistory
+
+    lda #<bkm1Server
+    sta zp_currentHostPtr
+    lda #>bkm1Server
+    sta zp_currentHostPtr+1
+
+    lda #<startPort
+    sta zp_currentPortPtr
+    lda #>startPort
+    sta zp_currentPortPtr+1
+
+    lda #<bkm1Selector
+    sta zp_currentSelectorPtr
+    lda #>bkm1Selector
+    sta zp_currentSelectorPtr+1
+
+    rts
+
+setBkm2GopherHostSelector
+    lda #$30
+    sta zp_currentType
+
+    lda #1
+    sta zp_scrollModeCrsr
+
+    lda #<bkm2Server
+    sta zp_currentHostPtr
+    lda #>bkm2Server
+    sta zp_currentHostPtr+1
+
+    lda #<startPort
+    sta zp_currentPortPtr
+    lda #>startPort
+    sta zp_currentPortPtr+1
+
+    lda #<bkm2Selector
+    sta zp_currentSelectorPtr
+    lda #>bkm2Selector
+    sta zp_currentSelectorPtr+1
+
+    ldx #0
+    stx zp_navModeHistory
+    rts
+
 setNewGopherHostSelector
 ;    jsr pushToHistoryStack ; here we'll need to write cursor position and stuff to history
 
@@ -416,3 +467,11 @@ response            !fill 256
 startGopher         !text "gopher.floodgap.com",$9
 startPort           !text "70\r\n"
 startSelector       !text "\r\n",$9
+
+bkm1Server          !text "gopher.floodgap.com",$9
+bkm1Selector        !text "/archive/info-mac/game",$9
+bkm1Type            !byte $31
+
+bkm2Server          !text "gopher.floodgap.com",$9
+bkm2Selector        !text "/archive/info-mac/help/mirror-list.txt", $9
+bkm2Type            !byte $30

@@ -6,6 +6,7 @@
 ; $1.f700 - $1.ff00: link table -> 2 kB
 
 ; configuration constants
+VRAM_LINE_TABLE = $a800 ; offsets to the lines in vram. written by copyx.asm, read by display.asm
 
 HISTORY_TABLE = $b000   ; room for 128 entries
 HISTORY_STACK = $b100   
@@ -14,7 +15,7 @@ HISTORY_STACK = $b100
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
 
-LINKTABLE_ADDRESS = $f000
+LINKTABLE_ADDRESS = $e000
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
 VISIBLE_LINES = 23
@@ -37,7 +38,7 @@ zp_tempX = $0e      ; used to hold x register when working with FAR routines
 zp_tempY = $0f    ; used to hold y register when working with FAR routines
 
 zp_contentBank  = $10   
-zp_linkTablePosition = $11 ; and $12. contains one 2-byte entry per textline
+zp_linkTablePosition = $11 ; and $12. contains one 3 or 9-byte entry per textline. starting at $1:f000
 zp_fastmode = $13
 
 ; used by parseGopher.asm
@@ -46,7 +47,7 @@ zp_visibleLength = $14  ; length of visible text in current line. also used by d
 ; used by display.asm
 ; textdisplay
 ; also using zp_visibleLength
-zp_currentLinkTablePtr = $15; and $16
+zp_currentLinkTablePtr = $15; and $16   ; where the entry at linkTablePosition points to (related to $1:0400)
 zp_vram_content_addr = $17 ; and $18 ;  also used by copytovram.asm
 zp_vram_screenram = $189 ; and $1a
 zp_linenumber_start = $1b   ; and $1c ; this is the scrolling position. ie the number of the first visible line (in context of the document, not the visible lines)
@@ -87,6 +88,8 @@ zp_lastVramContentLine = $3b ; and $3c. this is used to stop scrolling and load 
 zp_memPtr   = $3d ; and $3e. can be used for any temporary indirect read or write memory operation
 zp_pageType = $3f ; keeps type of current page persistently loaded. we run into conflicts with "type of current cursor positon" otherwise
 zp_tempA = $40 ; used to keep temporary value when pha/pla is not sufficient
+
+zp_vramLineOffsets = $41 ; and $42
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -267,6 +270,16 @@ main
     sta zp_navModeHistory
     jmp .nextHistoryPage
 
++   cmp #$31 ; 1 . first bookmark
+    bne +
+    jsr setBkm1GopherHostSelector
+    jmp .prepareRequest
+
++   cmp #$32 ; 2 . second bookmark
+    bne +
+    jsr setBkm2GopherHostSelector
+    jmp .prepareRequest
+
 +   cmp #13 ;return key
     bne ++
     lda #1
@@ -304,14 +317,15 @@ main
     jmp -
 
 ++  cmp #'X'
-    bne -
+    beq +
+    jmp .getUserinput
 
 ; we're done, clean the campground before leaving
 ;    lda #27
 ;    jsr bsout
 ;    lda #'X'
 ;    jsr bsout
-    jsr recoverZp
++   jsr recoverZp
     jmp enableBasicRom
     nop ; only for debugging purposes to give breakpoints a safe spot
 
@@ -365,6 +379,7 @@ main
     adc zp_linenumber_start
     sta zp_tempCalc
     lda zp_linenumber_start+1
+    adc #0
     sta zp_tempCalc+1
 
     lda zp_tempCalc+1
@@ -443,11 +458,19 @@ main
 +   jmp drawCursor
 
 .tryLineScrollUp
+    lda zp_linenumber_start+1
+    bne +
     lda zp_linenumber_start
     bne +
     jmp .getUserinput
-+   dec zp_linenumber_start
-    sec
++   sec
+    lda zp_linenumber_start
+    sbc #1
+    sta zp_linenumber_start
+    bcs +
+    dec zp_linenumber_start+1
+
++   sec
     lda zp_cursorLineContent
     sbc #1
     sta zp_cursorLineContent

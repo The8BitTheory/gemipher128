@@ -27,7 +27,7 @@ displayTextmode
     jsr initLinkTableAddress
 
 ; read length of current line from link-table
-+   lda #zp_linkTablePosition
+    lda #zp_linkTablePosition
     sta c_fetch_zp
 
 ; vram target to zero
@@ -76,6 +76,12 @@ displayTextmode
 ; target address
     jsr .writeVramAddress
 
+; what .gotoLineNumber would do
+    ; beginning of fram line offsets
+
+
+    
+
 ; block copy source (HB/LB order)
     ldy zp_vram_content_addr
     lda zp_vram_content_addr+1
@@ -88,6 +94,13 @@ displayTextmode
 ;-----------------------------------------
 ; here, printing the line is triggered 
 ;-----------------------------------------
+; displaying a screen works like this:
+; text is stored in $1000 onwards. 
+; visible screen is at $0000
+; block copy takes text from $1000 (or higher, for increasing lines) and copies to screen-ram
+; for each line, screen-ram is increased by 80
+; the block-copy source increases automatically with each copy operation
+
 -   jsr .displayLine
     bcc ++
     lda zp_scrollDirectionUp
@@ -313,27 +326,10 @@ drawCursor
 +   ldx #0
     stx zp_tempX    ; we use zp_tempY to count the current displayline
    
-    clc
-    lda #<LINKTABLE_ADDRESS
-    ;adc zp_linenumber_start
-    sta zp_currentLinkTablePtr
-    lda #>LINKTABLE_ADDRESS
-    ;adc zp_linenumber_start+1
-    sta zp_currentLinkTablePtr+1
-
-    ldx zp_linenumber_start
-    beq ++
--   clc
-    lda zp_currentLinkTablePtr
-    adc #9
-    sta zp_currentLinkTablePtr
-    bcc +
-    inc zp_currentLinkTablePtr+1
-+   dex
-    bne -
+    jsr .resetLinkTablePosition
 
     ; clear BLOCK COPY register bit to get BLOCK WRITE:
-++  ldx #24
+    ldx #24
     jsr vdc_reg_X_to_A
     and #$7f
     jsr A_to_vdc_reg_X
@@ -348,14 +344,15 @@ drawCursor
 
 
 .incAddresses
-    clc
-    lda zp_currentLinkTablePtr
-    adc #9
-    sta zp_currentLinkTablePtr
-    bcc +
-    inc zp_currentLinkTablePtr+1
+    ;clc
+    ;lda zp_currentLinkTablePtr
+    ;adc #9
+    ;sta zp_currentLinkTablePtr
+    ;bcc +
+    ;inc zp_currentLinkTablePtr+1
+    jsr .incLinkTableReadPosition
 
-+   inc zp_tempX
+    inc zp_tempX
     ldx zp_tempX
     cpx zp_lastLine
     bne -
@@ -436,7 +433,22 @@ drawCursor
     jsr .writeHexValue
     lda zp_linenumber_start
     ldy #$83
-    jmp .writeHexValue
+    jsr .writeHexValue
+
+    lda zp_linkTablePosition+1
+    ldy #$87
+    jsr .writeHexValue
+    lda zp_linkTablePosition
+    ldy #$89
+    jsr .writeHexValue
+
+    ;lda zp_tempCalc+1
+    ;ldy #$8c
+    ;jsr .writeHexValue
+    ;lda zp_tempCalc
+    ;ldy #$8
+    ;jsr .writeHexValue
+
     rts
 
 .makeItHex
@@ -459,35 +471,55 @@ removeCursor
     jmp A_to_vram_XXYY
 
 .gotoLineNumber
-    lda #<VRAM_CONTENT
+; go to the right vram offset
+    lda #<VRAM_LINE_TABLE
+    sta zp_vramLineOffsets
+    lda #>VRAM_LINE_TABLE
+    sta zp_vramLineOffsets+1
+
+    ; linecount x 2 should be the offset in the lineoffset table
+    lda zp_linenumber_start
+    asl
+    adc zp_vramLineOffsets
+    sta zp_vramLineOffsets
+
+    lda zp_linenumber_start+1
+    rol
+    adc zp_vramLineOffsets+1
+    sta zp_vramLineOffsets+1
+
+    clc
+    ldy #0
+    lda (zp_vramLineOffsets),y
     sta zp_vram_content_addr
-    lda #>VRAM_CONTENT
+    iny
+    lda (zp_vramLineOffsets),y
     sta zp_vram_content_addr+1
 
-    ldx zp_linenumber_start
-    bne +
-    ldy zp_linenumber_start+1
-    bne +
+
+; go to the right ram-content offset (increments of 9 or 3, depending on file type)
+    jsr .resetLinkTablePosition
     rts
+    nop
 
-+   stx zp_tempX
-    ldy zp_linenumber_start+1
-    sty zp_tempY
+; this sets the zp_linkTablePosition value to the first byte of the topmost line on screen
+.resetLinkTablePosition
+    lda zp_linenumber_start
+    sta zp_tempCalc
+    lda zp_linenumber_start+1
+    sta zp_tempCalc+1
+    lda zp_linkTableIncr
+    sta zp_tempX
+    jsr .multiply
 
-    ; read contentlength
--   jsr .readVisibleLength
-    ; A holds visible length of current line
     clc
-    adc zp_vram_content_addr
-    sta zp_vram_content_addr
-    bcc +
-    inc zp_vram_content_addr+1
+    adc #<LINKTABLE_ADDRESS
+    sta zp_linkTablePosition
 
-+   jsr .incLinkTableReadPosition
-    dec zp_tempX
-    bne -
-    dec zp_tempY
-    bpl -
+    tya
+    adc #>LINKTABLE_ADDRESS
+    sta zp_linkTablePosition+1
+
     rts
 
 .incLinkTableReadPosition
@@ -497,7 +529,9 @@ removeCursor
     sta zp_linkTablePosition
     bcc +
     inc zp_linkTablePosition+1
+    
 +   rts
+    nop
 
 .incOutputLineNumber
     dec zp_tempX
@@ -577,7 +611,10 @@ removeCursor
     rts
 
 .readLineType
-    lda #zp_currentLinkTablePtr
+;    lda c_fetch_zp
+;    pha
+
+    lda #zp_linkTablePosition
     sta c_fetch_zp
 
     ; load line type
@@ -592,6 +629,9 @@ removeCursor
 
     ldy #0
     jsr .fetchFromContentBankOffsetY
+
+;    pla
+;    sta c_fetch_zp
     rts
 
 .setAttributeRamToScreenLine
@@ -804,6 +844,32 @@ writeCurrentGopherToHeadline
     jmp .printHeaderLineUntilTab
     nop
 
+
+.multiply
+    lda #$00
+    tay
+    beq .enterLoop
+
+.doAdd:
+    clc
+    adc zp_tempCalc
+    tax
+
+    tya
+    adc zp_tempCalc+1
+    tay
+    txa
+
+.loop:
+    asl zp_tempCalc
+    rol zp_tempCalc+1
+.enterLoop:  ; accumulating multiply entry point (enter with .A=lo, .Y=hi)
+    lsr zp_tempX
+    bcs .doAdd
+    bne .loop
+
+    rts
+ 
 ; cursorOffsets holds the vram-offset for each cursor position
 ; this is required to keep track of multi-line text. otherwise we'd just go in incs of 80
 ; 25 lines, two bytes each. 23 sould be sufficient, but we can always reduce that
