@@ -442,12 +442,12 @@ drawCursor
     ldy #$89
     jsr .writeHexValue
 
-    ;lda zp_tempCalc+1
-    ;ldy #$8c
-    ;jsr .writeHexValue
-    ;lda zp_tempCalc
-    ;ldy #$8
-    ;jsr .writeHexValue
+;    lda zp_tempCalc+1
+;    ldy #$8c
+;    jsr .writeHexValue
+;    lda zp_tempCalc
+;    ldy #$8e
+;    jsr .writeHexValue
 
     rts
 

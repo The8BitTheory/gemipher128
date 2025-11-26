@@ -50,10 +50,7 @@ copyVisibleContentToVram
     ldx #31 ; VRAM register
     stx vdc_reg
 
-    lda #<VRAM_LINE_TABLE
-    sta zp_vramLineOffsets
-    lda #>VRAM_LINE_TABLE
-    sta zp_vramLineOffsets+1
+    jsr clearVramLineOffsetTable
 
 -   jsr writeVramLineOffset
     jsr .copyLineToVram

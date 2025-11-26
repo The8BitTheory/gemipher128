@@ -50,10 +50,7 @@ continueCopyToVram     ; when we left off before due to vram full
     ldx #31 ; VRAM register
     stx vdc_reg
 
-    lda #<VRAM_LINE_TABLE
-    sta zp_vramLineOffsets
-    lda #>VRAM_LINE_TABLE
-    sta zp_vramLineOffsets+1
+    jsr clearVramLineOffsetTable
 
 -   jsr writeVramLineOffset
     jsr .copyLineToVram
@@ -143,6 +140,28 @@ writeVramLineOffset
     inc zp_vramLineOffsets+1
 
 +   rts
+
+clearVramLineOffsetTable
+    lda #<VRAM_LINE_TABLE
+    sta zp_vramLineOffsets
+    lda #>VRAM_LINE_TABLE
+    sta zp_vramLineOffsets+1
+
+    lda #0
+    ldx #0
+
+-   sta VRAM_LINE_TABLE,x
+    sta VRAM_LINE_TABLE+$100,x
+    sta VRAM_LINE_TABLE+$200,x
+    sta VRAM_LINE_TABLE+$300,x
+    sta VRAM_LINE_TABLE+$400,x
+    sta VRAM_LINE_TABLE+$500,x
+    sta VRAM_LINE_TABLE+$600,x
+    sta VRAM_LINE_TABLE+$700,x
+    dex
+    bne -
+
+    rts
 
 .incLineNumber
     clc
