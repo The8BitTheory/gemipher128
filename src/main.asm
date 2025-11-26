@@ -273,12 +273,14 @@ main
 +   cmp #$31 ; 1 . first bookmark
     bne +
     jsr setBkm1GopherHostSelector
-    jmp .prepareRequest
+    jsr setFromHistory
+    jmp .requestNewContent
 
 +   cmp #$32 ; 2 . second bookmark
     bne +
     jsr setBkm2GopherHostSelector
-    jmp .prepareRequest
+    jsr setFromHistory
+    jmp .requestNewContent
 
 +   cmp #13 ;return key
     bne ++

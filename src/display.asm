@@ -442,12 +442,20 @@ drawCursor
     ldy #$89
     jsr .writeHexValue
 
-;    lda zp_tempCalc+1
-;    ldy #$8c
-;    jsr .writeHexValue
-;    lda zp_tempCalc
-;    ldy #$8e
-;    jsr .writeHexValue
+    lda zp_vramLineOffsets+1
+    ldy #$8c
+    jsr .writeHexValue
+    lda zp_vramLineOffsets
+    ldy #$8e
+    jsr .writeHexValue
+
+    lda zp_vram_content_addr+1
+    ldy #$91
+    jsr .writeHexValue
+    lda zp_vram_content_addr
+    ldy #$93
+    jsr .writeHexValue
+
 
     rts
 
@@ -472,20 +480,21 @@ removeCursor
 
 .gotoLineNumber
 ; go to the right vram offset
-    lda #<VRAM_LINE_TABLE
-    sta zp_vramLineOffsets
-    lda #>VRAM_LINE_TABLE
-    sta zp_vramLineOffsets+1
-
-    ; linecount x 2 should be the offset in the lineoffset table
     lda zp_linenumber_start
-    asl
-    adc zp_vramLineOffsets
-    sta zp_vramLineOffsets
-
+    sta zp_tempCalc
     lda zp_linenumber_start+1
-    rol
-    adc zp_vramLineOffsets+1
+    sta zp_tempCalc+1
+
+; linecount x 2 should be the offset in the lineoffset table
+    asl zp_tempCalc
+    rol zp_tempCalc+1
+    
+    clc
+    lda zp_tempCalc
+    adc #<VRAM_LINE_TABLE
+    sta zp_vramLineOffsets
+    lda zp_tempCalc+1
+    adc #>VRAM_LINE_TABLE
     sta zp_vramLineOffsets+1
 
     clc

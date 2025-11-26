@@ -33,11 +33,17 @@ setInitialGopherHostSelector
     jmp  ++
 
 setBkm1GopherHostSelector
+    ldx #0
+    lda mmuBankConfig,x
+    sta zp_hostSelBank
+
     lda #$31
     sta zp_currentType
 
     lda #0
     sta zp_scrollModeCrsr
+    
+    lda #1
     sta zp_navModeHistory
 
     lda #<bkm1Server
@@ -58,11 +64,16 @@ setBkm1GopherHostSelector
     rts
 
 setBkm2GopherHostSelector
+    ldx #0
+    lda mmuBankConfig,x
+    sta zp_hostSelBank
+
     lda #$30
     sta zp_currentType
 
     lda #1
     sta zp_scrollModeCrsr
+    sta zp_navModeHistory
 
     lda #<bkm2Server
     sta zp_currentHostPtr
@@ -79,8 +90,6 @@ setBkm2GopherHostSelector
     lda #>bkm2Selector
     sta zp_currentSelectorPtr+1
 
-    ldx #0
-    stx zp_navModeHistory
     rts
 
 setNewGopherHostSelector
@@ -98,6 +107,7 @@ setNewGopherHostSelector
 
 ; we're navigating from a history entry
 ; pointers go to bank 0
+setFromHistory
 +   ldx #0
     lda mmuBankConfig,x
     sta zp_hostSelBank
