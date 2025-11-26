@@ -173,35 +173,27 @@ drawCursor
     jsr .drawCurrentCursorLine ; writes content line in status line
 
 .drawStatusLine
-    ; this is using jsr bsout right now, should be changed to direct VRAM writes later (for consistency with charset, etc)
     lda c_fetch_zp
     pha
 
-    lda #0
-    sta zp_currentLinkTablePtr+1
-
     lda zp_cursorLineContent
-    sta zp_currentLinkTablePtr
-
-    ldx #8
--   clc
-    lda zp_currentLinkTablePtr
-    adc zp_cursorLineContent
-    sta zp_currentLinkTablePtr
-    bcc +
-    inc zp_currentLinkTablePtr+1
-+   dex
-    bne -
+    sta zp_tempCalc
+    lda zp_cursorLineContent+1
+    sta zp_tempCalc+1
+    lda zp_linkTableIncr
+    sta zp_tempX
+    jsr .multiply
 
     clc
     adc #<LINKTABLE_ADDRESS
-    sta zp_currentLinkTablePtr
-    
-    lda #>LINKTABLE_ADDRESS
-    adc zp_currentLinkTablePtr+1
-    sta zp_currentLinkTablePtr+1
+    sta zp_linkTablePosition
 
-    lda #zp_currentLinkTablePtr
+    tya
+    adc #>LINKTABLE_ADDRESS
+    sta zp_linkTablePosition+1
+
+
+    lda #zp_linkTablePosition
     sta c_fetch_zp
 
     ; load line type
@@ -233,21 +225,21 @@ drawCursor
     ldy #0
     ldx zp_contentBank
     jsr c_fetch
-;    pha
     sta zp_currentType
 
-    ldy #64
+    ldy #48
     sty zp_tempX
 
-    lda #$07
-    ldy #$86
-    jsr AY_to_vdc_regs_18_19
+;    lda #$07
+;    ldy #$80
+;    jsr AY_to_vdc_regs_18_19
     
-    lda zp_currentType
-    jsr toScreencode
-    ldx #31
-    jsr A_to_vdc_reg_X
+;    lda zp_pageType
+;    jsr toScreencode
+;    ldx #31
+;    jsr A_to_vdc_reg_X
 
+    lda zp_currentType
     cmp #$30 ;0 -> textfile
     beq +
     cmp #$31 ;1 -> directory
@@ -255,13 +247,13 @@ drawCursor
     jmp ++
 
 +   lda #$07
-    ldy #$87
+    ldy #$a1
     jsr AY_to_vdc_regs_18_19
 
-    lda #' '
-    jsr toScreencode
-    ldx #31
-    jsr A_to_vdc_reg_X
+;    lda #' '
+;    jsr toScreencode
+;    ldx #31
+;    jsr A_to_vdc_reg_X
 
     lda #zp_currentHostPtr
     sta c_fetch_zp
@@ -294,8 +286,9 @@ drawCursor
 
 +   pla
     sta c_fetch_zp
-
-    rts
+    jmp .drawPlainTextStatusline
+    ;rts
+    
 
 .doTextAttributeRam
     ; clear BLOCK COPY register bit to get BLOCK WRITE:
@@ -361,10 +354,10 @@ drawCursor
 
 .drawCurrentCursorLine
     lda zp_cursorLineContent+1
-    ldy #$81
+    ldy #$9c
     jsr .writeHexValue
     lda zp_cursorLineContent
-    ldy #$83
+    ldy #$9e
     jmp .writeHexValue
 
 .writeHexValue
@@ -436,26 +429,32 @@ drawCursor
     jsr .writeHexValue
 
     lda zp_linkTablePosition+1
-    ldy #$87
+    ldy #$86
     jsr .writeHexValue
     lda zp_linkTablePosition
-    ldy #$89
+    ldy #$88
     jsr .writeHexValue
 
     lda zp_vramLineOffsets+1
-    ldy #$8c
+    ldy #$8b
     jsr .writeHexValue
     lda zp_vramLineOffsets
-    ldy #$8e
+    ldy #$8d
     jsr .writeHexValue
 
     lda zp_vram_content_addr+1
-    ldy #$91
+    ldy #$90
     jsr .writeHexValue
     lda zp_vram_content_addr
-    ldy #$93
+    ldy #$92
     jsr .writeHexValue
 
+    lda zp_contentAddress+1
+    ldy #$95
+    jsr .writeHexValue
+    lda zp_contentAddress
+    ldy #$97
+    jsr .writeHexValue
 
     rts
 
