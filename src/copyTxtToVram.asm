@@ -64,9 +64,9 @@ continueCopyToVram     ; when we left off before due to vram full
     ldx #31 ; VRAM register
     stx vdc_reg
 
-    lda zp_cursorLineContent
+    lda zp_linenumber_start
     sta zp_firstVramContentLine
-    lda zp_cursorLineContent+1
+    lda zp_linenumber_start+1
     sta zp_firstVramContentLine+1
 
     jsr clearVramLineOffsetTable

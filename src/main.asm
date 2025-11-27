@@ -198,6 +198,9 @@ main
 
 .requestNewContent
     jsr requestContent
+
+    ; set the cursor line to zero here, that's important for calculating the right screen area for display
+    jsr .setToFirstContentLine
     
     lda #$93 ; clear screen
     jsr bsout
@@ -310,9 +313,6 @@ main
 +   cmp #13 ;return key
     bne ++
     
-    ; set the cursor line to zero here, that's important for calculating the right screen area for display
-    jsr .setToFirstContentLine
-
     lda #1
     sta zp_navModeHistory   ; not navigating in history
     lda zp_currentType
@@ -454,18 +454,22 @@ main
     ; we have reached the end of vram, but have more in RAM
     ; lines left to copy stays as it is. (as it holds the remaining number of lines to copy)
     ; start line of copy (current content line minus 23) (vram_content_addr) zp_linkTablePosition minus 23xincr (3 or 9)
-    
-;    sec
-;    lda zp_linenumber_start
-;    sbc #VISIBLE_LINES
-;    sta zp_linenumber_start
-;    bcs +
-;    dec zp_linenumber_start+1
-
+    ; offset of line to display (in vramLineOffsets) and length of each line (linkTablePosition) are read
+    ;  from different sources with different step increments (3/9 in linkTablePosition vs 2 in vramLineOffsets)
+    ;  linkTablePosition stays in place, as this is built when loading the file
+    ;  vramLineOffsets is to be re-built when copying the new data into vram
 +   lda zp_pageType
     cmp #$30    ;text file
-    bne +
-    lda #3
+    bne ++
+    
+    clc
+    lda zp_linenumber_start
+    adc #22
+    sta zp_linenumber_start
+    bcc +
+    inc zp_linenumber_start+1
+
++   lda #3
     sta zp_linkTableIncr
     jsr .calculateLinkTableOffset
 
@@ -474,7 +478,7 @@ main
     sta zp_scrollModeCrsr
     jmp .doneLoadOther
 
-+   cmp #$31    ;gopher file
+++  cmp #$31    ;gopher file
     bne .doneLoadOther
     lda #9
     sta zp_linkTableIncr
