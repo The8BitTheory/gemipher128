@@ -90,6 +90,7 @@ zp_pageType = $3f ; keeps type of current page persistently loaded. we run into 
 zp_tempA = $40 ; used to keep temporary value when pha/pla is not sufficient
 
 zp_vramLineOffsets = $41 ; and $42
+zp_firstVramContentLine = $43 ; and $44
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -112,6 +113,8 @@ b_slow = $77c4
 k_plot = $fff0
 k_primm = $ff7d
 k_getin = $eeeb
+;k_scnkey= $c55d
+k_scnkey= $c651
 bsout = $ffd2
 
 !macro print textaddress {
@@ -134,6 +137,27 @@ bsout = $ffd2
 *=$1c01
 !byte $0b,$1c,$b5,$07,$9e,$20,$37,$34,$32,$34,$00,$00,$00
 
+; these are the mappings from basic's bank command to the actual mmu config-register values
+mmuBankConfig       !byte $3F,$7F,$BF,$FF,$16,$56,$96,$D6,$2A,$6A,$AA,$EA,$06,$0A,$01,$00
+
+; this is used to keep an original copy of the zero-page range we're using. is restored when program ends
+zpStore             !fill 134
+keyStore            !fill 10    ;keeps values $1000-$1009
+
+fileOpError         !byte 0
+filenameCharset     !pet "latin9ui.char"
+filenameLength=*-filenameCharset
+
+; used by display.asm
+; cursorOffsets holds the vram-offset for each cursor position
+; this is required to keep track of multi-line text. otherwise we'd just go in incs of 80
+; 25 lines, two bytes each. 23 sould be sufficient, but we can always reduce that
+cursorOffsets  !word 80    ; first offset is always 80 (as long as we're starting in second screenline)
+                !fill 48
+
+retries        !byte 0
+
+
 *=$1d00
 main
 ;    jsr k_primm
@@ -152,6 +176,10 @@ main
 
     jsr initVdc
 
+    jsr detectAndInitializeWic64
+
+    
+
 ; disable case switching via Shift-Commodore
     lda #11
     jsr bsout
@@ -159,20 +187,20 @@ main
 ; switch to lower-case charset
     lda #14
     jsr bsout
-
     
-    jsr initHistoryStack
     jsr disableBasicRom
+    jsr initHistoryStack
 
 ; load from network
-    jsr detectAndInitializeWic64
     jsr setInitialGopherHostSelector
     lda #1
     sta zp_navModeHistory
 
 .requestNewContent
+    jsr disableBasicRom
     jsr requestContent
-
+    jsr disableBasicRom
+    
     lda zp_currentType
     sta zp_pageType
 
@@ -235,6 +263,8 @@ main
 
 .getUserinput
 -   jsr k_getin
+;-   lda 212
+;    cmp #88
     beq -
 
     cmp #17     ;cursor down
@@ -284,6 +314,14 @@ main
 
 +   cmp #13 ;return key
     bne ++
+    
+    ; set the cursor line to zero here, that's important for calculating the right screen area for display
+    lda #0
+    sta zp_cursorLineContent
+    sta zp_cursorLineContent+1
+    sta zp_firstVramContentLine
+    sta zp_firstVramContentLine+1
+
     lda #1
     sta zp_navModeHistory   ; not navigating in history
     lda zp_currentType
@@ -386,22 +424,23 @@ main
 
     lda zp_tempCalc+1
     cmp zp_lastVramContentLine+1
-    bcc +   ; 
+    bcc .doLineScrollDown
     lda zp_tempCalc
     cmp zp_lastVramContentLine
-    bcc +
+    bcc .doLineScrollDown
 
     ;yes, last line. now check, if RAM holds more lines.
-    ;lda zp_lastVramContentLine+1
-    ;cmp zp_linecount+1
-    ;bcc .loadNextDataIntoVram
-    ;lda zp_lastVramContentLine
-    ;cmp zp_linecount
-    ;bcc .loadNextDataIntoVram
+    lda zp_lastVramContentLine+1
+    cmp zp_linecount+1
+    bcc .loadNextDataIntoVram
+    lda zp_lastVramContentLine
+    cmp zp_linecount
+    bcc .loadNextDataIntoVram
 
     jmp .getUserinput   ; no. don't do anything, get next input from user
 
-+   lda zp_scrollModeCrsr
+.doLineScrollDown
+    lda zp_scrollModeCrsr
     bne +
     inc zp_cursorLineContent
     bne +
@@ -412,12 +451,25 @@ main
 +   jmp .updateDisplay
 
 .loadNextDataIntoVram
-    lda zp_pageType
+    ; we have reached the end of vram, but have more in RAM
+    ; lines left to copy stays as it is. (as it holds the remaining number of lines to copy)
+    ; start line of copy (current content line minus 23) (vram_content_addr) zp_linkTablePosition minus 23xincr (3 or 9)
+    
+;    sec
+;    lda zp_linenumber_start
+;    sbc #VISIBLE_LINES
+;    sta zp_linenumber_start
+;    bcs +
+;    dec zp_linenumber_start+1
+
++   lda zp_pageType
     cmp #$30    ;text file
     bne +
     lda #3
     sta zp_linkTableIncr
-    jsr copyTextToVram
+    jsr .calculateLinkTableOffset
+
+    jsr continueCopyToVram
     lda #1
     sta zp_scrollModeCrsr
     jmp .doneLoadOther
@@ -426,13 +478,33 @@ main
     bne .doneLoadOther
     lda #9
     sta zp_linkTableIncr
+    
     jsr copyVisibleContentToVram
     lda #0
     sta zp_scrollModeCrsr
 
 .doneLoadOther
-    jmp .getUserinput
+    jmp .doLineScrollDown
     nop
+
+.calculateLinkTableOffset
+    lda zp_linenumber_start
+    sta zp_tempCalc
+    lda zp_linenumber_start+1
+    sta zp_tempCalc+1
+    lda zp_linkTableIncr
+    sta zp_tempX
+    jsr multiply
+
+    clc
+    adc #<LINKTABLE_ADDRESS
+    sta zp_linkTablePosition
+
+    tya
+    adc #>LINKTABLE_ADDRESS
+    sta zp_linkTablePosition+1
+
+    rts
 
 .tryCursorUp
     lda zp_scrollModeCrsr
@@ -581,6 +653,17 @@ saveZp
     inx
     cpx #$8f+1
     bne -
+
+    ldx #0
+    ldy #9
+-   lda $1000,x
+    sta keyStore,x
+    lda #0
+    sta $1000,x
+    inx
+    dey
+    bpl -
+
     rts
 
 recoverZp
@@ -592,29 +675,29 @@ recoverZp
     inx
     cpx #$8f+1
     bne -
+
+    lda #0
+    ldx #0
+    ldy #9
+-   lda keyStore,x
+    sta $1000,x
+    inx
+    dey
+    bpl -
     rts
 
 !src "src/file/load.asm"
 !src "src/vdc.asm"
 !src "src/network/networkWic.asm"
+!src "src/wic64/wic64.asm"
+!src "src/history.asm"
+
 !src "src/parsers/parseGopher.asm"
 !src "src/parsers/parsePlainText.asm"
 !src "src/copytovram.asm"
 !src "src/copyTxtToVram.asm"
 !src "src/display.asm"
-!src "src/wic64/wic64.asm"
-!src "src/history.asm"
 
-; these are the mappings from basic's bank command to the actual mmu config-register values
-mmuBankConfig       !byte $3F,$7F,$BF,$FF,$16,$56,$96,$D6,$2A,$6A,$AA,$EA,$06,$0A,$01,$00
-
-; this is used to keep an original copy of the zero-page range we're using. is restored when program ends
-zpStore             !fill 134
-
-
-fileOpError         !byte 0
-filenameCharset     !pet "latin9ui.char"
-filenameLength=*-filenameCharset
 
 ; memory map
 ; bank 0 - $1c01 programcode

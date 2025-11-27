@@ -17,6 +17,8 @@
 
 copyVisibleContentToVram
     lda #0
+    sta zp_firstVramContentLine
+    sta zp_firstVramContentLine+1
     sta zp_lastVramContentLine
     sta zp_lastVramContentLine+1
     

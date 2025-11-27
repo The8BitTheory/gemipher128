@@ -13,31 +13,44 @@
 
 !zone txtRamToVram
 
-.VRAM_LEFT = 8191
+.VRAM_LEFT = 2047
 
 copyTextToVram
     lda #0
+    sta zp_firstVramContentLine
+    sta zp_firstVramContentLine+1
     sta zp_lastVramContentLine
     sta zp_lastVramContentLine+1
     
-    lda #<.VRAM_LEFT
-    sta .vramLeft
-    lda #>.VRAM_LEFT
-    sta .vramLeft+1
-
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
     sta zp_contentBank
     
-    jsr initLinkTableAddress
-
     clc
     lda zp_linecount
     sta .linesLeftToCopy
     lda zp_linecount+1
     sta .linesLeftToCopy+1
 
+    jsr initLinkTableAddress
+
+    ;inc zp_linenumber_start
+    ;clc
+    ;lda zp_linkTablePosition
+    ;adc #3
+    ;sta zp_linkTablePosition
+    ;bcc continueCopyToVram
+    ;inc zp_linkTablePosition+1
+
 continueCopyToVram     ; when we left off before due to vram full    
+
+    ; vram-left is reset, because we fill it with subsequent data from the beginning
+    lda #<.VRAM_LEFT
+    sta .vramLeft
+    lda #>.VRAM_LEFT
+    sta .vramLeft+1
+
+    ; write to vram from the start
     lda #<VRAM_CONTENT
     sta zp_vram_content_addr
     lda #>VRAM_CONTENT
@@ -46,9 +59,15 @@ continueCopyToVram     ; when we left off before due to vram full
     ldy zp_vram_content_addr
     lda zp_vram_content_addr+1
     
+    ; vram target
     jsr AY_to_vdc_regs_18_19
     ldx #31 ; VRAM register
     stx vdc_reg
+
+    lda zp_cursorLineContent
+    sta zp_firstVramContentLine
+    lda zp_cursorLineContent+1
+    sta zp_firstVramContentLine+1
 
     jsr clearVramLineOffsetTable
 
@@ -91,7 +110,7 @@ continueCopyToVram     ; when we left off before due to vram full
     ldy #0
     
 -   ldx zp_contentBank
-    jsr c_fetch
+    jsr c_fetch     ; read content byte from RAM
     cmp #$0d
     beq .rtvDone
     cmp #$0a
@@ -101,13 +120,14 @@ continueCopyToVram     ; when we left off before due to vram full
 
     jsr toScreencode
 
-; write byte to VRAM
+; write content byte to VRAM
     +vdc_sta
     dec .vramLeft
     bne +
     dec .vramLeft +1
     bpl +
     sec
+
     rts ; no more vram left. leave
 
     ; increase vram address.
@@ -177,4 +197,4 @@ clearVramLineOffsetTable
 +   rts
 
 .vramLeft       !word 0
-.linesLeftToCopy    !word 0
+.linesLeftToCopy    !word 0     ; related to copying from ram to vram. if this is > 0, we have more data to show

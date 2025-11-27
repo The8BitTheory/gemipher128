@@ -8,6 +8,7 @@ wic64_optimize_for_size = 0
 setInitialGopherHostSelector
     lda #$31
     sta zp_currentType
+    sta zp_pageType
 
     lda #0
     sta zp_scrollModeCrsr

@@ -8,10 +8,10 @@ displayTextmode
     ; this is because of we only check scroll-up yes or no. but not "no scroll"
     ; this is a quick and dirty hack to get out of this loop
     ldx #25
-    stx .retries
+    stx retries
 
 .displayTextmodeRestart
-    dec .retries
+    dec retries
     bne +
     rts
 
@@ -75,12 +75,6 @@ displayTextmode
 
 ; target address
     jsr .writeVramAddress
-
-; what .gotoLineNumber would do
-    ; beginning of fram line offsets
-
-
-    
 
 ; block copy source (HB/LB order)
     ldy zp_vram_content_addr
@@ -152,10 +146,10 @@ drawCursor
     adc zp_tempY
     tax
 
-    lda .cursorOffsets,x
+    lda cursorOffsets,x
     sta zp_cursorPosScreen
     inx
-    lda .cursorOffsets,x
+    lda cursorOffsets,x
     sta zp_cursorPosScreen+1
 
     lda #62 ; >
@@ -182,7 +176,7 @@ drawCursor
     sta zp_tempCalc+1
     lda zp_linkTableIncr
     sta zp_tempX
-    jsr .multiply
+    jsr multiply
 
     clc
     adc #<LINKTABLE_ADDRESS
@@ -227,8 +221,7 @@ drawCursor
     jsr c_fetch
     sta zp_currentType
 
-    ldy #48
-    sty zp_tempX
+
 
 ;    lda #$07
 ;    ldy #$80
@@ -239,6 +232,10 @@ drawCursor
 ;    ldx #31
 ;    jsr A_to_vdc_reg_X
 
+    ; this is the counter to print spaces for the rest of the line
+    ldy #38
+    sty zp_tempX
+
     lda zp_currentType
     cmp #$30 ;0 -> textfile
     beq +
@@ -247,7 +244,7 @@ drawCursor
     jmp ++
 
 +   lda #$07
-    ldy #$a1
+    ldy #$aa
     jsr AY_to_vdc_regs_18_19
 
 ;    lda #' '
@@ -275,7 +272,6 @@ drawCursor
     lda zp_tempX
     beq +
 
-
 ++  lda #' '
 -   jsr toScreencode
     ldx #31
@@ -284,10 +280,10 @@ drawCursor
 
     bne -
 
-+   pla
++   jsr .drawPlainTextStatusline
+    pla
     sta c_fetch_zp
-    jmp .drawPlainTextStatusline
-    ;rts
+    rts
     
 
 .doTextAttributeRam
@@ -305,7 +301,7 @@ drawCursor
     jsr A_to_vram_XXYY
 
     ;set count
-    lda #$30    ;lowbyte
+    lda #$2f    ;lowbyte
     ldy #$07    ;highbyte
     jmp vdc_do_YYAA_cycles
 
@@ -337,12 +333,6 @@ drawCursor
 
 
 .incAddresses
-    ;clc
-    ;lda zp_currentLinkTablePtr
-    ;adc #9
-    ;sta zp_currentLinkTablePtr
-    ;bcc +
-    ;inc zp_currentLinkTablePtr+1
     jsr .incLinkTableReadPosition
 
     inc zp_tempX
@@ -354,29 +344,51 @@ drawCursor
 
 .drawCurrentCursorLine
     lda zp_cursorLineContent+1
-    ldy #$9c
+    ldy #$80
     jsr .writeHexValue
     lda zp_cursorLineContent
-    ldy #$9e
+    ldy #$82
     jmp .writeHexValue
 
 .writeHexValue
     pha
-    lsr
-    lsr
-    lsr
-    lsr
-    jsr .makeItHex
+    jsr .hiNybToHex
     ldx #7
     jsr A_to_vram_XXYY
 
     pla
-    and #%00001111
-    jsr .makeItHex
+    jsr .loNybToHex
     ldx #7
     iny
     jmp A_to_vram_XXYY
 
+.hiNybToHex
+    lsr
+    lsr
+    lsr
+    lsr
+    jmp .makeItHex
+
+.loNybToHex
+    and #%00001111
+    jmp .makeItHex
+
+.printAcc
+    ldx #31
+    jmp A_to_vdc_reg_X
+
+; use jsr AY_to_vdc_regs_18_19 to set the vram location of the first character
+.printUntilZero
+    ldy #0
+-   lda (zp_memPtr),y
+    beq +
+    jsr toScreencode
+    ldx #31
+    jsr A_to_vdc_reg_X
+    iny
+    jmp -
+
++   rts
 
 .printHeaderLineUntilTab
     ldy #0
@@ -421,39 +433,101 @@ drawCursor
 
 .drawPlainTextStatusline
     ; draw logical line, total nr of lines, start and end vram offset (from $1000)
+    lda #$07
+    ldy #$80
+    jsr AY_to_vdc_regs_18_19
+
+    lda #<.textLineNr
+    sta zp_memPtr
+    lda #>.textLineNr
+    sta zp_memPtr+1
+
+    jsr .printUntilZero
+
     lda zp_linenumber_start+1
-    ldy #$81
-    jsr .writeHexValue
+    jsr .hiNybToHex
+    jsr .printAcc
+
+    lda zp_linenumber_start+1
+    jsr .loNybToHex
+    jsr .printAcc
+
     lda zp_linenumber_start
-    ldy #$83
-    jsr .writeHexValue
+    jsr .hiNybToHex
+    jsr .printAcc
+
+    lda zp_linenumber_start
+    jsr .loNybToHex
+    jsr .printAcc
+
+    lda #'/'
+    jsr toScreencode
+    jsr .printAcc
+
+    lda zp_lastVramContentLine+1
+    jsr .hiNybToHex
+    jsr .printAcc
+
+    lda zp_lastVramContentLine+1
+    jsr .loNybToHex
+    jsr .printAcc
+
+    lda zp_lastVramContentLine
+    jsr .hiNybToHex
+    jsr .printAcc
+
+    lda zp_lastVramContentLine
+    jsr .loNybToHex
+    jsr .printAcc
+
+    lda #'/'
+    jsr toScreencode
+    jsr .printAcc
+
+    lda zp_linecount+1
+    jsr .hiNybToHex
+    jsr .printAcc
+
+    lda zp_linecount+1
+    jsr .loNybToHex
+    jsr .printAcc
+
+    lda zp_linecount
+    jsr .hiNybToHex
+    jsr .printAcc
+
+    lda zp_linecount
+    jsr .loNybToHex
+    jsr .printAcc
+    
+    ;rts
 
     lda zp_linkTablePosition+1
-    ldy #$86
+    ldy #$97
     jsr .writeHexValue
     lda zp_linkTablePosition
-    ldy #$88
+    ldy #$99
     jsr .writeHexValue
 
     lda zp_vramLineOffsets+1
-    ldy #$8b
+    ldy #$9c
     jsr .writeHexValue
     lda zp_vramLineOffsets
-    ldy #$8d
+    ldy #$9e
     jsr .writeHexValue
 
     lda zp_vram_content_addr+1
-    ldy #$90
+    ldy #$a1
     jsr .writeHexValue
     lda zp_vram_content_addr
-    ldy #$92
+    ldy #$a3
     jsr .writeHexValue
 
     lda zp_contentAddress+1
-    ldy #$95
+    ldy #$a6
     jsr .writeHexValue
     lda zp_contentAddress
-    ldy #$97
+    ldy #$a8
     jsr .writeHexValue
 
     rts
@@ -479,9 +553,12 @@ removeCursor
 
 .gotoLineNumber
 ; go to the right vram offset
+    sec
     lda zp_linenumber_start
+    sbc zp_firstVramContentLine
     sta zp_tempCalc
     lda zp_linenumber_start+1
+    sbc zp_firstVramContentLine+1
     sta zp_tempCalc+1
 
 ; linecount x 2 should be the offset in the lineoffset table
@@ -518,7 +595,7 @@ removeCursor
     sta zp_tempCalc+1
     lda zp_linkTableIncr
     sta zp_tempX
-    jsr .multiply
+    jsr multiply
 
     clc
     adc #<LINKTABLE_ADDRESS
@@ -571,10 +648,10 @@ removeCursor
     sec    
     lda zp_vram_screenram
     sbc #1
-    sta .cursorOffsets,x
+    sta cursorOffsets,x
     inx
     lda zp_vram_screenram+1
-    sta .cursorOffsets,x
+    sta cursorOffsets,x
 
     rts
 
@@ -648,9 +725,9 @@ removeCursor
     adc zp_tempX
     tax
 
-    lda .cursorOffsets,x
+    lda cursorOffsets,x
     sta zp_memPtr
-    lda .cursorOffsets+1,x
+    lda cursorOffsets+1,x
     sta zp_memPtr+1
 
     clc
@@ -853,7 +930,11 @@ writeCurrentGopherToHeadline
     nop
 
 
-.multiply
+multiply
+    lda #%00001110
+    sta $ff00
+
+
     lda #$00
     tay
     beq .enterLoop
@@ -878,10 +959,5 @@ writeCurrentGopherToHeadline
 
     rts
  
-; cursorOffsets holds the vram-offset for each cursor position
-; this is required to keep track of multi-line text. otherwise we'd just go in incs of 80
-; 25 lines, two bytes each. 23 sould be sufficient, but we can always reduce that
-.cursorOffsets  !word 80    ; first offset is always 80 (as long as we're starting in second screenline)
-                !fill 48
 
-.retries        !byte 0
+.textLineNr       !text "LineNr: ",0
