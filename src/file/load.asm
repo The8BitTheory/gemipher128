@@ -1,5 +1,8 @@
+; this is currently only intended to load the charset.
+; if used otherwise, overwriting of existing memory locations might cause problems
+
 !zone loadfile
-load_address = $4000  ; just an example
+load_address = $b000  ; make sure file size doesn't run over 4kb.
 
 loadFromDisk
         lda #1
@@ -26,6 +29,7 @@ loadFromDisk
         ldx #<load_address
         ldy #>load_address
         lda #0
+        
         jsr $ffd5       ;BLOAD
         
         bcs .error

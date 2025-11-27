@@ -752,7 +752,7 @@ swp ; exchange contents of RAM and VRAM
 
 ; arguments: ram-source, vram-target, nr of characters to copy
 vcc ; copy charset from RAM to VRAM
-    jsr remember_mem_conf
+    ;jsr remember_mem_conf
     ; get low byte of RAM pointer into Y and clear base pointer's low byte instead
     ldy arg1
     ldx #0
@@ -794,7 +794,8 @@ vcc ; copy charset from RAM to VRAM
       ; all characters done?
       dec arg3
       bne ---
-    jmp complex_instruction_shared_exit
+      rts
+    ;jmp complex_instruction_shared_exit
 
 .fix_hi   inc arg1 + 1
     jmp .back

@@ -21,7 +21,6 @@ initVdc
     ldx #9
     jsr A_to_vdc_reg_X
 
-
 ; initialize charset
     jsr loadFromDisk
 
@@ -31,7 +30,7 @@ initVdc
     sta arg1
     sta arg2
     sta arg3+1
-    lda #$40
+    lda #$b0
     sta arg1+1
 
     lda #$30
