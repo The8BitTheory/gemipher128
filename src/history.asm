@@ -175,6 +175,7 @@ readFromStack
     ldy #0
     lda (zp_historyStackAddress),y
     sta zp_currentType
+    sta zp_pageType
     iny
 
 ;bytes 2-5: scroll and cursor position when we left (not implemented yet)

@@ -40,11 +40,12 @@ setBkm1GopherHostSelector
 
     lda #$31
     sta zp_currentType
+    sta zp_pageType
 
     lda #0
     sta zp_scrollModeCrsr
     
-    lda #1
+    lda #0
     sta zp_navModeHistory
 
     lda #<bkm1Server
@@ -71,9 +72,12 @@ setBkm2GopherHostSelector
 
     lda #$30
     sta zp_currentType
+    sta zp_pageType
 
     lda #1
     sta zp_scrollModeCrsr
+
+    lda #0
     sta zp_navModeHistory
 
     lda #<bkm2Server
@@ -97,7 +101,7 @@ setNewGopherHostSelector
 ;    jsr pushToHistoryStack ; here we'll need to write cursor position and stuff to history
 
     lda zp_navModeHistory
-    beq +
+    beq setFromHistory
 ; we're navigating from a content entry
 ; pointers go to bank 1
 
@@ -109,7 +113,7 @@ setNewGopherHostSelector
 ; we're navigating from a history entry
 ; pointers go to bank 0
 setFromHistory
-+   ldx #0
+    ldx #0
     lda mmuBankConfig,x
     sta zp_hostSelBank
     

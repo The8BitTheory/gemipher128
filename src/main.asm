@@ -197,13 +197,8 @@ main
     sta zp_navModeHistory
 
 .requestNewContent
-    jsr disableBasicRom
     jsr requestContent
-    jsr disableBasicRom
     
-    lda zp_currentType
-    sta zp_pageType
-
     lda #$93 ; clear screen
     jsr bsout
 
@@ -212,7 +207,7 @@ main
     jsr bsout
     jsr doFast
 
-    lda zp_currentType
+    lda zp_pageType
     cmp #$30    ;text file
     bne +
     jsr parsePlainText
@@ -316,15 +311,12 @@ main
     bne ++
     
     ; set the cursor line to zero here, that's important for calculating the right screen area for display
-    lda #0
-    sta zp_cursorLineContent
-    sta zp_cursorLineContent+1
-    sta zp_firstVramContentLine
-    sta zp_firstVramContentLine+1
+    jsr .setToFirstContentLine
 
     lda #1
     sta zp_navModeHistory   ; not navigating in history
     lda zp_currentType
+    sta zp_pageType     ; this is important. all processing of the next page is based on this
     cmp #$30
     beq +
     cmp #$31
@@ -368,6 +360,14 @@ main
 +   jsr recoverZp
     jmp enableBasicRom
     nop ; only for debugging purposes to give breakpoints a safe spot
+
+.setToFirstContentLine
+    lda #0
+    sta zp_cursorLineContent
+    sta zp_cursorLineContent+1
+    sta zp_firstVramContentLine
+    sta zp_firstVramContentLine+1
+    rts
 
 ; ---------------------
 ; navigation logic
@@ -594,6 +594,7 @@ main
 
 +   dec zp_historyStackPos
 .commonHistoryPageHandling
+    jsr .setToFirstContentLine
     jsr readFromStack
     jmp .prepareRequest
 
