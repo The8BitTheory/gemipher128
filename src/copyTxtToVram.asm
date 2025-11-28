@@ -13,7 +13,7 @@
 
 !zone txtRamToVram
 
-.VRAM_LEFT = 2047
+.VRAM_LEFT = 3071
 
 copyTextToVram
     lda #0
@@ -127,12 +127,16 @@ continueCopyToVram     ; when we left off before due to vram full
 
 ; write content byte to VRAM
     +vdc_sta
-    dec .vramLeft
-    bne +
-    dec .vramLeft +1
-    bpl +
     sec
+    lda .vramLeft
+    sbc #1
+    sta .vramLeft
+    bcs +
+    dec .vramLeft+1
+    bpl + ; high byte positive, continue copy
 
+    ; high byte below zero, 
+    sec             ; both zero
     rts ; no more vram left. leave
 
     ; increase vram address.

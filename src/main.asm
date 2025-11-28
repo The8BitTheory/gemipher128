@@ -422,20 +422,28 @@ main
 ;    cmp zp_linecount    ; is the last visible line also the last content line?
 
 ; is the last visible line also the last content line?
-    clc
-    lda #VISIBLE_LINES
-    adc zp_linenumber_start
-    sta zp_tempCalc
-    lda zp_linenumber_start+1
-    adc #0
-    sta zp_tempCalc+1
+;    clc
+;    lda #VISIBLE_LINES
+;    adc zp_linenumber_start
+;    sta zp_tempCalc
+;    lda zp_linenumber_start+1
+;    adc #0
+;    sta zp_tempCalc+1
 
-    lda zp_tempCalc+1
+;    lda zp_tempCalc+1
+;    cmp zp_lastVramContentLine+1
+;    bcc .doLineScrollDown
+;    lda zp_tempCalc
+;    cmp zp_lastVramContentLine
+;    bcc .doLineScrollDown
+
+    lda zp_linenumber_start+1
     cmp zp_lastVramContentLine+1
     bcc .doLineScrollDown
-    lda zp_tempCalc
+    lda zp_linenumber_start
     cmp zp_lastVramContentLine
     bcc .doLineScrollDown
+
 
     ;yes, last line. now check, if RAM holds more lines.
     lda zp_lastVramContentLine+1
@@ -470,12 +478,12 @@ main
     cmp #$30    ;text file
     bne ++
     
-    clc
-    lda zp_linenumber_start
-    adc #22
-    sta zp_linenumber_start
-    bcc +
-    inc zp_linenumber_start+1
+;    clc
+;    lda zp_linenumber_start
+;    adc #22
+;    sta zp_linenumber_start
+;    bcc +
+;    inc zp_linenumber_start+1
 
 +   lda #3
     sta zp_linkTableIncr
