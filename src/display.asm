@@ -36,7 +36,7 @@ displayTextmode
     lda #0
     sta zp_vram_screenram+1
 
-; setup the read-position in vram_content area
+; setup the position in vramLineOffset
     jsr .gotoLineNumber
 
     ; vram read address is taken from link-table
@@ -348,7 +348,7 @@ drawCursor
     jsr .writeHexValue
     lda zp_cursorLineContent
     ldy #$82
-    jmp .writeHexValue
+    ;jmp .writeHexValue
 
 .writeHexValue
     pha
@@ -553,6 +553,7 @@ removeCursor
 
 .gotoLineNumber
 ; go to the right vram offset
+    
     sec
     lda zp_linenumber_start
     sbc zp_firstVramContentLine

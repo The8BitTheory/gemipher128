@@ -34,16 +34,53 @@ copyTextToVram
 
     jsr initLinkTableAddress
 
-    ;inc zp_linenumber_start
-    ;clc
-    ;lda zp_linkTablePosition
-    ;adc #3
-    ;sta zp_linkTablePosition
-    ;bcc continueCopyToVram
-    ;inc zp_linkTablePosition+1
+    jmp .test
 
-continueCopyToVram     ; when we left off before due to vram full    
+continueCopyToVram     ; when we left off before due to vram full
+    jmp .test
+    ; go back one screen, so we can scroll up a bit without re-loading immediately
+    ldx zp_linkTableIncr
+    clc
+    lda #0
+-   adc #VISIBLE_LINES
+    dex
+    bne -
 
+    sta zp_tempA
+
+    sec
+    lda zp_linkTablePosition
+    sbc zp_tempA
+    sta zp_linkTablePosition
+    bcs +
+    dec zp_linkTablePosition+1
+
+; reduce vramLineOffset position (3 bytes per entry)
++   ldx #3
+    clc
+    lda #0
+-   adc #VISIBLE_LINES
+    dex
+    bne -
+
+    sta zp_tempA
+
+    sec
+    lda zp_vramLineOffsets
+    sbc zp_tempA
+    sta zp_vramLineOffsets
+    bcs +
+    dec zp_vramLineOffsets
+
+    sec
+    lda zp_linenumber_start
+    sbc #VISIBLE_LINES
+    sta zp_linenumber_start
+    bcs .test
+    dec zp_linenumber_start
+
+
+.test
     ; vram-left is reset, because we fill it with subsequent data from the beginning
     lda #<.VRAM_LEFT
     sta .vramLeft
@@ -71,20 +108,23 @@ continueCopyToVram     ; when we left off before due to vram full
 
     jsr clearVramLineOffsetTable
 
+; --- copy line ------------
 -   jsr writeVramLineOffset
-    jsr .copyLineToVram
+    jsr .copyGLineToVram
     bcs +
 
-    jsr .incLineNumber
+    jsr .incGLineNumber
 
     dec .linesLeftToCopy
     bne -
     dec .linesLeftToCopy+1
     bpl -
 
-+   rts
++   lda zp_lastVramContentLine
+    ldx zp_lastVramContentLine+1
+    rts
 
-.copyLineToVram
+.copyGLineToVram
     ldy #0
 
 ; read start position of current line from link-table
@@ -194,7 +234,7 @@ clearVramLineOffsetTable
 
     rts
 
-.incLineNumber
+.incGLineNumber
     clc
     lda zp_linkTablePosition
     adc zp_linkTableIncr
