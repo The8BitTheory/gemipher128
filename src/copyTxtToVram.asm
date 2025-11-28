@@ -103,6 +103,11 @@ continueCopyToVram     ; when we left off before due to vram full
     jsr c_fetch
     sta zp_visibleLength
 
+    ldy #2
+    sta (zp_vramLineOffsets),y
+
+    jsr incVramLineOffsetPosition
+
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp
     
@@ -152,13 +157,15 @@ writeVramLineOffset
     lda zp_vram_content_addr+1
     sta (zp_vramLineOffsets),y
 
++   rts
+
+incVramLineOffsetPosition
     clc
     lda zp_vramLineOffsets
-    adc #2
+    adc #3
     sta zp_vramLineOffsets
     bcc +
     inc zp_vramLineOffsets+1
-
 +   rts
 
 clearVramLineOffsetTable

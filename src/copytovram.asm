@@ -86,6 +86,10 @@ copyVisibleContentToVram
     jsr c_fetch
     sta zp_visibleLength
 
+    ldy #2
+    sta (zp_vramLineOffsets),y
+    jsr incVramLineOffsetPosition
+
 ; read first character of current line from content area (holds the line type)
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp

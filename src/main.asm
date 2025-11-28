@@ -333,6 +333,11 @@ main
 .goToFirstLine
     jmp .resetDisplay
 
++   cmp #'H' ;go home
+    bne +
+    jsr setInitialGopherHostSelector
+    jmp .requestNewContent
+
 +   cmp #'R' ;reload
     bne +
     jmp .requestNewContent
@@ -363,6 +368,9 @@ main
 
 .setToFirstContentLine
     lda #0
+    sta zp_cursorLineScreen
+    sta zp_linenumber_start
+    sta zp_linenumber_start+1
     sta zp_cursorLineContent
     sta zp_cursorLineContent+1
     sta zp_firstVramContentLine

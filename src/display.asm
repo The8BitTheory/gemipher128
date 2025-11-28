@@ -113,7 +113,7 @@ displayTextmode
     dec zp_cursorLineScreen
 +   jmp .displayTextmodeRestart ;restart building screen one content line earlier
 
-++  jsr .incLinkTableReadPosition
+++  jsr .incVramLineOffsetPosition
     jsr .incOutputLineNumber
     inc zp_tempY
 
@@ -561,15 +561,15 @@ removeCursor
     sbc zp_firstVramContentLine+1
     sta zp_tempCalc+1
 
-; linecount x 2 should be the offset in the lineoffset table
-    asl zp_tempCalc
-    rol zp_tempCalc+1
-    
+; linecount x 3 should be the offset in the lineoffset table
+    ldx #3
+    stx zp_tempX
+    jsr multiply
+
     clc
-    lda zp_tempCalc
     adc #<VRAM_LINE_TABLE
     sta zp_vramLineOffsets
-    lda zp_tempCalc+1
+    tya
     adc #>VRAM_LINE_TABLE
     sta zp_vramLineOffsets+1
 
@@ -580,6 +580,9 @@ removeCursor
     iny
     lda (zp_vramLineOffsets),y
     sta zp_vram_content_addr+1
+    iny
+    lda (zp_vramLineOffsets),y
+    sta zp_visibleLength
 
 
 ; go to the right ram-content offset (increments of 9 or 3, depending on file type)
@@ -606,6 +609,14 @@ removeCursor
     sta zp_linkTablePosition+1
 
     rts
+
+.incVramLineOffsetPosition
+    clc
+    lda zp_vramLineOffsets
+    adc #3
+    sta zp_vramLineOffsets
+    bcc .incLinkTableReadPosition
+    inc zp_vramLineOffsets+1
 
 .incLinkTableReadPosition
     clc
@@ -763,8 +774,9 @@ removeCursor
 
 .readVisibleLength
     ldy #2
-    ldx zp_contentBank
-    jsr c_fetch
+    lda (zp_vramLineOffsets),y
+;    ldx zp_contentBank
+;    jsr c_fetch
     sta zp_visibleLength
     rts
 
