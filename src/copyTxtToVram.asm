@@ -103,8 +103,10 @@ continueCopyToVram     ; when we left off before due to vram full
 
     lda zp_linenumber_start
     sta zp_firstVramContentLine
+    sta zp_lastVramContentLine
     lda zp_linenumber_start+1
     sta zp_firstVramContentLine+1
+    sta zp_lastVramContentLine+1
 
     jsr clearVramLineOffsetTable
 
@@ -113,7 +115,7 @@ continueCopyToVram     ; when we left off before due to vram full
     jsr .copyGLineToVram
     bcs +
 
-    jsr .incGLineNumber
+    jsr .incTLineNumber
 
     dec .linesLeftToCopy
     bne -
@@ -127,7 +129,7 @@ continueCopyToVram     ; when we left off before due to vram full
 .copyGLineToVram
     ldy #0
 
-; read start position of current line from link-table
+    ; read start position of current line from link-table
     lda #zp_linkTablePosition
     sta c_fetch_zp
     
@@ -234,7 +236,7 @@ clearVramLineOffsetTable
 
     rts
 
-.incGLineNumber
+.incTLineNumber
     clc
     lda zp_linkTablePosition
     adc zp_linkTableIncr
