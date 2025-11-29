@@ -164,12 +164,13 @@ drawCursor
     ;ldy #$80
     ;jsr A_to_vram_XXYY
 
-    jsr .drawCurrentCursorLine ; writes content line in status line
-
 .drawStatusLine
     lda c_fetch_zp
     pha
 
+    jsr .drawPlainTextStatusline
+
+    ; prepare values we want to show (type, selector, host, port)
     lda zp_cursorLineContent
     sta zp_tempCalc
     lda zp_cursorLineContent+1
@@ -221,17 +222,10 @@ drawCursor
     jsr c_fetch
     sta zp_currentType
 
-
-
 ;    lda #$07
 ;    ldy #$80
 ;    jsr AY_to_vdc_regs_18_19
     
-;    lda zp_pageType
-;    jsr toScreencode
-;    ldx #31
-;    jsr A_to_vdc_reg_X
-
     ; this is the counter to print spaces for the rest of the line
     ldy #38
     sty zp_tempX
@@ -244,7 +238,7 @@ drawCursor
     jmp ++
 
 +   lda #$07
-    ldy #$aa
+    ldy #$ab
     jsr AY_to_vdc_regs_18_19
 
 ;    lda #' '
@@ -265,23 +259,31 @@ drawCursor
     sta c_fetch_zp
     jsr .printStatusLineUntilTab
 
+    lda #'/'
+    jsr toScreencode
+    jsr .printAcc
+
+    lda zp_currentType
+    jsr toScreencode
+    ldx #31
+    jsr A_to_vdc_reg_X
+
     lda #zp_currentSelectorPtr
     sta c_fetch_zp
     jsr .printStatusLineUntilTab
 
     lda zp_tempX
-    beq +
+    beq .doneStatusline
 
 ++  lda #' '
 -   jsr toScreencode
     ldx #31
     jsr A_to_vdc_reg_X
     dec zp_tempX
-
     bne -
 
-+   jsr .drawPlainTextStatusline
-    pla
+.doneStatusline
++   pla
     sta c_fetch_zp
     rts
     
@@ -342,13 +344,6 @@ drawCursor
 
     rts
 
-.drawCurrentCursorLine
-    lda zp_cursorLineContent+1
-    ldy #$80
-    jsr .writeHexValue
-    lda zp_cursorLineContent
-    ldy #$82
-    ;jmp .writeHexValue
 
 .writeHexValue
     pha
@@ -444,23 +439,38 @@ drawCursor
 
     jsr .printUntilZero
 
-    lda zp_linenumber_start+1
+    lda zp_pageType
+    cmp #$31
+    bne +
+    ; for gopher pages, print the cursor line
+    lda zp_cursorLineContent+1
     jsr .hiNybToHex
     jsr .printAcc
+    lda zp_cursorLineContent+1
+    jsr .loNybToHex
+    jsr .printAcc
+    lda zp_cursorLineContent
+    jsr .hiNybToHex
+    jsr .printAcc
+    lda zp_cursorLineContent
+    jsr .loNybToHex
+    jsr .printAcc
+    jmp ++
 
++   lda zp_linenumber_start+1
+    jsr .hiNybToHex
+    jsr .printAcc
     lda zp_linenumber_start+1
     jsr .loNybToHex
     jsr .printAcc
-
     lda zp_linenumber_start
     jsr .hiNybToHex
     jsr .printAcc
-
     lda zp_linenumber_start
     jsr .loNybToHex
     jsr .printAcc
 
-    lda #'/'
+++  lda #'/'
     jsr toScreencode
     jsr .printAcc
 
