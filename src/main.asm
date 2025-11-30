@@ -158,7 +158,7 @@ cursorOffsets  !word 80    ; first offset is always 80 (as long as we're startin
 
 retries        !byte 0
 
-size_vram_content   !word 8191  ; available vram for content (after screen-ram, attribute-ram and charset)
+size_vram_content   !word 3071  ; available vram for content (after screen-ram, attribute-ram and charset)
 vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-vram copy of blocks
 
 *=$1d00
@@ -462,13 +462,6 @@ main
     lda zp_tempCalc
     cmp zp_lastVramContentLine
     bcc .doLineScrollDown
-
-;    lda zp_linenumber_start+1
-;    cmp zp_lastVramContentLine+1
-;    bcc .doLineScrollDown
-;    lda zp_linenumber_start
-;    cmp zp_lastVramContentLine
-;    bcc .doLineScrollDown
 
     ;yes, last line. now check, if RAM holds more lines.
     lda zp_lastVramContentLine+1
@@ -825,7 +818,7 @@ recoverZp
 !src "src/parsers/parseGopher.asm"
 !src "src/parsers/parsePlainText.asm"
 !src "src/parsers/commonParse.asm"
-!src "src/copy/copycommon.asm"
+!src "src/copy/copyCommon.asm"
 !src "src/display.asm"
 
 

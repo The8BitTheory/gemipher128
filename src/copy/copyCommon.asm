@@ -11,9 +11,9 @@
 ; $1000-$2fff invisible content area (we're copying to this area) - 8 kB available in a 16 kB VRAM setup
 ; $3000-$3fff character set (uppercase/lowercase)
 
-!zone txtRamToVram
+!zone ramToVram
 
-copyTextToVram
+copyToVram
     lda #0
     sta zp_firstVramContentLine
     sta zp_firstVramContentLine+1
@@ -111,8 +111,15 @@ continueCopyToVram     ; when we left off before due to vram full
 
 ; copy RAM to VRAM
     ldy #0
-    
--   ldx zp_contentBank
+
+-   lda zp_pageType
+    cmp #$31
+    bne +
+    jmp .readGopher
++   jmp .readPlainText
+
+.readPlainText
+    ldx zp_contentBank
     jsr c_fetch     ; read content byte from RAM
 
     cmp #$0d
@@ -122,10 +129,20 @@ continueCopyToVram     ; when we left off before due to vram full
     iny
     beq .rtvDone    ; copy 255 chars max (as a guardrail)
 
+    jmp .afterRead
+
+.readGopher
+    ldx zp_contentBank
+    iny
+    jsr c_fetch
+
+    cmp #9
+    beq .rtvDone
 ; -----------------
 ; specific part end
 ; ------------------
 
+.afterRead
     jsr toScreencode
 
 ; write content byte to VRAM
