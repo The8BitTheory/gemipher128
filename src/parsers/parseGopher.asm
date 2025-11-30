@@ -23,6 +23,8 @@ parseGopher
     ; also sets linktableposition to the first byte
     jsr initContentAddress
 
+    jsr initParseVram
+
     ; setup indirect reading from bank 1
     lda #zp_contentAddress
     sta c_fetch_zp

@@ -22,9 +22,9 @@ copyVisibleContentToVram
     sta zp_lastVramContentLine
     sta zp_lastVramContentLine+1
     
-    lda #<.VRAM_LEFT
+    lda size_vram_content
     sta .vramLeft
-    lda #>.VRAM_LEFT
+    lda size_vram_content+1
     sta .vramLeft+1
     
     ldx #CONTENT_BANK

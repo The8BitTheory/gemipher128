@@ -91,6 +91,7 @@ zp_tempA = $40 ; used to keep temporary value when pha/pla is not sufficient
 
 zp_vramLineOffsets = $41 ; and $42
 zp_firstVramContentLine = $43 ; and $44
+zp_vramBlock    = $45   ; which vram block we're currently working with. used by parse, copy, and display
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -157,6 +158,8 @@ cursorOffsets  !word 80    ; first offset is always 80 (as long as we're startin
 
 retries        !byte 0
 
+size_vram_content   !word 3071  ; available vram for content (after screen-ram, attribute-ram and charset)
+vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-vram copy of blocks
 
 *=$1d00
 main
@@ -242,6 +245,8 @@ main
     sta zp_linenumber_start+1
     sta zp_cursorLineContent
     sta zp_cursorLineContent+1
+    sta zp_vramBlock
+
     lda #FIRST_LINE
     sta zp_cursorLineScreen
 
@@ -480,7 +485,8 @@ main
     ;  from different sources with different step increments (3/9 in linkTablePosition vs 2 in vramLineOffsets)
     ;  linkTablePosition stays in place, as this is built when loading the file
     ;  vramLineOffsets is to be re-built when copying the new data into vram
-+   lda zp_pageType
++   inc zp_vramBlock    
+    lda zp_pageType
     cmp #$30    ;text file
     bne ++
 
@@ -488,13 +494,21 @@ main
     sta zp_linkTableIncr
     jsr .calculateLinkTableOffset
 
+    lda zp_linenumber_start
+    sta zp_firstVramContentLine
+    sta zp_lastVramContentLine
+    lda zp_linenumber_start+1
+    sta zp_firstVramContentLine+1
+    sta zp_lastVramContentLine+1
+
+
     jsr continueCopyToVram
     lda #1
     sta zp_scrollModeCrsr
-    jmp .doneLoadOther
+    jmp .doneLoadNext
 
 ++  cmp #$31    ;gopher file
-    bne .doneLoadOther
+    bne .doneLoadNext
     lda #9
     sta zp_linkTableIncr
     
@@ -502,7 +516,7 @@ main
     lda #0
     sta zp_scrollModeCrsr
 
-.doneLoadOther
+.doneLoadNext
     jmp .doLineScrollDown
     nop
 
@@ -551,11 +565,24 @@ main
 +   jmp drawCursor
 
 .tryLineScrollUp
+    ; is the first visible line also the first vram line?
     lda zp_linenumber_start+1
-    bne +
+    cmp zp_firstVramContentLine+1
+    bne .doLineScrollUp ; more lines in vram. scroll up
     lda zp_linenumber_start
-    bne +
+    cmp zp_firstVramContentLine
+    bne .doLineScrollUp ; more lines in vram. scroll up
+
+    ;yes, we're on top of vram.
+    ;   check if ram holds more previous lines (ie firstVramContentLine > 0)
+    lda zp_firstVramContentLine+1
+    bne .loadPrevDataIntoVram
+    lda zp_firstVramContentLine
+    bne .loadPrevDataIntoVram
+
     jmp .getUserinput
+
+.doLineScrollUp
 +   sec
     lda zp_linenumber_start
     sbc #1
@@ -570,6 +597,62 @@ main
     bcs +
     dec zp_cursorLineContent+1
 +   jmp .updateDisplay
+
+.loadPrevDataIntoVram
+    ; we have reached the end of vram, but have more in RAM
+    ; lines left to copy stays as it is. (as it holds the remaining number of lines to copy)
+    ; start line of copy (current content line minus 23) (vram_content_addr) zp_linkTablePosition minus 23xincr (3 or 9)
+    ; offset of line to display (in vramLineOffsets) and length of each line (linkTablePosition) are read
+    ;  from different sources with different step increments (3/9 in linkTablePosition vs 2 in vramLineOffsets)
+    ;  linkTablePosition stays in place, as this is built when loading the file
+    ;  vramLineOffsets is to be re-built when copying the new data into vram
++   lda zp_pageType
+    cmp #$30    ;text file
+    bne ++
+
++   ; stash current linenumber. we'll need it later, but for calc we need to change it temporarily
+    lda zp_linenumber_start
+    sta zp_memPtr
+    lda zp_linenumber_start+1
+    sta zp_memPtr+1
+
+    dec zp_vramBlock
+    jsr vramBlockIndexIntoX
+    lda vram_block_offsets,x
+    sta zp_linenumber_start
+    sta zp_firstVramContentLine
+    lda vram_block_offsets+1,x
+    sta zp_linenumber_start+1
+    sta zp_firstVramContentLine+1
+    
+    lda #3
+    sta zp_linkTableIncr
+    jsr .calculateLinkTableOffset
+
+    jsr continueCopyToVram
+
+    lda zp_memPtr
+    sta zp_linenumber_start
+    lda zp_memPtr+1
+    sta zp_linenumber_start+1
+
+    lda #1
+    sta zp_scrollModeCrsr
+    jmp .doneLoadPrev
+
+++  cmp #$31    ;gopher file
+    bne .doneLoadPrev
+    lda #9
+    sta zp_linkTableIncr
+    
+    jsr copyVisibleContentToVram
+    lda #0
+    sta zp_scrollModeCrsr
+
+.doneLoadPrev
+    jmp .doLineScrollUp
+    nop
+
 
 .calcCursorLineScreen
     clc
@@ -632,6 +715,11 @@ initLinkTableAddress
     lda #>LINKTABLE_ADDRESS
     sta zp_linkTablePosition+1
 
+    rts
+
+calcLinkTablePositionForFirstVramLine
+    jsr initLinkTableAddress
+    
     rts
 
 ; used for regular runtime (should leave us with $1c01 - $bfff for program code. close to 42 kB )
@@ -714,6 +802,7 @@ recoverZp
 
 !src "src/parsers/parseGopher.asm"
 !src "src/parsers/parsePlainText.asm"
+!src "src/parsers/commonParse.asm"
 !src "src/copytovram.asm"
 !src "src/copyTxtToVram.asm"
 !src "src/display.asm"

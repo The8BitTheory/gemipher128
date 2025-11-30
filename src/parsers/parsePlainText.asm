@@ -11,6 +11,8 @@
 parsePlainText
     jsr initContentAddress
 
+    jsr initParseVram
+
     ; setup indirect reading from bank 1
     lda #zp_contentAddress
     sta c_fetch_zp
@@ -127,6 +129,8 @@ parsePlainText
     bne +
     dec .leftToParse+1
 
++   jsr trackVramBlock
+
 ;    .checkEof
 +   lda .leftToParse
     bne +
@@ -171,7 +175,7 @@ parsePlainText
     lda zp_contentAddress+1
     jsr .stashToTxtLinkTable
 
-+   rts
+    rts
 
 
 .stashToTxtLinkTable

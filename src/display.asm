@@ -1,7 +1,6 @@
 !zone textdisplay
 
 ; zp_linkTablePosition will always point to the beginning of the current line
-; zp_currentLinkTablePtr will point to the index inside of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
     ; we run into infinite loops here if plain text content has less lines than available screen lines (23 usually)
