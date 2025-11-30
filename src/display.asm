@@ -240,11 +240,6 @@ drawCursor
     ldy #$ab
     jsr AY_to_vdc_regs_18_19
 
-;    lda #' '
-;    jsr toScreencode
-;    ldx #31
-;    jsr A_to_vdc_reg_X
-
     lda #zp_currentHostPtr
     sta c_fetch_zp
     jsr .printStatusLineUntilTab
@@ -537,6 +532,10 @@ drawCursor
     jsr .writeHexValue
     lda zp_contentAddress
     ldy #$a8
+    jsr .writeHexValue
+
+    lda zp_vramBlock
+    ldy #$ab
     jsr .writeHexValue
 
     rts
@@ -937,6 +936,14 @@ writeCurrentGopherToHeadline
     sta zp_tempCalc+1
 
     jsr .printHeaderLineUntilTab
+
+    lda #'/'
+    jsr toScreencode
+    jsr .printAcc
+
+    lda zp_pageType
+    jsr toScreencode
+    jsr .printAcc
 
     lda #<tcpWriteSelector
     sta zp_memPtr
