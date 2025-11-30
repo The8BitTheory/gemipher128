@@ -158,7 +158,7 @@ cursorOffsets  !word 80    ; first offset is always 80 (as long as we're startin
 
 retries        !byte 0
 
-size_vram_content   !word 3071  ; available vram for content (after screen-ram, attribute-ram and charset)
+size_vram_content   !word 8191  ; available vram for content (after screen-ram, attribute-ram and charset)
 vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-vram copy of blocks
 
 *=$1d00
@@ -219,7 +219,8 @@ main
     jsr parsePlainText
     lda #3
     sta zp_linkTableIncr
-    jsr copyTextToVram
+    ;jsr copyTextToVram
+    jsr copyToVram
     lda #1
     sta zp_scrollModeCrsr
     jmp .doneProcessing
@@ -229,7 +230,8 @@ main
     jsr parseGopher
     lda #9
     sta zp_linkTableIncr
-    jsr copyVisibleContentToVram
+    ;jsr copyVisibleContentToVram
+    jsr copyToVram
     lda #0
     sta zp_scrollModeCrsr
 .doneProcessing
@@ -530,7 +532,8 @@ main
     lda #9
     sta zp_linkTableIncr
     
-    jsr copyVisibleContentToVram
+    ;jsr copyVisibleContentToVram
+    jsr copyToVram
     lda #0
     sta zp_scrollModeCrsr
 
@@ -663,7 +666,8 @@ main
     lda #9
     sta zp_linkTableIncr
     
-    jsr copyVisibleContentToVram
+    ;jsr copyVisibleContentToVram
+    jsr copyToVram
     lda #0
     sta zp_scrollModeCrsr
 
@@ -821,8 +825,7 @@ recoverZp
 !src "src/parsers/parseGopher.asm"
 !src "src/parsers/parsePlainText.asm"
 !src "src/parsers/commonParse.asm"
-!src "src/copytovram.asm"
-!src "src/copyTxtToVram.asm"
+!src "src/copy/copycommon.asm"
 !src "src/display.asm"
 
 

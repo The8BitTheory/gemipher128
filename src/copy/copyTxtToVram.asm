@@ -11,21 +11,14 @@
 ; $1000-$2fff invisible content area (we're copying to this area) - 8 kB available in a 16 kB VRAM setup
 ; $3000-$3fff character set (uppercase/lowercase)
 
-!zone RAMTOVRAM
+!zone txtRamToVram
 
-.VRAM_LEFT = 8191
-
-copyVisibleContentToVram
+copyTextToVram
     lda #0
     sta zp_firstVramContentLine
     sta zp_firstVramContentLine+1
     sta zp_lastVramContentLine
     sta zp_lastVramContentLine+1
-    
-    lda size_vram_content
-    sta .vramLeft
-    lda size_vram_content+1
-    sta .vramLeft+1
     
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
@@ -33,13 +26,24 @@ copyVisibleContentToVram
     
     jsr initLinkTableAddress
 
-    clc
+continueCopyToVram     ; when we left off before due to vram full
+
+    ; lines left to copy needs to be set accordingly
+    sec
     lda zp_linecount
+    sbc zp_linenumber_start
     sta .linesLeftToCopy
     lda zp_linecount+1
+    sbc zp_linenumber_start+1
     sta .linesLeftToCopy+1
-    
-;continueCopyToVram     ; when we left off before due to vram full   
+
+    ; vram-left is reset, because we fill it with subsequent data from the beginning
+    lda size_vram_content
+    sta .vramLeft
+    lda size_vram_content+1
+    sta .vramLeft+1
+
+    ; write to vram from the start
     lda #<VRAM_CONTENT
     sta zp_vram_content_addr
     lda #>VRAM_CONTENT
@@ -48,18 +52,25 @@ copyVisibleContentToVram
     ldy zp_vram_content_addr
     lda zp_vram_content_addr+1
     
+    ; vram target
     jsr AY_to_vdc_regs_18_19
     ldx #31 ; VRAM register
     stx vdc_reg
 
+    lda zp_firstVramContentLine
+    sta zp_lastVramContentLine
+    lda zp_firstVramContentLine+1
+    sta zp_lastVramContentLine+1
+
     jsr clearVramLineOffsetTable
 
+; --- copy line ------------
 -   jsr writeVramLineOffset
-    jsr .copyLineToVram
+    jsr .copyGLineToVram
     bcs +
 
-    jsr .incLineNumber
-    
+    jsr .incTLineNumber
+
     dec .linesLeftToCopy
     bne -
     dec .linesLeftToCopy+1
@@ -67,10 +78,10 @@ copyVisibleContentToVram
 
 +   rts
 
-.copyLineToVram
+.copyGLineToVram
     ldy #0
 
-; read start position of current line from link-table
+    ; read start position of current line from link-table
     lda #zp_linkTablePosition
     sta c_fetch_zp
     
@@ -88,40 +99,47 @@ copyVisibleContentToVram
 
     ldy #2
     sta (zp_vramLineOffsets),y
+
     jsr incVramLineOffsetPosition
 
-; read first character of current line from content area (holds the line type)
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp
-    ldy #0
-    ldx zp_contentBank
-    jsr c_fetch 
     
-    jsr .myRtv
+; -------------------------------
+; specific to plain text content
+; -------------------------------
 
-    rts
-    nop
-
-.myRtv   ; copy RAM to VRAM
-
+; copy RAM to VRAM
     ldy #0
     
 -   ldx zp_contentBank
-    iny
-    jsr c_fetch
+    jsr c_fetch     ; read content byte from RAM
 
-    cmp #9
+    cmp #$0d
     beq .rtvDone
+    cmp #$0a
+    beq .rtvDone
+    iny
+    beq .rtvDone    ; copy 255 chars max (as a guardrail)
+
+; -----------------
+; specific part end
+; ------------------
 
     jsr toScreencode
 
-; write byte to VRAM
-    +vdc_sta
-    dec .vramLeft
-    bne +
-    dec .vramLeft +1
-    bpl +
+; write content byte to VRAM
+    +vdc_sta        ; write byte to vram
     sec
+    lda .vramLeft
+    sbc #1
+    sta .vramLeft
+    bcs +
+    dec .vramLeft+1
+    bpl + ; high byte positive, continue copy
+
+    ; high byte below zero, 
+    sec             ; both zero
     rts ; no more vram left. leave
 
     ; increase vram address.
@@ -138,8 +156,48 @@ copyVisibleContentToVram
     clc
     rts
 
+writeVramLineOffset
+    ldy #0
+    lda zp_vram_content_addr
+    sta (zp_vramLineOffsets),y
+    iny
+    lda zp_vram_content_addr+1
+    sta (zp_vramLineOffsets),y
 
-.incLineNumber
++   rts
+
+incVramLineOffsetPosition
+    clc
+    lda zp_vramLineOffsets
+    adc #3
+    sta zp_vramLineOffsets
+    bcc +
+    inc zp_vramLineOffsets+1
++   rts
+
+clearVramLineOffsetTable
+    lda #<VRAM_LINE_TABLE
+    sta zp_vramLineOffsets
+    lda #>VRAM_LINE_TABLE
+    sta zp_vramLineOffsets+1
+
+    lda #0
+    ldx #0
+
+-   sta VRAM_LINE_TABLE,x
+    sta VRAM_LINE_TABLE+$100,x
+    sta VRAM_LINE_TABLE+$200,x
+    sta VRAM_LINE_TABLE+$300,x
+    sta VRAM_LINE_TABLE+$400,x
+    sta VRAM_LINE_TABLE+$500,x
+    sta VRAM_LINE_TABLE+$600,x
+    sta VRAM_LINE_TABLE+$700,x
+    dex
+    bne -
+
+    rts
+
+.incTLineNumber
     clc
     lda zp_linkTablePosition
     adc zp_linkTableIncr
@@ -152,7 +210,5 @@ copyVisibleContentToVram
     inc zp_lastVramContentLine+1
 +   rts
 
-
-
 .vramLeft       !word 0
-.linesLeftToCopy    !word 0
+.linesLeftToCopy    !word 0     ; related to copying from ram to vram. if this is > 0, we have more data to show
