@@ -492,12 +492,19 @@ main
     ;  from different sources with different step increments (3/9 in linkTablePosition vs 2 in vramLineOffsets)
     ;  linkTablePosition stays in place, as this is built when loading the file
     ;  vramLineOffsets is to be re-built when copying the new data into vram
-+   jsr vramBlockIndexIntoX
+    jsr vramBlockIndexIntoX
     lda zp_firstVramContentLine
     sta vram_block_offsets,x
     lda zp_firstVramContentLine+1
     sta vram_block_offsets+1,x
     inc zp_vramBlock
+
+    lda zp_linenumber_start
+    sta zp_firstVramContentLine
+    sta zp_lastVramContentLine
+    lda zp_linenumber_start+1
+    sta zp_firstVramContentLine+1
+    sta zp_lastVramContentLine+1
 
     lda zp_pageType
     cmp #$30    ;text file
@@ -507,14 +514,6 @@ main
     sta zp_linkTableIncr
     jsr .calculateLinkTableOffset
 
-    lda zp_linenumber_start
-    sta zp_firstVramContentLine
-    sta zp_lastVramContentLine
-    lda zp_linenumber_start+1
-    sta zp_firstVramContentLine+1
-    sta zp_lastVramContentLine+1
-
-
     jsr continueCopyToVram
     lda #1
     sta zp_scrollModeCrsr
@@ -523,10 +522,10 @@ main
 ++  cmp #$31    ;gopher file
     bne .doneLoadNext
     lda #9
-    sta zp_linkTableIncr
-    
-    ;jsr copyVisibleContentToVram
-    jsr copyToVram
+    sta zp_linkTableIncr    
+    jsr .calculateLinkTableOffset
+
+    jsr continueCopyToVram
     lda #0
     sta zp_scrollModeCrsr
 
@@ -620,12 +619,7 @@ main
     ;  from different sources with different step increments (3/9 in linkTablePosition vs 2 in vramLineOffsets)
     ;  linkTablePosition stays in place, as this is built when loading the file
     ;  vramLineOffsets is to be re-built when copying the new data into vram
-+   lda zp_pageType
-    cmp #$30    ;text file
-    bne ++
-
-+   ; stash current linenumber. we'll need it later, but for calc we need to change it temporarily
-    lda zp_linenumber_start
++   lda zp_linenumber_start
     sta zp_memPtr
     lda zp_linenumber_start+1
     sta zp_memPtr+1
@@ -638,17 +632,16 @@ main
     lda vram_block_offsets+1,x
     sta zp_linenumber_start+1
     sta zp_firstVramContentLine+1
-    
+
+    lda zp_pageType
+    cmp #$30    ;text file
+    bne ++
+
++   ; stash current linenumber. we'll need it later, but for calc we need to change it temporarily
     lda #3
     sta zp_linkTableIncr
     jsr .calculateLinkTableOffset
-
     jsr continueCopyToVram
-
-    lda zp_memPtr
-    sta zp_linenumber_start
-    lda zp_memPtr+1
-    sta zp_linenumber_start+1
 
     lda #1
     sta zp_scrollModeCrsr
@@ -658,13 +651,18 @@ main
     bne .doneLoadPrev
     lda #9
     sta zp_linkTableIncr
-    
-    ;jsr copyVisibleContentToVram
-    jsr copyToVram
+    jsr .calculateLinkTableOffset
+    jsr continueCopyToVram
+
     lda #0
     sta zp_scrollModeCrsr
 
 .doneLoadPrev
+    lda zp_memPtr
+    sta zp_linenumber_start
+    lda zp_memPtr+1
+    sta zp_linenumber_start+1
+
     jmp .doLineScrollUp
     nop
 
