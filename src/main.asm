@@ -339,10 +339,14 @@ main
     jmp .requestNewContent
 
 ++  cmp #19 ;home
+    bne ++
+
+    lda zp_vramBlock
     bne +
+    jmp .resetDisplay
 
     ; setting these values to 1 allows us to leverage on most of regular scroll-up routines
-    lda #0
++   lda #0
     sta zp_linenumber_start+1
     sta zp_cursorLineContent+1
 
@@ -352,7 +356,7 @@ main
     sta zp_vramBlock
     jmp .loadPrevDataIntoVram
 
-+   cmp #'H' ;go home
+++  cmp #'H' ;go home
     bne +
     jsr setInitialGopherHostSelector
     jmp .requestNewContent
