@@ -24,15 +24,19 @@ copyTextToVram
     lda mmuBankConfig,X
     sta zp_contentBank
     
-    clc
-    lda zp_linecount
-    sta .linesLeftToCopy
-    lda zp_linecount+1
-    sta .linesLeftToCopy+1
-
     jsr initLinkTableAddress
 
 continueCopyToVram     ; when we left off before due to vram full
+
+    ; lines left to copy needs to be set accordingly
+    sec
+    lda zp_linecount
+    sbc zp_linenumber_start
+    sta .linesLeftToCopy
+    lda zp_linecount+1
+    sbc zp_linenumber_start+1
+    sta .linesLeftToCopy+1
+
     ; vram-left is reset, because we fill it with subsequent data from the beginning
     lda size_vram_content
     sta .vramLeft
@@ -118,7 +122,7 @@ continueCopyToVram     ; when we left off before due to vram full
     jsr toScreencode
 
 ; write content byte to VRAM
-    +vdc_sta
+    +vdc_sta        ; write byte to vram
     sec
     lda .vramLeft
     sbc #1

@@ -32,6 +32,7 @@ parsePlainText
     lda #0
     sta zp_visibleLength
     sta zp_linecount
+    sta zp_linecount+1
 
 ; content is stored in the $1:0400 region, pointers to each line in the $1:f700 region
 ; each line takes 3 bytes in the linktable. 2 bytes for pointer, 1 byte for line length
@@ -48,6 +49,7 @@ parsePlainText
     beq .finishLine
 
     inc zp_visibleLength
+    jsr trackVramBlock
     jmp -
 
 .finishLine
@@ -117,7 +119,7 @@ parsePlainText
     ; read from bank 1
     ldx zp_contentBank
     ldy #0
-    jsr c_fetch
+    jsr c_fetch         ; read from bank 1
     sta zp_tempA
     pha
 
@@ -129,7 +131,7 @@ parsePlainText
     bne +
     dec .leftToParse+1
 
-+   jsr trackVramBlock
+;+   jsr trackVramBlock
 
 ;    .checkEof
 +   lda .leftToParse
