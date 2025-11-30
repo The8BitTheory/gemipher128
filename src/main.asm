@@ -158,7 +158,7 @@ cursorOffsets  !word 80    ; first offset is always 80 (as long as we're startin
 
 retries        !byte 0
 
-size_vram_content   !word 8191  ; available vram for content (after screen-ram, attribute-ram and charset)
+size_vram_content   !word 3071  ; available vram for content (after screen-ram, attribute-ram and charset)
 vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-vram copy of blocks
 
 *=$1d00
@@ -245,7 +245,6 @@ main
     sta zp_linenumber_start+1
     sta zp_cursorLineContent
     sta zp_cursorLineContent+1
-    sta zp_vramBlock
 
     lda #FIRST_LINE
     sta zp_cursorLineScreen
@@ -341,8 +340,17 @@ main
 
 ++  cmp #19 ;home
     bne +
-.goToFirstLine
-    jmp .resetDisplay
+
+    ; setting these values to 1 allows us to leverage on most of regular scroll-up routines
+    lda #0
+    sta zp_linenumber_start+1
+    sta zp_cursorLineContent+1
+
+    lda #1
+    sta zp_linenumber_start
+    sta zp_cursorLineContent
+    sta zp_vramBlock
+    jmp .loadPrevDataIntoVram
 
 +   cmp #'H' ;go home
     bne +
