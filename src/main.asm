@@ -325,16 +325,20 @@ main
 +   cmp #13 ;return key
     bne ++
     
+    lda zp_pageType
+    cmp #$31
+    bne .getUserinput
+
     lda #1
     sta zp_navModeHistory   ; not navigating in history
     lda zp_currentType
-    sta zp_pageType     ; this is important. all processing of the next page is based on this
     cmp #$30
     beq +
     cmp #$31
     beq +
     jmp -
-+   inc zp_historyStackPos
++   sta zp_pageType     ; this is important. all processing of the next page is based on this
+    inc zp_historyStackPos
 .prepareRequest
     
     jsr setNewGopherHostSelector
