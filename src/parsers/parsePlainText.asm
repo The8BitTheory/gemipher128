@@ -49,7 +49,6 @@ parsePlainText
     beq .finishLine
 
     inc zp_visibleLength
-    jsr trackVramBlock
     jmp -
 
 .finishLine
@@ -130,8 +129,6 @@ parsePlainText
 +   dec .leftToParse
     bne +
     dec .leftToParse+1
-
-;+   jsr trackVramBlock
 
 ;    .checkEof
 +   lda .leftToParse

@@ -158,7 +158,7 @@ cursorOffsets  !word 80    ; first offset is always 80 (as long as we're startin
 
 retries        !byte 0
 
-size_vram_content   !word 3071  ; available vram for content (after screen-ram, attribute-ram and charset)
+size_vram_content   !word 8191  ; available vram for content (after screen-ram, attribute-ram and charset)
 vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-vram copy of blocks
 
 *=$1d00
@@ -485,7 +485,13 @@ main
     ;  from different sources with different step increments (3/9 in linkTablePosition vs 2 in vramLineOffsets)
     ;  linkTablePosition stays in place, as this is built when loading the file
     ;  vramLineOffsets is to be re-built when copying the new data into vram
-+   inc zp_vramBlock    
++   jsr vramBlockIndexIntoX
+    lda zp_firstVramContentLine
+    sta vram_block_offsets,x
+    lda zp_firstVramContentLine+1
+    sta vram_block_offsets+1,x
+    inc zp_vramBlock
+
     lda zp_pageType
     cmp #$30    ;text file
     bne ++
