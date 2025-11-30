@@ -9,31 +9,14 @@
 
 !zone plainText
 parsePlainText
-    jsr initContentAddress
-
-    jsr initParseVram
-
-    ; setup indirect reading from bank 1
-    lda #zp_contentAddress
-    sta c_fetch_zp
-
-    ; setup indirect writing to bank 1
-    lda #zp_linkTablePosition
-    sta c_stash_zp
-
-    jsr .clearLinkTable
-
-; based on response-size, we can decide whether to overwrite the previous data, or keep it
-    lda zp_responseSize
-    sta .leftToParse
-    lda zp_responseSize+1
-    sta .leftToParse+1
+    jsr initParser
 
     lda #0
     sta zp_visibleLength
     sta zp_linecount
     sta zp_linecount+1
 
+    
 ; content is stored in the $1:0400 region, pointers to each line in the $1:f700 region
 ; each line takes 3 bytes in the linktable. 2 bytes for pointer, 1 byte for line length
 ; this also allows us to make word-wrap a user-choice
@@ -41,7 +24,7 @@ parsePlainText
 .parseLine
     jsr .storePointerInTxtLinkTable
 
--   jsr .readNextByte
+-   jsr readNextByte
     bcs .doneParse
     cmp #$0d    ;line break?
     beq -
@@ -72,7 +55,7 @@ parsePlainText
     bcs +
     dec zp_contentAddress+1
 
-+   jsr .readNextByte
++   jsr readNextByte
     cmp #'.'        ;if we find a single dot on a line, this is the end of the file
     bne +
     jsr .recoverValues  ; clean the campground
@@ -97,9 +80,9 @@ parsePlainText
     sta .temp4
     lda zp_contentAddress+1
     sta .temp4+1
-    lda .leftToParse
+    lda leftToParse
     sta .temp4+2
-    lda .leftToParse+1
+    lda leftToParse+1
     sta .temp4+3
     rts
 
@@ -109,38 +92,9 @@ parsePlainText
     lda .temp4+1
     sta zp_contentAddress+1
     lda .temp4+2
-    sta .leftToParse
+    sta leftToParse
     lda .temp4+3
-    sta .leftToParse+1
-    rts
-
-.readNextByte
-    ; read from bank 1
-    ldx zp_contentBank
-    ldy #0
-    jsr c_fetch         ; read from bank 1
-    sta zp_tempA
-    pha
-
-    inc zp_contentAddress
-    bne +
-    inc zp_contentAddress+1
-
-+   dec .leftToParse
-    bne +
-    dec .leftToParse+1
-
-;    .checkEof
-+   lda .leftToParse
-    bne +
-    lda .leftToParse+1
-    bpl +
-    sec ; set carry means we reached end of file
-    pla
-    rts
-
-+   clc ; clear carry means we still have data left
-    pla
+    sta leftToParse+1
     rts
 
 .checkEndChar
@@ -149,12 +103,12 @@ parsePlainText
     sta .temp4
     lda zp_contentAddress+1
     sta .temp4+1
-    lda .leftToParse
+    lda leftToParse
     sta .temp4+2
-    lda .leftToParse+1
+    lda leftToParse+1
     sta .temp4+3
 
-    jsr .readNextByte
+    jsr readNextByte
     cmp #'.'
     bne +
 
@@ -187,47 +141,4 @@ parsePlainText
 
 +   rts
 
-.clearLinkTable
-; this clears 8x256 bytes
-
-    ldy #0
--   lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-
-    jsr initLinkTableAddress
-    iny
-    bne -
-
-    jmp initLinkTableAddress
-
-.leftToParse    !word 0
 .temp4          !word 0,0

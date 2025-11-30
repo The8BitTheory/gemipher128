@@ -21,35 +21,13 @@
 parseGopher
     ; set zp_content to beginning of content so we can start parsing that now
     ; also sets linktableposition to the first byte
-    jsr initContentAddress
-
-    jsr initParseVram
-
-    ; setup indirect reading from bank 1
-    lda #zp_contentAddress
-    sta c_fetch_zp
-
-    ; setup indirect writing to bank 1
-    lda #zp_linkTablePosition
-    sta c_stash_zp
-
-    jsr .clearLinkTable
-
-    ; good thing we're both, reading and writing, from and to bank 1
-    ldx #CONTENT_BANK
-    lda mmuBankConfig,X
-    sta zp_contentBank
-
+    jsr initParser
+    
     lda #0
     sta .parseSeq
     sta .parseMode
     sta zp_linecount
     sta zp_linecount+1
-
-    lda zp_responseSize
-    sta .leftToParse
-    lda zp_responseSize+1
-    sta .leftToParse+1
 
 ; which section of the line are we parsing?
 ; 0=type and visible content
@@ -85,7 +63,7 @@ parseGopher
 .handleType
     lda .parseMode
     bne .selectNextParseMode
-    jsr .readNextByte
+    jsr readNextByte
     bne .selectNextParseMode
 
 .foundZero
@@ -146,7 +124,7 @@ parseGopher
     nop
 
 .handleVisible
-    jsr .readNextByte
+    jsr readNextByte
     
     cmp #9  ; tab. end ascii output
     bne +
@@ -169,7 +147,7 @@ parseGopher
 
 ; for now, just skip until tab
 .handleSelector
-    jsr .readNextByte
+    jsr readNextByte
     cmp #9
     beq +
 
@@ -177,17 +155,17 @@ parseGopher
 +   jmp .handleTab
 
 .handleHost
-    jsr .readNextByte
+    jsr readNextByte
     cmp #9
     beq +
     jmp .handleHost
 +   jmp .handleTab
 
 .handlePort
-    jsr .readNextByte
+    jsr readNextByte
     cmp #13
     bne .handlePort
-    jsr .readNextByte
+    jsr readNextByte
     cmp #10
     bne .handlePort
     
@@ -200,7 +178,7 @@ parseGopher
     inc zp_linecount+1
 
     ; and check whether to end parsing alltogether
-+   lda .leftToParse+1
++   lda leftToParse+1
     bmi .parseComplete
 
     jmp .decideOnParseSeq
@@ -209,23 +187,6 @@ parseGopher
     lda #4
     sta .parseSeq    ;.parseSeq 4 should end parsing
     jmp .decideOnParseSeq
-
-.readNextByte
-    ; read from bank 1
-    ldx zp_contentBank
-    ldy #0
-    jsr c_fetch
-
-    inc zp_contentAddress
-    bne +
-    inc zp_contentAddress+1
-
-+   dec .leftToParse
-    bne +
-    dec .leftToParse+1
-
-+   rts
-
 
 .storeValueInLinkTable
     ldy #0
@@ -252,48 +213,6 @@ parseGopher
 
 +   rts
 
-.clearLinkTable
-; this clears 8x256 bytes
-
-    ldy #0
--   lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-    inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-
-    jsr initLinkTableAddress
-    iny
-    bne -
-
-    jmp initLinkTableAddress
-
 .parseMode       !byte 0 ; $69 for i, $31 for 1, etc
 .parseSeq        !byte 0 ; 0=type specific parsing, 1=selector, 2=hostname, 3=port
-.leftToParse     !word 0
+
