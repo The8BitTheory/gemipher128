@@ -5,6 +5,8 @@ Currently the program starts at gopher.floodgap.com. From there, you'll find man
 
 Right now, only Gopher directories and Textfiles can be viewed. Downloading files is not implemented yet.
 
+![Gopher](media/fun.png "Fun and Games with Gopher")
+
 ## Keybindings
 * H Home - go to startpage
 * Cursor left/right - go back and forth in page (hole?) history
