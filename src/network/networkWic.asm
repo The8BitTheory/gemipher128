@@ -238,10 +238,10 @@ detectAndInitializeWic64
 
 requestContent
     sec
-    lda #<LINKTABLE_ADDRESS
+    lda #<CONTENT_END_ADDRESS
     sbc #<CONTENT_ADDRESS
     sta .ramLeft
-    lda #>LINKTABLE_ADDRESS
+    lda #>CONTENT_END_ADDRESS
     sbc #>CONTENT_ADDRESS
     sta .ramLeft+1
     
@@ -382,10 +382,10 @@ requestContent
     inc zp_contentAddress+1
 
 ; check if we reached the end of available RAM
-+   lda #>LINKTABLE_ADDRESS
++   lda #>CONTENT_END_ADDRESS
     cmp zp_contentAddress+1
     bcs +
-    lda #<LINKTABLE_ADDRESS
+    lda #<CONTENT_END_ADDRESS
     cmp zp_contentAddress
     bcs +
     

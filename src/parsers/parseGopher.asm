@@ -165,10 +165,12 @@ parseGopher
 
 .handlePort
     jsr readNextByte
+    bcs .parseComplete
     beq .parseComplete
     cmp #13
     bne .handlePort
     jsr readNextByte
+    bcs .parseComplete
     cmp #10
     bne .handlePort
     
@@ -180,11 +182,7 @@ parseGopher
     bne +
     inc zp_linecount+1
 
-    ; and check whether to end parsing alltogether
-+   lda leftToParse+1
-    bmi .parseComplete
-
-    jmp .decideOnParseSeq
++   jmp .decideOnParseSeq
 
 .parseComplete
     lda #4

@@ -2,8 +2,8 @@
 ; memory map
 ; ------------
 ; $0.1c01 - $0.afff: programcode. only enable basic-rom when needed. close to 41kB
-; $1.0400 - $1.f700: data --> 62 kB
-; $1.f700 - $1.ff00: link table -> 2 kB
+; $1.0400 - $1.dfff: data --> 56 kB
+; $1.e000 - $1.ff00: link table -> 7.75 kB
 
 ; configuration constants
 VRAM_LINE_TABLE = $a800 ; offsets to the lines in vram. written by copyx.asm, read by display.asm
@@ -15,6 +15,7 @@ HISTORY_STACK = $b100
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
 
+CONTENT_END_ADDRESS = LINKTABLE_ADDRESS-$ff
 LINKTABLE_ADDRESS = $e000
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display

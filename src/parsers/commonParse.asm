@@ -95,11 +95,11 @@ readNextByte
     bne +
     inc zp_contentAddress+1
 
-+   lda #>LINKTABLE_ADDRESS
++   lda #>CONTENT_END_ADDRESS
     cmp zp_contentAddress+1
     bcs +
 
-    lda #<LINKTABLE_ADDRESS
+    lda #<CONTENT_END_ADDRESS
     cmp zp_contentAddress
     bcs +
     jmp .reachedEof
