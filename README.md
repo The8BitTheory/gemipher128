@@ -54,6 +54,8 @@ Of course, memory is a constraint on the Commodore 128. Right now, it should jus
 * 
 
 
-## Other Gopher clients for Commodore 8-bit computers
-The only other Gopher client for a Commodore 8-bit computer seems to be http://www.armory.com/%7Espectre/cwi/hl/, but I haven't looked into that so far, as it's for the Commodore 64, not the 128.
+## More Gopher material
 
+The only other Gopher client for a Commodore 8-bit computer seems to be Hyperlink http://www.armory.com/%7Espectre/cwi/hl/, but I haven't looked into that so far, as it's for the Commodore 64, not the 128.
+
+A great video, explaining Gopher in the year 1995 (in not too great quality, unfortunately) is here: https://www.youtube.com/watch?v=fx7hCQeuEaE

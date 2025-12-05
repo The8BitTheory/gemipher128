@@ -2,7 +2,7 @@
 initParser
     jsr initContentAddress
 
-    jsr initParseVram
+    jsr initParseVram   ; this should be called when copying to vram, not here
 
     ; setup indirect reading from bank 1
     lda #zp_contentAddress
@@ -95,15 +95,33 @@ readNextByte
     bne +
     inc zp_contentAddress+1
 
-+   dec leftToParse
-    bne +
++   lda #>LINKTABLE_ADDRESS
+    cmp zp_contentAddress+1
+    bcs +
+
+    lda #<LINKTABLE_ADDRESS
+    cmp zp_contentAddress
+    bcs +
+    jmp .reachedEof
+
++   sec
+    lda leftToParse
+    sbc #1
+    sta leftToParse
+    bcs +
     dec leftToParse+1
 
 ;    .checkEof
-+   lda leftToParse
++   lda leftToParse+1
     bne +
-    lda leftToParse+1
-    bpl +
+    lda leftToParse
+    bne +
+
+    nop
+    nop
+    nop
+
+.reachedEof
     sec ; set carry means we reached end of file
     pla
     rts

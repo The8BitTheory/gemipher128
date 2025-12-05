@@ -237,6 +237,15 @@ detectAndInitializeWic64
 +   rts
 
 requestContent
+    sec
+    lda #<LINKTABLE_ADDRESS
+    sbc #<CONTENT_ADDRESS
+    sta .ramLeft
+    lda #>LINKTABLE_ADDRESS
+    sbc #>CONTENT_ADDRESS
+    sta .ramLeft+1
+    
+
     lda #$93 ; clear screen
     jsr bsout
 
@@ -245,6 +254,7 @@ requestContent
     lda #0
     sta zp_responseSize
     sta zp_responseSize+1
+    sta zp_tempY    ;we'll use this as a retry counter (256 times)
 
     +wic64_execute wic64TransferTimeout
     +wic64_execute wic64RemoteTimeout
@@ -268,7 +278,10 @@ requestContent
     lda availableResponse
     bne +
     lda availableResponse+1
-    beq .waitForIncomingData
+    bne +
+    dec zp_tempY
+    bne .waitForIncomingData
+    jmp .allResponseRead
 
 +   lda availableResponse
     sta zp_contentLength
@@ -310,7 +323,8 @@ requestContent
 
     +print txtTcpRead
 .readResponsePart
-
+    ldy #0
+    sty zp_tempY
     +wic64_execute tcpRead, response, 5
     bcc +
     jmp .connTimeout
@@ -319,17 +333,21 @@ requestContent
     lda wic64_bytes_to_transfer
     sta packBytes
     jsr .storeInPerm
-    bcs ++  ; if carry flag is set, we're out of RAM and stop reading
+    bcc .handleResponse
+    jmp .allResponseRead  ; if carry flag is set, we're out of RAM and stop reading
     
 .handleResponse
     +wic64_execute tcpAvailable, availableResponse, 5
     lda availableResponse
-    bne +
+    bne .readResponsePart
     lda availableResponse+1
-    beq ++
+    bne .readResponsePart
 
-+   jmp .readResponsePart
-++  jmp .allResponseRead
+    dec zp_tempY
+    ;bne .handleResponse
+    bne .readResponsePart
+
+    jmp .allResponseRead
 
 .storeInPerm
     ; setup for indsta
@@ -366,8 +384,11 @@ requestContent
 ; check if we reached the end of available RAM
 +   lda #>LINKTABLE_ADDRESS
     cmp zp_contentAddress+1
+    bcs +
+    lda #<LINKTABLE_ADDRESS
+    cmp zp_contentAddress
+    bcs +
     
-    bmi +
     sec
     rts
 
@@ -437,6 +458,8 @@ requestContent
     +print txtDone
     rts
 
+.ramLeft            !word 0
+
 txtDetect           !text "Detecting WiC64... ",0
 txtConnected        !text "Check WiC64 is connected ...",0
 txtTimeout          !text "timeout",$d,0
@@ -480,6 +503,7 @@ statusResponse      !fill 40
 response            !fill 256
 
 startGopher         !text "gopher.floodgap.com",$9
+;startGopher         !text "gopher.quux.org",$9
 startPort           !text "70\r\n"
 startSelector       !text "\r\n",$9
 

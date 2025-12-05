@@ -158,7 +158,7 @@ cursorOffsets  !word 80    ; first offset is always 80 (as long as we're startin
 
 retries        !byte 0
 
-size_vram_content   !word 3071  ; available vram for content (after screen-ram, attribute-ram and charset)
+size_vram_content   !word 6143  ; available vram for content (after screen-ram, attribute-ram and charset)
 vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-vram copy of blocks
 
 *=$1d00
