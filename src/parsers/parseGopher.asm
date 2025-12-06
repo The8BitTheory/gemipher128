@@ -125,7 +125,7 @@ parseGopher
 
 .handleVisible
     jsr readNextByte
-    beq .parseComplete
+    bcs .parseComplete
     cmp #9  ; tab. end ascii output
     bne +
     inc .parseSeq
@@ -148,7 +148,7 @@ parseGopher
 ; for now, just skip until tab
 .handleSelector
     jsr readNextByte
-    beq .parseComplete
+    bcs .parseComplete
     cmp #9
     beq +
 
@@ -157,7 +157,7 @@ parseGopher
 
 .handleHost
     jsr readNextByte
-    beq .parseComplete
+    bcs .parseComplete
     cmp #9
     beq +
     jmp .handleHost

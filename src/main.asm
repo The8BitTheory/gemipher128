@@ -1,6 +1,8 @@
 ; ------------
 ; memory map
 ; ------------
+
+
 ; $0.1c01 - $0.afff: programcode. only enable basic-rom when needed. close to 41kB
 ; $1.0400 - $1.dfff: data --> 56 kB
 ; $1.e000 - $1.ff00: link table -> 7.75 kB
@@ -23,6 +25,9 @@ VISIBLE_LINES = 23
 FIRST_LINE = 1
 LAST_LINE = FIRST_LINE+VISIBLE_LINES-1
 
+DMA = $03f0 ;y holds the value for the command register, A holds the value for the MMU configuration.
+            ;REC needs to be configured to trigger execution upon writing to $ff00
+
 ; bank 1 used for data
 ;  content data starts at $0400 and goes up.
 ;  link tables are expected to have 2kb and start at $f700
@@ -43,20 +48,20 @@ zp_linkTablePosition = $11 ; and $12. contains one 3 or 9-byte entry per textlin
 zp_fastmode = $13
 
 ; used by parseGopher.asm
-zp_visibleLength = $14  ; length of visible text in current line. also used by display.asm
+zp_visibleLength = $14  ; and $15. length of visible text in current line. also used by display.asm
 
 ; used by display.asm
 ; textdisplay
 ; also using zp_visibleLength
-zp_currentLinkTablePtr = $15; and $16   ; where the entry at linkTablePosition points to (related to $1:0400)
-zp_vram_content_addr = $17 ; and $18 ;  also used by copytovram.asm
-zp_vram_screenram = $189 ; and $1a
-zp_linenumber_start = $1b   ; and $1c ; this is the scrolling position. ie the number of the first visible line (in context of the document, not the visible lines)
-zp_cursorLineContent = $1d    ; and $1e     ; this is the cursor line relative to the content
-zp_cursorPosScreen = $1f ; and $20   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
-zp_cursorLineScreen = $21   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
-zp_lastLine = $22       ; this is #LAST_LINE when all content lines fit screen lines. is reduced by one for each multi-line. refers to the screen, not the file
-zp_scrollDirectionUp = $23  ; 0=up, else=down
+zp_currentLinkTablePtr = $16; and $17   ; where the entry at linkTablePosition points to (related to $1:0400)
+zp_vram_content_addr = $18 ; and $19 ;  also used by copytovram.asm
+zp_vram_screenram = $1a ; and $1b
+zp_linenumber_start = $1c   ; and $1d ; this is the scrolling position. ie the number of the first visible line (in context of the document, not the visible lines)
+zp_cursorLineContent = $1e    ; and $1f     ; this is the cursor line relative to the content
+zp_cursorPosScreen = $20 ; and $21   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
+zp_cursorLineScreen = $22   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
+zp_lastLine = $23       ; this is #LAST_LINE when all content lines fit screen lines. is reduced by one for each multi-line. refers to the screen, not the file
+zp_scrollDirectionUp = $24  ; 0=up, else=down
 
 ; used by copytovram.asm
 ; zp_vram_content_addr
@@ -66,33 +71,36 @@ zp_scrollDirectionUp = $23  ; 0=up, else=down
 ; zp_currentLinkTablePtr
 ; zp_linkTablePosition
 ; zp_contentBank
-zp_currentType = $24
-zp_currentSelectorPtr = $25 ; and $26
-zp_currentHostPtr = $27 ; and $28
-zp_currentPortPtr = $29 ; and $2a
-zp_currentTypePtr = $2b ; and $2c
-zp_linkTableIncr = $2d      ; link table has entries of different sizes (gopher=9 bytes, plain text = 3 bytes)
-zp_responseSize = $2e ; and $2f ; the nr of bytes we counted for response. upfront information should be in zp_contentLength
-zp_scrollModeCrsr = $30 ; 0=cursor movement, else=just scroll screen lines
-zp_contentLength = $31; and $32 ; the content length that's reported by the server. zp_responseSize holds the nr bytes we counted
+zp_currentType = $25
+zp_currentSelectorPtr = $26 ; and $27
+zp_currentHostPtr = $28 ; and $29
+zp_currentPortPtr = $2a ; and $2b
+zp_currentTypePtr = $2c ; and $2d
+zp_linkTableIncr = $2e      ; link table has entries of different sizes (gopher=9 bytes, plain text = 3 bytes)
+zp_responseSize = $2f ; and $30 ; the nr of bytes we counted for response. upfront information should be in zp_contentLength
+zp_scrollModeCrsr = $31 ; 0=cursor movement, else=just scroll screen lines
+zp_contentLength = $32; and $33 ; the content length that's reported by the server. zp_responseSize holds the nr bytes we counted
 
 ; history.asm
-zp_historyStackPos = $33    ; the position (entry) in the history stack. (multiply x 12 to get stack offset per entry)
-zp_historyStackSize = $34   ; the nr of entries in the history stack. (multiply x 12 to get stack offset per entry)
-zp_historyStackAddress = $35; and $36. holds the address of the current entry (ie HISTORY_STACK + stackpos*12)
-zp_hostSelBank = $37        ; where to read host,port,selector from (1 for current page, 0 for history)
-zp_navModeHistory = $38     ; 0=navigation via history stack (cursor keys), else=navigation via return key
+zp_historyStackPos = $34    ; the position (entry) in the history stack. (multiply x 12 to get stack offset per entry)
+zp_historyStackSize = $35   ; the nr of entries in the history stack. (multiply x 12 to get stack offset per entry)
+zp_historyStackAddress = $36; and $37. holds the address of the current entry (ie HISTORY_STACK + stackpos*12)
+zp_hostSelBank = $38        ; where to read host,port,selector from (1 for current page, 0 for history)
+zp_navModeHistory = $39     ; 0=navigation via history stack (cursor keys), else=navigation via return key
                             ; (0 means no stack updates, only changing stack position, 1 means push new page to stack)
-zp_tempCalc     = $39 ; and $3a
+zp_tempCalc     = $3a ; and $3b
 
-zp_lastVramContentLine = $3b ; and $3c. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
-zp_memPtr   = $3d ; and $3e. can be used for any temporary indirect read or write memory operation
-zp_pageType = $3f ; keeps type of current page persistently loaded. we run into conflicts with "type of current cursor positon" otherwise
-zp_tempA = $40 ; used to keep temporary value when pha/pla is not sufficient
+zp_lastVramContentLine = $3c ; and $3d. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
+zp_memPtr   = $3e ; and $3f. can be used for any temporary indirect read or write memory operation
+zp_pageType = $40 ; keeps type of current page persistently loaded. we run into conflicts with "type of current cursor positon" otherwise
+zp_tempA = $41 ; used to keep temporary value when pha/pla is not sufficient
 
-zp_vramLineOffsets = $41 ; and $42
-zp_firstVramContentLine = $43 ; and $44
-zp_vramBlock    = $45   ; which vram block we're currently working with. used by parse, copy, and display
+zp_vramLineOffsets = $42 ; and $43
+zp_firstVramContentLine = $44 ; and $45
+zp_vramBlock    = $46   ; which vram block we're currently working with. used by parse, copy, and display
+zp_reu_blocks = $47  ; and $48. 0=not detected, above=nr of 64kb blocks/banks
+zp_georam_blocks = $49 ; 0=no, above=nr of 64kb blocks/banks
+zp_perm_target = $4a    ; where to store downloaded data. 0=bank1, 1=reu, 2=georam
 
 ; common memory area below $0400
 c_fetch = $02a2
@@ -164,6 +172,11 @@ vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-v
 
 *=$1d00
 main
+    jsr b_slow
+
+    jsr detectREU
+;    jsr detectGeoRAM
+
 ;    jsr k_primm
 ;    !pet "pet klein GROSS",0
 ;    jsr k_primm
@@ -182,8 +195,6 @@ main
 
     jsr detectAndInitializeWic64
 
-    
-
 ; disable case switching via Shift-Commodore
     lda #11
     jsr bsout
@@ -196,18 +207,19 @@ main
     jsr initHistoryStack
 
 ; load from network
-    jsr setInitialGopherHostSelector
-    lda #1
-    sta zp_navModeHistory
+    ;jsr setInitialGopherHostSelector
+    jsr loadInitialPageFromDisk
+    jmp .afterRequest
 
 .requestNewContent
     jsr requestContent
 
     ; set the cursor line to zero here, that's important for calculating the right screen area for display
+.afterRequest
     jsr .setToFirstContentLine
     
-    lda #$93 ; clear screen
-    jsr bsout
+;    lda #$93 ; clear screen
+;    jsr bsout
 
 ; do the processing
     lda #$0d
@@ -367,6 +379,11 @@ main
     bne +
     jsr setInitialGopherHostSelector
     jmp .requestNewContent
+
++   cmp #'S' ; go to startpage
+    bne +
+    jsr loadInitialPageFromDisk
+    jmp .afterRequest
 
 +   cmp #'R' ;reload
     bne +
@@ -735,10 +752,6 @@ initLinkTableAddress
 
     rts
 
-calcLinkTablePositionForFirstVramLine
-    jsr initLinkTableAddress
-    
-    rts
 
 ; used for regular runtime (should leave us with $1c01 - $bfff for program code. close to 42 kB )
 disableBasicRom
@@ -751,6 +764,24 @@ enableBasicRom
     lda #%00000000
     sta $ff00
     rts
+
+    ; enable I/O (setting bit0 if $ff00 to 0)
+enableIO
+    pha
+    lda $ff00
+    and #%11111110
+    sta $ff00
+    pla
+    rts
+
+disableIO
+    pha
+    lda $ff00
+    ora #%00000001
+    sta $ff00
+    pla
+    rts
+
 
 doFast
     jsr enableBasicRom
@@ -813,10 +844,14 @@ recoverZp
     rts
 
 !src "src/file/load.asm"
+!src "src/file/loadContent.asm"
+!src "src/network/disk.asm"
 !src "src/vdc.asm"
 !src "src/network/networkWic.asm"
 !src "src/wic64/wic64.asm"
 !src "src/history.asm"
+;!src "src/memory/georam.asm"
+!src "src/memory/reu.asm"
 
 !src "src/parsers/parseGopher.asm"
 !src "src/parsers/parsePlainText.asm"

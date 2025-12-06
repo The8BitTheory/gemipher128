@@ -1,3 +1,13 @@
+;  incoming data is stored at 'response'. that's usually 240 bytes
+;  when a 240 byte block is full, data is copied to bank 1
+;  when ram is full, download is stopped (tcp close).
+
+;  if an REU is available, we keep downloading data to 'response'
+;  instead of copying to bank 1, we DMA-copy the 240 byte blocks to the REU.
+;  copying data from the REU to bank 1 is done when data is to be displayed.
+
+; if a georam is connected, we write data to georam's 256 byte block immediately
+
 !zone networkWic
 wic64_include_load_and_run = 0
 wic64_include_enter_portal = 0
@@ -5,13 +15,17 @@ wic64_optimize_for_size = 0
 
 !src "src/wic64/wic64.h"
 
-setInitialGopherHostSelector
+setParamsForGopherPage
     lda #$31
     sta zp_currentType
     sta zp_pageType
 
     lda #0
     sta zp_scrollModeCrsr
+    rts
+
+setInitialGopherHostSelector
+    jsr setParamsForGopherPage
 
     lda #<startGopher
     sta zp_currentHostPtr
@@ -31,7 +45,7 @@ setInitialGopherHostSelector
     ldx #0
     lda mmuBankConfig,x
     sta zp_hostSelBank
-    jmp  ++
+    jmp  .setWithBankSet
 
 setBkm1GopherHostSelector
     ldx #0
@@ -108,7 +122,7 @@ setNewGopherHostSelector
     ldx #1
     lda mmuBankConfig,x
     sta zp_hostSelBank
-    jmp ++
+    jmp .setWithBankSet
 
 ; we're navigating from a history entry
 ; pointers go to bank 0
@@ -117,7 +131,8 @@ setFromHistory
     lda mmuBankConfig,x
     sta zp_hostSelBank
     
-++  ldy #0
+.setWithBankSet
+    ldy #0
     sty tcpOpenSizeL
     sty tcpWriteSizeL
     sty tcpOpenSizeH
@@ -164,8 +179,15 @@ setFromHistory
 
 -   ldx zp_hostSelBank
     jsr c_fetch
-    cmp #9
-    beq +
+    cmp #$0d
+    bne +
+    iny
+    jmp -
++   cmp #$0a
+    bne +
+    jmp .writeCrLf
++   cmp #9
+    beq .writeCrLf
     ldx zp_tempX
     sta tcpWriteSelector,x
     inc zp_tempX
@@ -173,7 +195,10 @@ setFromHistory
     jsr .incWriteSize
     jmp -
 
-+   ldx zp_tempX
+;+   rts
+
+.writeCrLf
+    ldx zp_tempX
     lda #$0d
     sta tcpWriteSelector,x
     jsr .incWriteSize
@@ -244,9 +269,16 @@ requestContent
     lda #>CONTENT_END_ADDRESS
     sbc #>CONTENT_ADDRESS
     sta .ramLeft+1
-    
 
-    lda #$93 ; clear screen
+    lda zp_perm_target
+    cmp #1
+    bne +
+    jsr initReu
+    
+;    lda #0
+;    sta zp_perm_target
+
++   lda #$93 ; clear screen
     jsr bsout
 
     jsr initContentAddress
@@ -332,24 +364,41 @@ requestContent
     jsr bsout
     lda wic64_bytes_to_transfer
     sta packBytes
-    jsr .storeInPerm
+
+    lda zp_perm_target
+    bne +
+    jsr .storeInBank1
+    jmp .afterStore
+
++   cmp #1
+    bne +
+    jsr storeInReu
+    jmp .afterStore
+
++   cmp #2
+    bne +
+    ;jsr .storeInGeoRam
+
+.afterStore
     bcc .handleResponse
-    jmp .allResponseRead  ; if carry flag is set, we're out of RAM and stop reading
+
++   jmp .allResponseRead  ; if carry flag is set, we're out of RAM and stop reading
     
 .handleResponse
     +wic64_execute tcpAvailable, availableResponse, 5
     lda availableResponse
-    bne .readResponsePart
+    bne +
     lda availableResponse+1
-    bne .readResponsePart
+    bne +
 
-    dec zp_tempY
-    ;bne .handleResponse
-    bne .readResponsePart
+    dec zp_tempY    ; we wait for 256 cycles if more data arrives
+    bne +
 
     jmp .allResponseRead
 
-.storeInPerm
++   jmp .readResponsePart
+
+.storeInBank1
     ; setup for indsta
     lda #zp_contentAddress
     sta c_stash_zp
@@ -414,9 +463,6 @@ requestContent
 +   adc #54
     rts
 
-.storeInBank1    
-    rts
-
 .allResponseRead
     lda #$0d
     jsr bsout
@@ -456,9 +502,26 @@ requestContent
     +print txtTcpClose
     +wic64_execute tcpClose, response
     +print txtDone
-    rts
+
+    lda zp_perm_target
+    beq ++
+
+    cmp #1
+    bne +
+    jsr readFromReu ; if we stored to REU, copy initial set of data to bank 1 for regular display
+    jmp ++
+
++   cmp #2
+    bne ++
+    ; jsr readFromGeoRam
+
+++  rts
 
 .ramLeft            !word 0
+.reuAvlblRam        !word 0 ; how much ram is left in the current reu bank
+.reuAvlblBank       !byte 0 ; how many banks are left once the current one is filled
+.geoRamAvlblRam     !word 0 
+.geoRamAvlblBank    !byte 0
 
 txtDetect           !text "Detecting WiC64... ",0
 txtConnected        !text "Check WiC64 is connected ...",0
@@ -503,9 +566,10 @@ statusResponse      !fill 40
 response            !fill 256
 
 startGopher         !text "gopher.floodgap.com",$9
+;startGopher         !text "gopher.black",$9
 ;startGopher         !text "gopher.quux.org",$9
 startPort           !text "70\r\n"
-startSelector       !text "\r\n",$9
+startSelector       !text "",$9
 
 bkm1Server          !text "gopher.floodgap.com",$9
 bkm1Selector        !text "/archive/info-mac/game",$9
