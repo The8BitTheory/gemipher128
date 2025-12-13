@@ -356,11 +356,11 @@ drawCursor
     lsr
     lsr
     lsr
-    jmp .makeItHex
+    jmp makeItHex
 
 .loNybToHex
     and #%00001111
-    jmp .makeItHex
+    jmp makeItHex
 
 .printAcc
     ldx #31
@@ -540,7 +540,7 @@ drawCursor
 
     rts
 
-.makeItHex
+makeItHex
     clc
     cmp #10
     bpl +
@@ -921,7 +921,7 @@ writeCurrentGopherToHeadline
 
     ldx #64
     stx zp_tempX
-    ldy #10
+    ldy #02
     lda #00
     jsr AY_to_vdc_regs_18_19
 

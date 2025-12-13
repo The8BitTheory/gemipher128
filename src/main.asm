@@ -4,8 +4,12 @@
 
 
 ; $0.1c01 - $0.afff: programcode. only enable basic-rom when needed. close to 41kB
+; $0.b000 - $0.b0ff: history pointers
+; $0.b100 - ?????: string entries for history (host:port/selector)
+; $0.e000 - $0.ff00: link table -> 7.75 kB
+
 ; $1.0400 - $1.dfff: data --> 56 kB
-; $1.e000 - $1.ff00: link table -> 7.75 kB
+
 
 ; configuration constants
 VRAM_LINE_TABLE = $a800 ; offsets to the lines in vram. written by copyx.asm, read by display.asm
@@ -13,12 +17,16 @@ VRAM_LINE_TABLE = $a800 ; offsets to the lines in vram. written by copyx.asm, re
 HISTORY_TABLE = $b000   ; room for 128 entries
 HISTORY_STACK = $b100   
 
+LINKTABLE_ADDRESS = $e000
+
+
+
 ; CONTENT describes one full gopher page
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
 
 CONTENT_END_ADDRESS = LINKTABLE_ADDRESS-$ff
-LINKTABLE_ADDRESS = $e000
+
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
 VISIBLE_LINES = 23
@@ -155,8 +163,6 @@ zpStore             !fill 134
 keyStore            !fill 10    ;keeps values $1000-$1009
 
 fileOpError         !byte 0
-filenameCharset     !pet "latin9ui.char"
-filenameLength=*-filenameCharset
 
 ; used by display.asm
 ; cursorOffsets holds the vram-offset for each cursor position
@@ -172,18 +178,29 @@ vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-v
 
 *=$1d00
 main
+; disable case switching via Shift-Commodore
+    lda #11
+    jsr bsout
+
+; switch to lower-case charset
+    lda #14
+    jsr bsout
+
     jsr b_slow
 
-    jsr detectREU
-;    jsr detectGeoRAM
+    lda #$93 ; clear screen
+    jsr bsout
+
+    jsr detectAndInitSwiftlink
+    bcc +
+    jmp .exitGracefully
+    ;jsr detectGeoRAM
 
 ;    jsr k_primm
 ;    !pet "pet klein GROSS",0
 ;    jsr k_primm
 ;    !text "ascii klein GROSS",0
-    lda #$93 ; clear screen
-    jsr bsout
-
++
     lda #0
     sta zp_fastmode
 
@@ -192,19 +209,15 @@ main
     jsr saveZp
 
     jsr initVdc
+    
 
-    jsr detectAndInitializeWic64
-
-; disable case switching via Shift-Commodore
-    lda #11
-    jsr bsout
-
-; switch to lower-case charset
-    lda #14
-    jsr bsout
+;    jsr detectAndInitializeWic64
     
     jsr disableBasicRom
     jsr initHistoryStack
+
+    jsr requestContentViaSwiftlink
+    jmp .afterRequest
 
 ; load from network
     ;jsr setInitialGopherHostSelector
@@ -409,6 +422,7 @@ main
 ;    jsr bsout
 ;    lda #'X'
 ;    jsr bsout
+.exitGracefully
 +   jsr recoverZp
     jmp enableBasicRom
     nop ; only for debugging purposes to give breakpoints a safe spot
@@ -759,7 +773,7 @@ disableBasicRom
     sta $ff00
     rts
 
-; used for slow/fast
+; used for slow/fast. resets to bank 15, not only enabling basic
 enableBasicRom
     lda #%00000000
     sta $ff00
@@ -784,6 +798,7 @@ disableIO
 
 
 doFast
+    rts
     jsr enableBasicRom
     jsr b_fast
     jmp disableBasicRom
@@ -847,10 +862,12 @@ recoverZp
 !src "src/file/loadContent.asm"
 !src "src/network/disk.asm"
 !src "src/vdc.asm"
+!src "src/network/networkCommon.asm"
 !src "src/network/networkWic.asm"
+!src "src/network/swiftlink.asm"
 !src "src/wic64/wic64.asm"
 !src "src/history.asm"
-;!src "src/memory/georam.asm"
+!src "src/memory/georam.asm"
 !src "src/memory/reu.asm"
 
 !src "src/parsers/parseGopher.asm"
@@ -859,6 +876,9 @@ recoverZp
 !src "src/copy/copyCommon.asm"
 !src "src/display.asm"
 
+
+txtReu      !text "REU: ",0
+txtGeoRam   !text "GeoRAM: ",0
 
 ; memory map
 ; bank 0 - $1c01 programcode

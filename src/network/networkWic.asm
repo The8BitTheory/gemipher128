@@ -15,36 +15,8 @@ wic64_optimize_for_size = 0
 
 !src "src/wic64/wic64.h"
 
-setParamsForGopherPage
-    lda #$31
-    sta zp_currentType
-    sta zp_pageType
-
-    lda #0
-    sta zp_scrollModeCrsr
-    rts
-
 setInitialGopherHostSelector
-    jsr setParamsForGopherPage
-
-    lda #<startGopher
-    sta zp_currentHostPtr
-    lda #>startGopher
-    sta zp_currentHostPtr+1
-
-    lda #<startPort
-    sta zp_currentPortPtr
-    lda #>startPort
-    sta zp_currentPortPtr+1
-
-    lda #<startSelector
-    sta zp_currentSelectorPtr
-    lda #>startSelector
-    sta zp_currentSelectorPtr+1
-
-    ldx #0
-    lda mmuBankConfig,x
-    sta zp_hostSelBank
+    jsr setInitialGopherHostSelectorCommon
     jmp  .setWithBankSet
 
 setBkm1GopherHostSelector
@@ -265,19 +237,23 @@ requestContent
     sec
     lda #<CONTENT_END_ADDRESS
     sbc #<CONTENT_ADDRESS
-    sta .ramLeft
+    sta ramLeft
     lda #>CONTENT_END_ADDRESS
     sbc #>CONTENT_ADDRESS
-    sta .ramLeft+1
+    sta ramLeft+1
 
     lda zp_perm_target
     cmp #1
     bne +
     jsr initReu
-    
+    jmp .afterPerm
++   cmp #2
+    bne +
+    jsr initGeoRam
 ;    lda #0
 ;    sta zp_perm_target
 
+.afterPerm
 +   lda #$93 ; clear screen
     jsr bsout
 
@@ -355,6 +331,7 @@ requestContent
 
     +print txtTcpRead
 .readResponsePart
+    +wic64_execute wic64TransferTimeout 
     ldy #0
     sty zp_tempY
     +wic64_execute tcpRead, response, 5
@@ -377,7 +354,8 @@ requestContent
 
 +   cmp #2
     bne +
-    ;jsr .storeInGeoRam
+    jsr storeInGeoRam
+    ;jmp .afterStore
 
 .afterStore
     bcc .handleResponse
@@ -517,7 +495,6 @@ requestContent
 
 ++  rts
 
-.ramLeft            !word 0
 .reuAvlblRam        !word 0 ; how much ram is left in the current reu bank
 .reuAvlblBank       !byte 0 ; how many banks are left once the current one is filled
 .geoRamAvlblRam     !word 0 
@@ -552,7 +529,7 @@ tcpClose            !byte "R", WIC64_TCP_CLOSE, $00, $00
 wic64IsConnected    !byte "R", WIC64_IS_CONNECTED, $01, $00, 5
 
 wic64GetStMsg       !byte "R", WIC64_GET_STATUS_MESSAGE, $01, $00, 0
-wic64TransferTimeout !byte "R", WIC64_SET_TRANSFER_TIMEOUT, $01, $00, 5
+wic64TransferTimeout !byte "R", WIC64_SET_TRANSFER_TIMEOUT, $01, $00, 10
 wic64RemoteTimeout  !byte "R", WIC64_SET_REMOTE_TIMEOUT, $01, $00, 10
 
 availableResponse   !word 0

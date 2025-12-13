@@ -22,7 +22,7 @@ initVdc
     jsr A_to_vdc_reg_X
 
 ; initialize charset
-    jsr loadFromDisk
+    jsr loadCharsetFromDisk
 
     ; arguments: ram-source, vram-target, nr of characters to copy
     ; copy from 16384 ($4000) to $3000 in fram, copy 96 bytes

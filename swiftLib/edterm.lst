@@ -1,0 +1,41 @@
+10 io=56832 : hack=0 : baud=0+11 : parity=0 : rem ** $de00,nohack,9600,8n1
+20 if en=1 then 150
+30 print chr$(14);"Extra-Dumb Term 1.00":print"by Craig Bruce, 14-Apr-1998"
+40 dv=peek(186)
+50 co=64:ml=49152:if fre(0)<>fre(1) then co=128:ml=4864
+60 print:print"loading swiftlib driver..."
+70 f$="swiftlib"+mid$(str$(co),2) : en=1
+80 if co=128 then bload (f$),u(dv) : goto 150
+90 en=1 : load f$,dv,1 : goto 20
+100 rem ** call ml routine: pc,a,x,y in and a,x,y,sr,cs out
+110 if co=128 then sys pc,a,x,y,0 : rreg a,x,y,sr : cs=sr and 1 : return
+120 poke 780,a : poke 781,x : poke 782,y : poke 783,0 : sys pc
+130 a=peek(780): x=peek(781) : y=peek(782) : sr=peek(783) : cs=sr and 1
+140 return
+150 rem ** initialize
+160 print:print "initializing ascii tables..."
+170 dim ta%(255),tc%(255)
+180 for i=0  to 64 : ta%(i)=i    : tc%(i)=i    : next
+190 for i=65 to 90 : ta%(i)=i+32 : tc%(i)=i+128: next
+200 for i=91 to 95 : ta%(i)=i    : tc%(i)=i    : next
+210 for i=96 to 122: ta%(i)=i-32 : tc%(i)=i-32 : next
+220 for i=123to 127: ta%(i)=i    : tc%(i)=i+96 : next
+230 for i=128to 191: ta%(i)=i    : tc%(i)=i    : next
+231 for i=192to 218: ta%(i)=i-128: tc%(i)=i    : next
+232 for i=219to 223: ta%(i)=i-96 : tc%(i)=i    : next
+233 for i=224to 255: ta%(i)=i    : tc%(i)=i    : next
+234 tc%(10)=13 : tc%(13)=0 : tc%(96)=192 : ta%(192)=60 : tc%(8)=20 : ta%(8)=20
+240 print:print "initialize swiftlink..."
+250 pc=ml+0 : y=int(io/256) : a=io-y*256 : x=hack : gosub 100
+260 if cs then print "error initializing swiftlink!" : end
+270 pc=ml+3 : a=baud : x=parity : gosub 100
+280 if cs=0 then 310
+290 baud=(baud and 15*16) + ((baud+1)and 15)
+300 print "trying baud code";baud : goto 270
+310 print:print "edterm ready":print:print chr$(185);chr$(157);
+320 get a$ : if a$="" then 330
+321 if a$=chr$(191) then 290
+329 pc=ml+12 : a=ta%(asc(a$)) : gosub 100
+330 pc=ml+9 : gosub 100
+331 if x<>0 then print " ";chr$(157);chr$(tc%(a));chr$(185);chr$(157);
+340 goto 320

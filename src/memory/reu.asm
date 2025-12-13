@@ -37,8 +37,6 @@ initReu
     rts
 
 storeInReu
-
-    
     ; have reu auto-increment the write address
     lda .reuBlock
     sta reu_extaddr_bank
@@ -154,13 +152,13 @@ detectREU
         stx zp_reu_blocks+1
         ; first write signatures to banks in *descending* order (banks 255..0):
 ----    dex
-        stx banknum
-        lda #<signature_start
-        ldx #>signature_start
+        stx .banknum
+        lda #<.signature_start
+        ldx #>.signature_start
         ldy #REUCOMMAND_STASH
         jsr set_registers_AXY
         ; all banks written?
-        ldx banknum
+        ldx .banknum
         bne ----
 
         ; now check signatures in *ascending* order:
@@ -168,24 +166,24 @@ detectREU
 ; but I'm reluctant to use this function in a "REU detect" routine: it could
 ; be buggy in modern FPGA implementations because it is so seldomly used)
         ; banknum just became zero so no need to init it
-----    lda #<sig_candidate_start
-        ldx #>sig_candidate_start
+----    lda #<.sig_candidate_start
+        ldx #>.sig_candidate_start
         ldy #REUCOMMAND_FETCH
         jsr set_registers_AXY
         ; compare data
-        ldx #SIGNATURE_LENGTH_LOW - 1
---      lda sig_candidate_start, x
-        cmp signature_start, x
+        ldx #.SIGNATURE_LENGTH_LOW - 1
+--      lda .sig_candidate_start, x
+        cmp .signature_start, x
         bne @failed
         dex
         bpl --
     ; bank has correct signature
-        inc banknum ; next bank (== number of banks already found)
+        inc .banknum ; next bank (== number of banks already found)
         bne ----
 
         ; there are actually 256 banks!
         sec
-        lda banknum
+        lda .banknum
         sta zp_reu_blocks
         bcc +
         lda #1
@@ -194,7 +192,7 @@ detectREU
  
 @failed 
     clc
-    lda banknum
+    lda .banknum
     sta zp_reu_blocks
 
 .exitReu
@@ -216,23 +214,24 @@ set_registers_AXY ; setup REU registers (used for both reading and writing)
     ldx #0
     stx reu_extaddr_lo
     stx reu_extaddr_hi
-    lda banknum
+    lda .banknum
     sta reu_extaddr_bank
-    lda #SIGNATURE_LENGTH_LOW
+    lda #.SIGNATURE_LENGTH_LOW
     sta reu_len_lo
     stx reu_len_hi
     sty reu_command
     rts
  
 ; signature we write to REU banks, first byte is bank number
-signature_start
-banknum     !tx 0, "bliblablub"
-    SIGNATURE_LENGTH_LOW = * - signature_start
+.signature_start
+.banknum     !tx 0, "bliblablub"
+    .SIGNATURE_LENGTH_LOW = * - .signature_start
  
 ; target buffer when reading signatures back from REU
-sig_candidate_start
+.sig_candidate_start
         !tx "XBLIBLABLUB"   ; must be same length as signature above, obviously
-sig_candidate_end
-    SIGNATURE_LENGTH_LOW = * - sig_candidate_start
+.sig_candidate_end
+    .SIGNATURE_LENGTH_LOW = * - .sig_candidate_start
 
 .reuBlock   !byte 0
+

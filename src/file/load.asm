@@ -2,32 +2,40 @@
 ; if used otherwise, overwriting of existing memory locations might cause problems
 
 !zone loadfile
-load_address = $b000  ; make sure file size doesn't run over 4kb.
+;load_address = $b000  ; make sure file size doesn't run over 4kb.
 
-loadFromDisk
+loadCharsetFromDisk
+        LDA #.filenameLength
+        LDX #<.filenameCharset
+        LDY #>.filenameCharset
+        jmp .loadRoutine
+
+loadSwiftlinkDriverFromDisk
+        lda #.filenameSwiftlinkLength
+        ldx #<.filenameSwiftlink
+        ldy #>.filenameSwiftlink
+
+.loadRoutine
+        JSR $FFBD     ; call SETNAM
+
         lda #1
         sta fileOpError
         lda #0
         sta .byteCount
 
-        LDA #filenameLength
-        LDX #<filenameCharset
-        LDY #>filenameCharset
-        JSR $FFBD     ; call SETNAM
-
         LDA #$02      ; file number 2
         LDX $BA       ; last used device number
         BNE +
         LDX #$08      ; default to device 8
-+       LDY #$00      ; secondary address 2
++       LDY #$01      ; secondary address 2 (0=relocated load, 1=load to position in fileheader)
         JSR $FFBA     ; call SETLFS
 
         lda #0
         ldx #0
         jsr $ff68 ; call SETBNK
 
-        ldx #<load_address
-        ldy #>load_address
+;        ldx #<load_address
+;        ldy #>load_address
         lda #0
         
         jsr $ffd5       ;BLOAD
@@ -35,39 +43,6 @@ loadFromDisk
         bcs .error
         rts
 
-
-;        JSR $FFC0     ; call OPEN
-;        BCS .error    ; if carry set, the file could not be opened
-
-        ; check drive error channel here to test for
-        ; FILE NOT FOUND error etc.
-
-;        LDX #$02      ; filenumber 2
-;        JSR $FFC6     ; call CHKIN (file 2 now used as input)
-
-;        LDA #<load_address
-;        STA $AE
-;        LDA #>load_address
-;        STA $AF
-
-;        LDY #$00
-;-       JSR $FFB7     ; call READST (read status byte)
-;        BNE .eof      ; either EOF or read error
-;        JSR $FFCF     ; call CHRIN (get a byte from file)
-;        STA ($AE),Y   ; write byte to memory
-;        INC $AE
-;        BNE +
-;        INC $AF
-
-;+       inc .byteCount
-;        ldx .byteCount
-;        cpx #.maxBytes
-;        beq .eof        ; if we have reached 24 bytes, stop loading
-;        JMP -     ; next byte
-
-;.eof
-;        AND #$40      ; end of file?
-;        BEQ .readerror
 .close
         LDA #$02      ; filenumber 2
         JSR $FFC3     ; call CLOSE
@@ -97,3 +72,9 @@ loadFromDisk
 
 .byteCount      !byte 0
 .maxBytes = 24
+
+.filenameCharset     !pet "latin9ui.char"
+.filenameLength=*-.filenameCharset
+
+.filenameSwiftlink      !pet "swiftlib128"
+.filenameSwiftlinkLength=*-.filenameSwiftlink
