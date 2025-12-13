@@ -329,22 +329,30 @@ requestContent
     lda #$d
     jsr bsout
 
+    lda #zp_contentAddress
+    sta c_stash_zp
+
+    ldx #CONTENT_BANK
+    lda mmuBankConfig,X
+    sta zp_contentBank
+    +wic64_set_store_instruction .storeInstructionBank1
+
     +print txtTcpRead
 .readResponsePart
     +wic64_execute wic64TransferTimeout 
     ldy #0
     sty zp_tempY
-    +wic64_execute tcpRead, response, 5
+    +wic64_execute tcpRead, response, 5, ramLeft
     bcc +
-    jmp .connTimeout
+    jmp .allResponseRead
 +   lda #'o'
     jsr bsout
-    lda wic64_bytes_to_transfer
-    sta packBytes
+
+    jmp .readResponsePart
 
     lda zp_perm_target
     bne +
-    jsr .storeInBank1
+    jsr .updateNumbersForBank1
     jmp .afterStore
 
 +   cmp #1
@@ -375,6 +383,36 @@ requestContent
     jmp .allResponseRead
 
 +   jmp .readResponsePart
+
+
+.updateNumbersForBank1
+;    clc
+;    lda wic64_bytes_to_transfer
+;    adc zp_contentAddress
+;    sta zp_contentAddress
+;    bcc +
+;    inc zp_contentAddress+1
+
+; check if we reached the end of available RAM
+    lda #>CONTENT_END_ADDRESS
+    cmp zp_contentAddress+1
+    bcs +
+    lda #<CONTENT_END_ADDRESS
+    cmp zp_contentAddress
+
+    sec
+    rts
+
++   clc
+    tya
+    adc zp_responseSize
+    sta zp_responseSize
+    bcc +
+    inc zp_responseSize+1
+
++   clc
+    rts
+
 
 .storeInBank1
     ; setup for indsta
@@ -428,6 +466,23 @@ requestContent
 
 +   clc
     rts
+
+.storeInstructionBank1
+    jsr .stashBank1
+
+.stashBank1
+    stx zp_wic_stash_x
+    sty zp_wic_stash_y
+    ldy #0
+    ldx zp_contentBank
+    jsr c_stash
+    ldx zp_wic_stash_x
+    ldy zp_wic_stash_y
+    inc zp_contentAddress
+    bne +
+    inc zp_contentAddress+1
++   rts
+
 
 .makeItHex
     and #%00001111
@@ -529,8 +584,13 @@ tcpClose            !byte "R", WIC64_TCP_CLOSE, $00, $00
 wic64IsConnected    !byte "R", WIC64_IS_CONNECTED, $01, $00, 5
 
 wic64GetStMsg       !byte "R", WIC64_GET_STATUS_MESSAGE, $01, $00, 0
-wic64TransferTimeout !byte "R", WIC64_SET_TRANSFER_TIMEOUT, $01, $00, 10
-wic64RemoteTimeout  !byte "R", WIC64_SET_REMOTE_TIMEOUT, $01, $00, 10
+wic64TransferTimeout !byte "R", WIC64_SET_TRANSFER_TIMEOUT
+wic64TransferTimeoutSize !byte $01, $00
+wic64TransferTimeoutValue !byte 10
+
+wic64RemoteTimeout  !byte "R", WIC64_SET_REMOTE_TIMEOUT
+wic64RemoteTimeoutSize !byte $01, $00
+wic64RemoteTimeoutValue !byte 10
 
 availableResponse   !word 0
 writeResponse       !word 0

@@ -110,6 +110,9 @@ zp_reu_blocks = $47  ; and $48. 0=not detected, above=nr of 64kb blocks/banks
 zp_georam_blocks = $49 ; 0=no, above=nr of 64kb blocks/banks
 zp_perm_target = $4a    ; where to store downloaded data. 0=bank1, 1=reu, 2=georam
 
+zp_wic_stash_x = $4b
+zp_wic_stash_y = $4c
+
 ; common memory area below $0400
 c_fetch = $02a2
 c_fetch_zp = $02aa
@@ -191,16 +194,16 @@ main
     lda #$93 ; clear screen
     jsr bsout
 
-    jsr detectAndInitSwiftlink
-    bcc +
-    jmp .exitGracefully
+;    jsr detectAndInitSwiftlink
+;    bcc +
+;    jmp .exitGracefully
     ;jsr detectGeoRAM
 
 ;    jsr k_primm
 ;    !pet "pet klein GROSS",0
 ;    jsr k_primm
 ;    !text "ascii klein GROSS",0
-+
+;+
     lda #0
     sta zp_fastmode
 
@@ -211,13 +214,13 @@ main
     jsr initVdc
     
 
-;    jsr detectAndInitializeWic64
+    jsr detectAndInitializeWic64
     
     jsr disableBasicRom
     jsr initHistoryStack
 
-    jsr requestContentViaSwiftlink
-    jmp .afterRequest
+;    jsr requestContentViaSwiftlink
+;    jmp .afterRequest
 
 ; load from network
     ;jsr setInitialGopherHostSelector
@@ -402,7 +405,7 @@ main
     bne +
     jmp .requestNewContent
 
-+   cmp #'S'; speed
++   cmp #'F'; speed
     bne ++
     lda zp_fastmode
     beq +
@@ -798,7 +801,6 @@ disableIO
 
 
 doFast
-    rts
     jsr enableBasicRom
     jsr b_fast
     jmp disableBasicRom
