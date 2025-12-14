@@ -258,6 +258,13 @@ requestContent
     jsr bsout
 
     jsr initContentAddress
+    lda #zp_contentAddress
+    sta c_stash_zp
+
+    ldx #CONTENT_BANK
+    lda mmuBankConfig,X
+    sta zp_contentBank
+    +wic64_set_store_instruction .storeInstructionBank1
     
     lda #0
     sta zp_responseSize
@@ -329,26 +336,17 @@ requestContent
     lda #$d
     jsr bsout
 
-    lda #zp_contentAddress
-    sta c_stash_zp
-
-    ldx #CONTENT_BANK
-    lda mmuBankConfig,X
-    sta zp_contentBank
-    +wic64_set_store_instruction .storeInstructionBank1
-
     +print txtTcpRead
-.readResponsePart
-    +wic64_execute wic64TransferTimeout 
     ldy #0
     sty zp_tempY
-    +wic64_execute tcpRead, response, 5, ramLeft
+.readResponsePart
+;    +wic64_execute wic64TransferTimeout 
+
+    +wic64_execute tcpRead, response, 5
     bcc +
     jmp .allResponseRead
-+   lda #'o'
-    jsr bsout
 
-    jmp .readResponsePart
++   jmp .readResponsePart
 
     lda zp_perm_target
     bne +
@@ -371,11 +369,15 @@ requestContent
 +   jmp .allResponseRead  ; if carry flag is set, we're out of RAM and stop reading
     
 .handleResponse
-    +wic64_execute tcpAvailable, availableResponse, 5
-    lda availableResponse
+    lda wic64_response_size
     bne +
-    lda availableResponse+1
+    lda wic64_response_size+1
     bne +
+    ;+wic64_execute tcpAvailable, availableResponse, 5
+    ;lda availableResponse
+    ;bne +
+    ;lda availableResponse+1
+    ;bne +
 
     dec zp_tempY    ; we wait for 256 cycles if more data arrives
     bne +
@@ -386,12 +388,6 @@ requestContent
 
 
 .updateNumbersForBank1
-;    clc
-;    lda wic64_bytes_to_transfer
-;    adc zp_contentAddress
-;    sta zp_contentAddress
-;    bcc +
-;    inc zp_contentAddress+1
 
 ; check if we reached the end of available RAM
     lda #>CONTENT_END_ADDRESS
@@ -400,60 +396,6 @@ requestContent
     lda #<CONTENT_END_ADDRESS
     cmp zp_contentAddress
 
-    sec
-    rts
-
-+   clc
-    tya
-    adc zp_responseSize
-    sta zp_responseSize
-    bcc +
-    inc zp_responseSize+1
-
-+   clc
-    rts
-
-
-.storeInBank1
-    ; setup for indsta
-    lda #zp_contentAddress
-    sta c_stash_zp
-
-    ldx #CONTENT_BANK
-    lda mmuBankConfig,X
-    sta zp_contentBank
-
-    ldy #0
-    sty zp_tempX
-
--   ldx zp_tempX
-    lda response,x
-
-; begin store in bank 1
-    ldx zp_contentBank
-    jsr c_stash
-; end store in bank 1
-    
-    inc zp_tempX
-    iny
-    dec packBytes
-    bne -
-
-    clc
-    tya
-    adc zp_contentAddress
-    sta zp_contentAddress
-    bcc +
-    inc zp_contentAddress+1
-
-; check if we reached the end of available RAM
-+   lda #>CONTENT_END_ADDRESS
-    cmp zp_contentAddress+1
-    bcs +
-    lda #<CONTENT_END_ADDRESS
-    cmp zp_contentAddress
-    bcs +
-    
     sec
     rts
 
@@ -481,6 +423,8 @@ requestContent
     inc zp_contentAddress
     bne +
     inc zp_contentAddress+1
+    lda #'o'
+    jsr bsout
 +   rts
 
 
