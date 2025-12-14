@@ -327,21 +327,6 @@ wic64_nop = $ea
     +wic64_execute .request, .response
 }
 
-!macro wic64_execute .request, .response, .timeout, .size {
-    lda wic64_timeout
-    sta wic64_configured_timeout
-
-    lda #.timeout
-    sta wic64_timeout
-
-    lda #<.size
-    sta wic64_bytes_to_transfer
-    lda #>.size
-    sta wic64_bytes_to_transfer+1
-
-    +wic64_execute .request, .response
-}
-
 ;---------------------------------------------------------
 
 !macro wic64_detect {
