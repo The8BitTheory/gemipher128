@@ -199,8 +199,8 @@ detectAndInitializeWic64
     jmp .noWicDetected
 +   beq +
     jmp .legacyFirmware
-+   +wic64_set_error_handler .handleWic64Error
-    +print txtConnected
+;+   +wic64_set_error_handler .handleWic64Error
++   +print txtConnected
     +wic64_execute wic64IsConnected, connectResponse, 10
     bcs .connTimeout
     bne .notConnected
@@ -228,6 +228,9 @@ detectAndInitializeWic64
     rts
 
 .handleWic64Error
+    lda zp_contentAddress
+    sta zp_responseSize
+
     bcc +
     +wic64_execute wic64GetStMsg, statusResponse
     jmp .connTimeout
@@ -285,7 +288,7 @@ requestContent
     jmp .connTimeout
 +   +print txtDone
 
-    lda #10
+    lda #$ff
     sta zp_tempY    ;we'll use this as a retry counter (256 times)
     +print txtTcpRead
     
@@ -314,24 +317,6 @@ requestContent
     lda wic64_bytes_to_transfer
     bne .readResponsePart
 
-    lda zp_perm_target
-    bne +
-    jmp .afterStore
-
-+   cmp #1
-    bne +
-    jsr storeInReu
-    jmp .afterStore
-
-+   cmp #2
-    bne +
-    jsr storeInGeoRam
-    ;jmp .afterStore
-
-.afterStore
-    bcc .areWeDone
-+   jmp .allResponseRead  ; if carry flag is set, we're out of RAM and stop reading
-    
 .areWeDone
     lda wic64_response_size
     bne +
@@ -379,6 +364,28 @@ requestContent
     lda #$d
     jsr bsout
 
+.closeConnection
+    lda zp_contentAddress
+    sta zp_responseSize
+
+    +print txtTcpClose
+    +wic64_execute tcpClose, response
+    +print txtDone
+
+    lda zp_perm_target
+    beq ++
+
+    cmp #1
+    bne +
+    jsr readFromReu ; if we stored to REU, copy initial set of data to bank 1 for regular display
+    jmp ++
+
++   cmp #2
+    bne ++
+    ; jsr readFromGeoRam
+
+++  rts
+
 
 .storeInstructionBank1
     jsr .stashBank1
@@ -404,8 +411,6 @@ requestContent
     +print txtTcpClose
     +wic64_execute tcpClose, response
     +print txtDone
-    lda zp_contentAddress
-    sta zp_responseSize
 
 +   rts
 
@@ -423,24 +428,7 @@ requestContent
     rts
 
 
-.closeConnection
-    +print txtTcpClose
-    +wic64_execute tcpClose, response
-    +print txtDone
 
-    lda zp_perm_target
-    beq ++
-
-    cmp #1
-    bne +
-    jsr readFromReu ; if we stored to REU, copy initial set of data to bank 1 for regular display
-    jmp ++
-
-+   cmp #2
-    bne ++
-    ; jsr readFromGeoRam
-
-++  rts
 
 .reuAvlblRam        !word 0 ; how much ram is left in the current reu bank
 .reuAvlblBank       !byte 0 ; how many banks are left once the current one is filled
