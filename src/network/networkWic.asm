@@ -269,7 +269,6 @@ requestContent
     lda #0
     sta zp_responseSize
     sta zp_responseSize+1
-    sta zp_tempY    ;we'll use this as a retry counter (256 times)
 
     +wic64_execute wic64TransferTimeout
     +wic64_execute wic64RemoteTimeout
@@ -286,71 +285,37 @@ requestContent
     jmp .connTimeout
 +   +print txtDone
 
-.waitForIncomingData
+    lda #10
+    sta zp_tempY    ;we'll use this as a retry counter (256 times)
+    +print txtTcpRead
+    
+.readIncomingData
     lda #'.'
     jsr bsout
-    +wic64_execute tcpAvailable, availableResponse, 5
-    lda availableResponse
+    +wic64_execute tcpRead, response, 5
+    bcs .allResponseRead    ; this means timeout
+    lda wic64_response_size
     bne +
-    lda availableResponse+1
+    lda wic64_response_size+1
     bne +
     dec zp_tempY
-    bne .waitForIncomingData
+    bne .readIncomingData
     jmp .allResponseRead
 
-+   lda availableResponse
-    sta zp_contentLength
-    lda availableResponse+1
-    sta zp_contentLength+1
-
-    lda #$d
-    jsr bsout
-
-    lda #'$'
-    jsr bsout
-
-    lda zp_contentLength+1
-    lsr
-    lsr
-    lsr
-    lsr 
-    jsr .makeItHex
-    jsr bsout
-    
-    lda zp_contentLength+1
-    jsr .makeItHex
-    jsr bsout
-
-    lda zp_contentLength
-    lsr
-    lsr
-    lsr
-    lsr
-    jsr .makeItHex
-    jsr bsout
-    
-    lda zp_contentLength
-    jsr .makeItHex
-    jsr bsout
-
-    lda #$d
-    jsr bsout
-
-    +print txtTcpRead
-    ldy #0
++   ldy #0
     sty zp_tempY
+    jmp .isMoreDataAvailable
 .readResponsePart
-;    +wic64_execute wic64TransferTimeout 
-
     +wic64_execute tcpRead, response, 5
-    bcc +
-    jmp .allResponseRead
-
-+   jmp .readResponsePart
+    bcs .allResponseRead    ; this means timeout
+.isMoreDataAvailable
+    lda wic64_bytes_to_transfer+1
+    bne .readResponsePart
+    lda wic64_bytes_to_transfer
+    bne .readResponsePart
 
     lda zp_perm_target
     bne +
-    jsr .updateNumbersForBank1
     jmp .afterStore
 
 +   cmp #1
@@ -364,81 +329,21 @@ requestContent
     ;jmp .afterStore
 
 .afterStore
-    bcc .handleResponse
-
+    bcc .areWeDone
 +   jmp .allResponseRead  ; if carry flag is set, we're out of RAM and stop reading
     
-.handleResponse
+.areWeDone
     lda wic64_response_size
     bne +
     lda wic64_response_size+1
     bne +
-    ;+wic64_execute tcpAvailable, availableResponse, 5
-    ;lda availableResponse
-    ;bne +
-    ;lda availableResponse+1
-    ;bne +
 
     dec zp_tempY    ; we wait for 256 cycles if more data arrives
     bne +
-
     jmp .allResponseRead
 
 +   jmp .readResponsePart
 
-
-.updateNumbersForBank1
-
-; check if we reached the end of available RAM
-    lda #>CONTENT_END_ADDRESS
-    cmp zp_contentAddress+1
-    bcs +
-    lda #<CONTENT_END_ADDRESS
-    cmp zp_contentAddress
-
-    sec
-    rts
-
-+   clc
-    tya
-    adc zp_responseSize
-    sta zp_responseSize
-    bcc +
-    inc zp_responseSize+1
-
-+   clc
-    rts
-
-.storeInstructionBank1
-    jsr .stashBank1
-
-.stashBank1
-    stx zp_wic_stash_x
-    sty zp_wic_stash_y
-    ldy #0
-    ldx zp_contentBank
-    jsr c_stash
-    ldx zp_wic_stash_x
-    ldy zp_wic_stash_y
-    inc zp_contentAddress
-    bne +
-    inc zp_contentAddress+1
-    lda #'o'
-    jsr bsout
-+   rts
-
-
-.makeItHex
-    and #%00001111
-
-    clc
-    cmp #10
-    bpl +
-    adc #$30
-    rts
-
-+   adc #54
-    rts
 
 .allResponseRead
     lda #$0d
@@ -473,6 +378,49 @@ requestContent
 
     lda #$d
     jsr bsout
+
+
+.storeInstructionBank1
+    jsr .stashBank1
+
+.stashBank1
+    stx zp_wic_stash_x
+    sty zp_wic_stash_y
+    ldy #0
+    ldx zp_contentBank
+    jsr c_stash
+    ldx zp_wic_stash_x
+    ldy zp_wic_stash_y
+    inc zp_contentAddress
+    bne +
+    inc zp_contentAddress+1
+    inc zp_responseSize+1
+    lda #'o'
+    jsr bsout
+
+    ; check whether we have RAM left
+    dec ramLeft+1
+    bne +
+    +print txtTcpClose
+    +wic64_execute tcpClose, response
+    +print txtDone
+    lda zp_contentAddress
+    sta zp_responseSize
+
++   rts
+
+
+.makeItHex
+    and #%00001111
+
+    clc
+    cmp #10
+    bpl +
+    adc #$30
+    rts
+
++   adc #54
+    rts
 
 
 .closeConnection

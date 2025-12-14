@@ -25,7 +25,7 @@ LINKTABLE_ADDRESS = $e000
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
 
-CONTENT_END_ADDRESS = LINKTABLE_ADDRESS-$ff
+CONTENT_END_ADDRESS = LINKTABLE_ADDRESS -$1ff
 
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
