@@ -85,16 +85,20 @@ continueCopyToVram     ; when we left off before due to vram full
     lda #zp_linkTablePosition
     sta c_fetch_zp
     
-    ldx zp_contentBank
-    jsr c_fetch
-    sta zp_currentLinkTablePtr
+    ;ldx zp_contentBank
+    ;jsr c_fetch
+    lda (zp_linkTablePosition),y
+    sta zp_currentLinkTablePtr  ;replace with zp_memptr?
+
     iny
-    ldx zp_contentBank
-    jsr c_fetch
-    sta zp_currentLinkTablePtr+1
+    ;ldx zp_contentBank
+    ;jsr c_fetch
+    lda (zp_linkTablePosition),y
+    sta zp_currentLinkTablePtr+1    ;replace with zp_memptr?
     iny
-    ldx zp_contentBank
-    jsr c_fetch
+    ;ldx zp_contentBank
+    ;jsr c_fetch
+    lda (zp_linkTablePosition),y
     sta zp_visibleLength
 
     ldy #2

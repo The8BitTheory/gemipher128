@@ -293,10 +293,9 @@ requestContent
     +print txtTcpRead
     
 .readIncomingData
-    lda #'.'
-    jsr bsout
     +wic64_execute tcpRead, response, 5
     bcs .allResponseRead    ; this means timeout
+    ;jsr .writeDebug
     lda wic64_response_size
     bne +
     lda wic64_response_size+1
@@ -311,13 +310,15 @@ requestContent
 .readResponsePart
     +wic64_execute tcpRead, response, 5
     bcs .allResponseRead    ; this means timeout
+    lda wic64_status
+    bne .allResponseRead
+    ;jsr .writeDebug
 .isMoreDataAvailable
     lda wic64_bytes_to_transfer+1
     bne .readResponsePart
     lda wic64_bytes_to_transfer
     bne .readResponsePart
 
-.areWeDone
     lda wic64_response_size
     bne +
     lda wic64_response_size+1
@@ -413,6 +414,63 @@ requestContent
     +print txtDone
 
 +   rts
+
+.writeDebug
+    lda #$0d
+    jsr bsout
+
+    lda #'$'
+    jsr bsout
+
+    lda wic64_response_size+1
+    lsr
+    lsr
+    lsr
+    lsr
+    jsr .makeItHex
+    jsr bsout
+    lda wic64_response_size+1
+    jsr .makeItHex
+    jsr bsout
+
+    lda wic64_response_size
+    lsr
+    lsr
+    lsr
+    lsr
+    jsr .makeItHex
+    jsr bsout
+    lda wic64_response_size
+    jsr .makeItHex
+    jsr bsout
+
+    lda #' '
+
+    lda #'$'
+    jsr bsout
+
+    lda wic64_bytes_to_transfer+1
+    lsr
+    lsr
+    lsr
+    lsr
+    jsr .makeItHex
+    jsr bsout
+    lda wic64_bytes_to_transfer+1
+    jsr .makeItHex
+    jsr bsout
+
+    lda wic64_bytes_to_transfer
+    lsr
+    lsr
+    lsr
+    lsr
+    jsr .makeItHex
+    jsr bsout
+    lda wic64_bytes_to_transfer
+    jsr .makeItHex
+    jsr bsout
+    rts
 
 
 .makeItHex

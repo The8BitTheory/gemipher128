@@ -118,15 +118,18 @@ parsePlainText
 
 .storeValueInTxtLinkTable
     ldy #0
-    jsr .stashToTxtLinkTable
+    ;jsr .stashToTxtLinkTable
+    jsr writeToLinkTable
     rts
 
 .storePointerInTxtLinkTable
     ldy #0
     lda zp_contentAddress
-    jsr .stashToTxtLinkTable
+    ;jsr .stashToTxtLinkTable
+    jsr writeToLinkTable
     lda zp_contentAddress+1
-    jsr .stashToTxtLinkTable
+    ;jsr .stashToTxtLinkTable
+    jsr writeToLinkTable
 
     rts
 

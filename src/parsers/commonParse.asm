@@ -26,37 +26,52 @@ clearLinkTable
 
     ldy #0
 -   lda #0
-    ldx zp_contentBank
-    jsr c_stash
+    ;ldx zp_contentBank
+    ;jsr c_stash
+    sta (zp_linkTablePosition),y
+    
     inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
+    sta (zp_linkTablePosition),y
+    ;lda #0
+    ;ldx zp_contentBank
+    ;jsr c_stash
+    
     inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
+    sta (zp_linkTablePosition),y
+    ;lda #0
+    ;ldx zp_contentBank
+    ;jsr c_stash
+    
     inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
+    sta (zp_linkTablePosition),y
+    ;lda #0
+    ;ldx zp_contentBank
+    ;jsr c_stash
+    
     inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
+    sta (zp_linkTablePosition),y
+    ;lda #0
+    ;ldx zp_contentBank
+    ;jsr c_stash
+    
     inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
+    sta (zp_linkTablePosition),y
+    ;lda #0
+    ;ldx zp_contentBank
+    ;jsr c_stash
+    
     inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
+    sta (zp_linkTablePosition),y
+    ;lda #0
+    ;ldx zp_contentBank
+    ;jsr c_stash
+    
     inc zp_linkTablePosition+1
-    lda #0
-    ldx zp_contentBank
-    jsr c_stash
-
+    sta (zp_linkTablePosition),y
+    ;lda #0
+    ;ldx zp_contentBank
+    ;jsr c_stash
+    
     jsr initLinkTableAddress
     iny
     bne -
@@ -82,6 +97,17 @@ vramBlockIndexIntoX
     asl
     tax
     rts
+
+writeToLinkTable
+;    ldx zp_contentBank
+    ; y must be set accordingly at this point
+;    jsr c_stash
+    sta (zp_linkTablePosition),y
+    inc zp_linkTablePosition
+    bne +
+    inc zp_linkTablePosition+1
+
++   rts
 
 readNextByte
     ; read from bank 1

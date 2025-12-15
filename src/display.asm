@@ -192,26 +192,42 @@ drawCursor
 
     ; load line type
     ldy #0
-    jsr .fetchFromContentBankOffsetY
+    ;jsr .fetchFromContentBankOffsetY
+    lda (zp_linkTablePosition),y
+    iny
     sta zp_currentTypePtr
-    jsr .fetchFromContentBankOffsetY
+    ;jsr .fetchFromContentBankOffsetY
+    lda (zp_linkTablePosition),y
+    iny
     sta zp_currentTypePtr+1
 
     iny ;skip currentLength
 
-    jsr .fetchFromContentBankOffsetY
+    ;jsr .fetchFromContentBankOffsetY
+    lda (zp_linkTablePosition),y
+    iny
     sta zp_currentSelectorPtr
-    jsr .fetchFromContentBankOffsetY
+    ;jsr .fetchFromContentBankOffsetY
+    lda (zp_linkTablePosition),y
+    iny
     sta zp_currentSelectorPtr+1
 
-    jsr .fetchFromContentBankOffsetY
+    ;jsr .fetchFromContentBankOffsetY
+    lda (zp_linkTablePosition),y
+    iny
     sta zp_currentHostPtr
-    jsr .fetchFromContentBankOffsetY
+    ;jsr .fetchFromContentBankOffsetY
+    lda (zp_linkTablePosition),y
+    iny
     sta zp_currentHostPtr+1
 
-    jsr .fetchFromContentBankOffsetY
+    ;jsr .fetchFromContentBankOffsetY
+    lda (zp_linkTablePosition),y
+    iny
     sta zp_currentPortPtr
-    jsr .fetchFromContentBankOffsetY
+    ;jsr .fetchFromContentBankOffsetY
+    lda (zp_linkTablePosition),y
+    iny
     sta zp_currentPortPtr+1
 
     lda #zp_currentTypePtr
@@ -724,9 +740,13 @@ removeCursor
 
     ; load line type
     ldy #0
-    jsr .fetchFromContentBankOffsetY
+    ;jsr .fetchFromContentBankOffsetY
+    lda (zp_linkTablePosition),y
+    iny
     sta zp_memPtr
-    jsr .fetchFromContentBankOffsetY
+    ;jsr .fetchFromContentBankOffsetY
+    lda (zp_linkTablePosition),y
+    iny
     sta zp_memPtr+1
 
     lda #zp_memPtr
@@ -734,6 +754,7 @@ removeCursor
 
     ldy #0
     jsr .fetchFromContentBankOffsetY
+
 
 ;    pla
 ;    sta c_fetch_zp

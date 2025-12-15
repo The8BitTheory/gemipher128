@@ -191,15 +191,18 @@ parseGopher
 
 .storeValueInLinkTable
     ldy #0
-    jsr .stashToLinkTable
+    ;jsr .stashToLinkTable
+    jsr writeToLinkTable
     rts
 
 .storePointerInLinkTable
     ldy #0
     lda zp_contentAddress
-    jsr .stashToLinkTable
+    ;jsr .stashToLinkTable
+    jsr writeToLinkTable
     lda zp_contentAddress+1
-    jsr .stashToLinkTable
+    ;jsr .stashToLinkTable
+    jsr writeToLinkTable
 
 +   rts
 

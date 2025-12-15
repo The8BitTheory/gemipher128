@@ -17,7 +17,7 @@ VRAM_LINE_TABLE = $a800 ; offsets to the lines in vram. written by copyx.asm, re
 HISTORY_TABLE = $b000   ; room for 128 entries
 HISTORY_STACK = $b100   
 
-LINKTABLE_ADDRESS = $e000
+;LINKTABLE_ADDRESS = $e000
 
 
 
@@ -25,7 +25,7 @@ LINKTABLE_ADDRESS = $e000
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
 
-CONTENT_END_ADDRESS = LINKTABLE_ADDRESS -$1ff
+CONTENT_END_ADDRESS = $fd00 ;LINKTABLE_ADDRESS -$fff
 
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
@@ -903,3 +903,4 @@ txtGeoRam   !text "GeoRAM: ",0
 ;       to copy lines 10-32 (23 lines), the code will add up all the lengths until line 10 and then copy each line
 ; $3000 charset (4kb)
 
+LINKTABLE_ADDRESS   !byte 0
