@@ -313,8 +313,11 @@ requestContent
 .readResponsePart
     +wic64_execute tcpRead, response, 5
     bcs .allResponseRead    ; this means timeout
-    lda wic64_status
-    bne .allResponseRead
+    lda ramLeft+1
+    bne .isMoreDataAvailable
+    lda ramLeft
+    bne .isMoreDataAvailable
+    jmp .allResponseRead
     ;jsr .writeDebug
 .isMoreDataAvailable
     lda wic64_bytes_to_transfer+1
@@ -397,6 +400,13 @@ requestContent
     jmp .closeConnection
 
 
+.storeInstructionDrop
+    jsr .dropWicTraffic
+
+.dropWicTraffic
+    rts
+    nop
+
 .storeInstructionBank1
     jsr .stashBank1
 
@@ -421,6 +431,7 @@ requestContent
     +print txtTcpClose
     +wic64_execute tcpClose, response
     +print txtDone
+    +wic64_set_store_instruction .storeInstructionDrop
 
 +   rts
 

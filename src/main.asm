@@ -23,7 +23,7 @@ HISTORY_STACK = $b100
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
 
-CONTENT_END_ADDRESS = $fe00 ;LINKTABLE_ADDRESS -$fff
+CONTENT_END_ADDRESS = $F000 ;LINKTABLE_ADDRESS -$fff
 
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
@@ -194,9 +194,6 @@ main
 
     jsr .detectAndDisableSuperCpu
 
-;    jsr detectAndInitSwiftlink
-;    bcc +
-;    jmp .exitGracefully
     ;jsr detectGeoRAM
 
 ;    jsr k_primm
@@ -218,9 +215,6 @@ main
     
     jsr disableBasicRom
     jsr initHistoryStack
-
-;    jsr requestContentViaSwiftlink
-;    jmp .afterRequest
 
 ; load from network
     ;jsr setInitialGopherHostSelector
@@ -902,7 +896,7 @@ recoverZp
 !src "src/vdc.asm"
 !src "src/network/networkCommon.asm"
 !src "src/network/networkWic.asm"
-!src "src/network/swiftlink.asm"
+;!src "src/network/swiftlink.asm"
 !src "src/wic64/wic64.asm"
 !src "src/history.asm"
 !src "src/memory/georam.asm"
