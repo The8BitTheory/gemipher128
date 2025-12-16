@@ -273,6 +273,8 @@ requestContent
     sta zp_responseSize
     sta zp_responseSize+1
 
+    jsr doSlow
+
     +wic64_execute wic64TransferTimeout
     +wic64_execute wic64RemoteTimeout
 
@@ -294,9 +296,10 @@ requestContent
     
 .readIncomingData
     +wic64_execute tcpRead, response, 5
-    bcs .allResponseRead    ; this means timeout
+    bcc +
+    jmp .endWithTimeout    ; this means timeout
     ;jsr .writeDebug
-    lda wic64_response_size
++   lda wic64_response_size
     bne +
     lda wic64_response_size+1
     bne +
@@ -373,6 +376,8 @@ requestContent
     +wic64_execute tcpClose, response
     +print txtDone
 
+    jsr doFast
+
     lda zp_perm_target
     beq ++
 
@@ -386,6 +391,10 @@ requestContent
     ; jsr readFromGeoRam
 
 ++  rts
+
+.endWithTimeout
+
+    jmp .closeConnection
 
 
 .storeInstructionBank1

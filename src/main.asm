@@ -25,7 +25,7 @@ HISTORY_STACK = $b100
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
 
-CONTENT_END_ADDRESS = $fd00 ;LINKTABLE_ADDRESS -$fff
+CONTENT_END_ADDRESS = $fe00 ;LINKTABLE_ADDRESS -$fff
 
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
@@ -193,6 +193,8 @@ main
 
     lda #$93 ; clear screen
     jsr bsout
+
+    jsr .detectAndDisableSuperCpu
 
 ;    jsr detectAndInitSwiftlink
 ;    bcc +
@@ -801,14 +803,41 @@ disableIO
 
 
 doFast
-    jsr enableBasicRom
-    jsr b_fast
-    jmp disableBasicRom
+    lda $ff00
+    pha
+
+    jsr setBank15
+    ;set fast flag
+    LDA $D011
+    AND #$6F
+    STA $D011
+    LDA #$01
+    STA $D030
+
+    pla
+    sta $ff00
+    RTS
+
+setBank15
+    LDA #$00
+    STA $FF00
+    rts
 
 doSlow
-    jsr enableBasicRom
-    jsr b_slow
-    jmp disableBasicRom
+    lda $ff00
+    pha
+
+    jsr setBank15
+    LDA #$00
+    STA $D030
+    LDA $D011
+    AND #$7F
+    ORA #$10
+    STA $D011
+
+    pla
+    sta $ff00
+    rts
 
 k_indsta
     pha
@@ -859,6 +888,15 @@ recoverZp
     dey
     bpl -
     rts
+
+.detectAndDisableSuperCpu
+    lda $D0B9
+    bpl +   ; top-most bit not set, no super-cpu detected
+
+    lda #0
+    sta $D07A   ; set super cpu to normal speed (ie 1 or 2 mhz, but not 20)
+
++   rts
 
 !src "src/file/load.asm"
 !src "src/file/loadContent.asm"

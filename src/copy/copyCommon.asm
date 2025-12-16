@@ -49,6 +49,9 @@ continueCopyToVram     ; when we left off before due to vram full
     lda #>VRAM_CONTENT
     sta zp_vram_content_addr+1
 
+    ; we throttle speed, maybe that decreases the pixel errors
+    jsr doSlow
+
     ldy zp_vram_content_addr
     lda zp_vram_content_addr+1
     
@@ -76,7 +79,8 @@ continueCopyToVram     ; when we left off before due to vram full
     dec .linesLeftToCopy+1
     bpl -
 
-+   rts
++   jsr doFast
+    rts
 
 .copyGLineToVram
     ldy #0
