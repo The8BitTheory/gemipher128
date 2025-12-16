@@ -19,8 +19,6 @@ HISTORY_STACK = $b100
 
 ;LINKTABLE_ADDRESS = $e000
 
-
-
 ; CONTENT describes one full gopher page
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
@@ -248,7 +246,7 @@ main
     cmp #$30    ;text file
     bne +
     jsr parsePlainText
-    lda #3
+    lda #4
     sta zp_linkTableIncr
     ;jsr copyTextToVram
     jsr copyToVram
@@ -551,7 +549,7 @@ main
     cmp #$30    ;text file
     bne ++
 
-+   lda #3
++   lda #4
     sta zp_linkTableIncr
     jsr .calculateLinkTableOffset
 
@@ -679,7 +677,7 @@ main
     bne ++
 
 +   ; stash current linenumber. we'll need it later, but for calc we need to change it temporarily
-    lda #3
+    lda #4
     sta zp_linkTableIncr
     jsr .calculateLinkTableOffset
     jsr continueCopyToVram

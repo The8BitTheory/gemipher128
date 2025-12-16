@@ -39,7 +39,9 @@ initVdc
     lda #98
     sta arg3
 
+    jsr doSlow
     jsr vcc
+    jsr doFast
 
     rts
 

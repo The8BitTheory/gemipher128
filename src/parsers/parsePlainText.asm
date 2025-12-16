@@ -13,6 +13,7 @@ parsePlainText
 
     lda #0
     sta zp_visibleLength
+    sta zp_visibleLength+1
     sta zp_linecount
     sta zp_linecount+1
 
@@ -32,7 +33,9 @@ parsePlainText
     beq .finishLine
 
     inc zp_visibleLength
-    jmp -
+    bne -
+    inc zp_visibleLength+1
+-   jmp -
 
 .finishLine
     inc zp_linecount
@@ -65,13 +68,18 @@ parsePlainText
 +   jsr .recoverValues  ; clean the campground
     lda zp_visibleLength
 ++  jsr .storeValueInTxtLinkTable
+    lda zp_visibleLength+1
+    jsr .storeValueInTxtLinkTable
     lda #0
     sta zp_visibleLength
+    sta zp_visibleLength+1
     jmp .parseLine
 
 .doneParse
     jsr .storePointerInTxtLinkTable
     lda zp_visibleLength
+    jmp .storeValueInTxtLinkTable
+    lda zp_visibleLength+1
     jmp .storeValueInTxtLinkTable
     nop
 

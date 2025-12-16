@@ -586,9 +586,15 @@ removeCursor
     sbc zp_firstVramContentLine+1
     sta zp_tempCalc+1
 
-; linecount x 3 should be the offset in the lineoffset table
-    ldx #3
-    stx zp_tempX
+; linecount x 3 (gopher) or x4 (text) should be the offset in the lineoffset table
+    lda zp_pageType
+    cmp #30
+    bne +
+    ldx #4      ; plain text
+    jmp ++
++   ldx #3      ; gopher files
+    
+++  stx zp_tempX
     jsr multiply
 
     clc
@@ -609,8 +615,18 @@ removeCursor
     lda (zp_vramLineOffsets),y
     sta zp_visibleLength
 
+    lda zp_pageType
+    cmp #30 ; plain text
+    bne +
+    ; line-length stored in 2 bytes
+    iny
+    lda (zp_vramLineOffsets),y    
+    jmp ++
++   lda #0  ; gopher
+    
+++  sta zp_visibleLength+1
 
-; go to the right ram-content offset (increments of 9 or 3, depending on file type)
+; go to the right ram-content offset (increments of 10 or 3, depending on file type)
     jsr .resetLinkTablePosition
     rts
     nop
