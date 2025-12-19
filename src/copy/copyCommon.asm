@@ -19,7 +19,15 @@ copyToVram
     sta zp_firstVramContentLine+1
     sta zp_lastVramContentLine
     sta zp_lastVramContentLine+1
-    
+
+    lda zp_pageType
+    cmp #$30
+    bne +
+    lda #4    
+    jmp ++
++   lda #3
+++  sta .vramLineOffsetIncr
+
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
     sta zp_contentBank
@@ -96,10 +104,28 @@ continueCopyToVram     ; when we left off before due to vram full
     lda (zp_linkTablePosition),y
     sta zp_visibleLength
 
+    lda zp_pageType
+    cmp #$30
+    bne +
+    iny
+    lda (zp_linkTablePosition),Y
+    sta zp_visibleLength+1
+    jmp ++
+
++   lda #0
+    sta zp_visibleLength+1
+
+++  lda zp_visibleLength
     ldy #2
     sta (zp_vramLineOffsets),y
+    lda zp_pageType
+    cmp #$30
+    bne +
+    iny
+    lda zp_visibleLength+1
+    sta (zp_vramLineOffsets),y
 
-    jsr incVramLineOffsetPosition
++   jsr .incVramLineOffsetPosition
 
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp
@@ -172,6 +198,15 @@ continueCopyToVram     ; when we left off before due to vram full
     clc
     rts
 
+.writeVisibleLengthToVram
+    lda zp_visibleLength
+    ldy #2
+    sta (zp_vramLineOffsets),y
+    iny
+    lda zp_visibleLength+1
+    sta (zp_vramLineOffsets),y
+    rts
+
 writeVramLineOffset
     ldy #0
     lda zp_vram_content_addr
@@ -182,10 +217,10 @@ writeVramLineOffset
 
 +   rts
 
-incVramLineOffsetPosition
+.incVramLineOffsetPosition
     clc
     lda zp_vramLineOffsets
-    adc #3
+    adc .vramLineOffsetIncr
     sta zp_vramLineOffsets
     bcc +
     inc zp_vramLineOffsets+1
@@ -228,3 +263,4 @@ clearVramLineOffsetTable
 
 .vramLeft       !word 0
 .linesLeftToCopy    !word 0     ; related to copying from ram to vram. if this is > 0, we have more data to show
+.vramLineOffsetIncr !byte 0     ; 3 or 4 bytes, depending max line length 1 or 2 bytes

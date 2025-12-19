@@ -540,7 +540,6 @@ main
 +   lda #4
     sta zp_linkTableIncr
     jsr .calculateLinkTableOffset
-
     jsr continueCopyToVram
     lda #1
     sta zp_scrollModeCrsr
@@ -551,7 +550,6 @@ main
     lda #9
     sta zp_linkTableIncr    
     jsr .calculateLinkTableOffset
-
     jsr continueCopyToVram
     lda #0
     sta zp_scrollModeCrsr

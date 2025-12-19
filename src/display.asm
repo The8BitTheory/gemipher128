@@ -4,6 +4,14 @@
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
 .displayTextmodeRestart
+    lda zp_pageType
+    cmp #$30
+    bne +
+    lda #4    
+    jmp ++
++   lda #3
+++  sta .vramLineOffsetIncr
+
 
     ldy #LAST_LINE
     sty zp_lastLine
@@ -104,8 +112,8 @@ displayTextmode
 ; renderloop for all visible content lines on screen
 -   jsr .displayLine
 
-    jsr .incVramLineOffsetPosition
-    jsr .incOutputLineNumber
+    jsr .incVramLineOffsetPosition  ; where we read line information for block copy
+    jsr .incOutputLineNumber        ; where we write lines to
     inc zp_tempY    ; content line increasing
     dec zp_tempX    ; content lines left to print
     inc .currentScreenLine
@@ -603,7 +611,7 @@ removeCursor
 
 ; linecount x 3 (gopher) or x4 (text) should be the offset in the lineoffset table
     lda zp_pageType
-    cmp #30
+    cmp #$30
     bne +
     ldx #4      ; plain text
     jmp ++
@@ -669,7 +677,7 @@ removeCursor
 .incVramLineOffsetPosition
     clc
     lda zp_vramLineOffsets
-    adc #3
+    adc .vramLineOffsetIncr
     sta zp_vramLineOffsets
     bcc .incLinkTableReadPosition
     inc zp_vramLineOffsets+1
@@ -767,6 +775,7 @@ removeCursor
     
 ++  ldy #0  ; high-byte in Y is zero anyways, because we print 79 chars max
     jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
+                            ; the destination location is updated by the vdc automatically
     
     lda zp_visibleLength+1  ;check if we have to handle multi-line content
     bne +
@@ -781,9 +790,7 @@ removeCursor
 .drawNextLine
     jsr .incOutputLineNumber
     jsr .writeScreenToContentLine
-    lda zp_visibleLength
     inc .currentScreenLine
-    jsr .writeScreenToContentLine
 
     jmp -
 
@@ -860,7 +867,7 @@ removeCursor
     sta zp_visibleLength
 
     lda zp_pageType
-    cmp #$30 ; plain text
+    cmp #$30 ; plain text   
     bne +
     ; line-length stored in 2 bytes
     iny
@@ -1083,3 +1090,4 @@ multiply
 
 .screenToContentLine    !fill 52    ; contains offset to contentline per screenline. needed to handle multi-line content
 .currentScreenLine      !byte 0     ; what line are we rendering currently
+.vramLineOffsetIncr !byte 0     ; 3 or 4 bytes, depending max line length 1 or 2 bytes
