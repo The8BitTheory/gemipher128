@@ -581,6 +581,6 @@ bkm1Server          !text "gopher.floodgap.com",$9
 bkm1Selector        !text "/archive/info-mac/game",$9
 bkm1Type            !byte $31
 
-bkm2Server          !text "gopher.floodgap.com",$9
-bkm2Selector        !text "/archive/info-mac/help/mirror-list.txt", $9
+bkm2Server          !text "sdf.org",$9
+bkm2Selector        !text "/users/alberti/aboutme/211995069-Internet-Gopher-Bridge-to-the-Web-Alberti.txt", $9
 bkm2Type            !byte $30

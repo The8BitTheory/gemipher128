@@ -28,6 +28,8 @@ CONTENT_END_ADDRESS = $F000 ;LINKTABLE_ADDRESS -$fff
 
 VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
 VISIBLE_LINES = 23
+TEXT_LINE_LENGTH = 80
+GOPHER_LINE_LENGTH = 79
 FIRST_LINE = 1
 LAST_LINE = FIRST_LINE+VISIBLE_LINES-1
 
@@ -67,7 +69,7 @@ zp_cursorLineContent = $1e    ; and $1f     ; this is the cursor line relative t
 zp_cursorPosScreen = $20 ; and $21   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
 zp_cursorLineScreen = $22   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
 zp_lastLine = $23       ; this is #LAST_LINE when all content lines fit screen lines. is reduced by one for each multi-line. refers to the screen, not the file
-
+zp_lineLength = $24     ; this holds 80 for plain text and 79 for gopher lines. (for now)
 ; used by copytovram.asm
 ; zp_vram_content_addr
 ; zp_linecount

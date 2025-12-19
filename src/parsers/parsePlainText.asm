@@ -26,7 +26,7 @@ parsePlainText
     jsr .storePointerInTxtLinkTable
 
 -   jsr readNextByte
-    bcs .doneParse
+    bcs .finishLine
     cmp #$0d    ;line break?
     beq -
     cmp #$0a    ; other line break
@@ -35,45 +35,25 @@ parsePlainText
     inc zp_visibleLength
     bne -
     inc zp_visibleLength+1
--   jmp -
+    jmp -
 
 .finishLine
     inc zp_linecount
     bne +
     inc zp_linecount+1
     
-    ; checking if the line consisted of a single .
 +   lda zp_visibleLength
-    jmp ++  ; disable check for single .
-    cmp #1
-    bne ++
-    ; check if we found an end character (single . on a line)
-    jsr .storeValues
-
-    ; we need to go back 3 characters (parsing pointer is already after line break at this point)
-    sec
-    lda zp_contentAddress
-    sbc #3
-    sta zp_contentAddress
-    bcs +
-    dec zp_contentAddress+1
-
-+   jsr readNextByte
-    cmp #'.'        ;if we find a single dot on a line, this is the end of the file
-    bne +
-    jsr .recoverValues  ; clean the campground
-    jmp .doneParse   ; yes. we're done
-
-    ; no. revert to stored values
-+   jsr .recoverValues  ; clean the campground
-    lda zp_visibleLength
-++  jsr .storeValueInTxtLinkTable
+    jsr .storeValueInTxtLinkTable
     lda zp_visibleLength+1
     jsr .storeValueInTxtLinkTable
     lda #0
     sta zp_visibleLength
     sta zp_visibleLength+1
-    jmp .parseLine
+
+    lda leftToParse+1
+    bne .parseLine
+    lda leftToParse
+    bne .parseLine
 
 .doneParse
     jsr .storePointerInTxtLinkTable
@@ -81,7 +61,7 @@ parsePlainText
     jmp .storeValueInTxtLinkTable
     lda zp_visibleLength+1
     jmp .storeValueInTxtLinkTable
-    nop
+
 
 .storeValues
     lda zp_contentAddress
@@ -126,17 +106,16 @@ parsePlainText
 
 .storeValueInTxtLinkTable
     ldy #0
-    ;jsr .stashToTxtLinkTable
     jsr writeToLinkTable
     rts
 
 .storePointerInTxtLinkTable
     ldy #0
     lda zp_contentAddress
-    ;jsr .stashToTxtLinkTable
+
     jsr writeToLinkTable
     lda zp_contentAddress+1
-    ;jsr .stashToTxtLinkTable
+
     jsr writeToLinkTable
 
     rts

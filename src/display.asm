@@ -20,10 +20,23 @@ displayTextmode
     lda #zp_linkTablePosition
     sta c_fetch_zp
 
-; vram target to zero
+    lda zp_pageType
+    cmp #$31 ; gopher
+    bne +
+
+; line start for gopher files
+    lda #79
+    sta zp_lineLength
     lda #81
     sta zp_vram_screenram
-    lda #0
+    jmp ++
+
+; line start for text files
++   lda #80
+    sta zp_lineLength
+    sta zp_vram_screenram
+
+++  lda #0
     sta zp_vram_screenram+1
 
 ; setup the position in vramLineOffset
@@ -93,7 +106,8 @@ displayTextmode
 
     jsr .incVramLineOffsetPosition
     jsr .incOutputLineNumber
-    inc zp_tempY
+    inc zp_tempY    ; content line increasing
+    dec zp_tempX    ; content lines left to print
     inc .currentScreenLine
     jsr .writeScreenToContentLine
 
@@ -101,9 +115,27 @@ displayTextmode
     bne +
     jsr .calculateCursorOffset
 
-+   ldx zp_tempX
+; is the screen full?
++   ldx .currentScreenLine
+    cpx #VISIBLE_LINES+1
+    beq .allLinesDisplayed
+
+    clc
+    lda zp_linenumber_start
+    adc zp_tempY
+    sta zp_tempCalc
+    lda zp_linenumber_start+1
+    adc #0
+    sta zp_tempCalc+1
+
+    lda zp_linecount+1
+    cmp zp_tempCalc+1
+    bcc .allLinesDisplayed
+    lda zp_linecount
+    cmp zp_tempCalc
     bne -
 
+.allLinesDisplayed
     lda zp_pageType
     cmp #$31
     bne +
@@ -333,7 +365,7 @@ drawCursor
     inc zp_tempX
     ldx zp_tempX
     cpx zp_lastLine
-    bne -
+    bne -   ; yes, this jumps back to .readLineType in the previous routine
 
     rts
 
@@ -654,11 +686,11 @@ removeCursor
     nop
 
 .incOutputLineNumber
-    dec zp_tempX
-    bne +
-    rts
-
-+   clc
+;    dec zp_tempX
+;    bne +
+;    rts
+;+
+    clc
     lda zp_vram_screenram
     adc #80
     sta zp_vram_screenram
@@ -714,18 +746,18 @@ removeCursor
 -   lda zp_visibleLength+1    ; check
     bne .longerThanOneScreenLine
     lda zp_visibleLength
-    cmp #79
+    cmp zp_lineLength
     bcc .shorterThanOneScreenLine
 
     ; line longer than 79 characters
 .longerThanOneScreenLine
     sec
     lda zp_visibleLength
-    sbc #79
+    sbc zp_lineLength
     sta zp_visibleLength
     bcs +
     dec zp_visibleLength+1
-+   lda #79
++   lda zp_lineLength
     jmp ++
 
     ; line shorter than 79 characters
@@ -740,11 +772,12 @@ removeCursor
     bne +
     lda zp_visibleLength
     beq .displayDone    ; hb and lb are zero. nothing left to print
-+   ldx zp_tempX    ;contains the nr of lines left on screen for printing
-    cpx #1
++   ldx .currentScreenLine    ;contains the current line nr that's printed on screen
+    cpx #VISIBLE_LINES
     bne .drawNextLine       ; not on the last line, keep going
     rts       ; we are on the last line. stop printing despite there being more text in the current content line
-    
+    nop
+
 .drawNextLine
     jsr .incOutputLineNumber
     jsr .writeScreenToContentLine
@@ -827,7 +860,7 @@ removeCursor
     sta zp_visibleLength
 
     lda zp_pageType
-    cmp #30 ; plain text
+    cmp #$30 ; plain text
     bne +
     ; line-length stored in 2 bytes
     iny

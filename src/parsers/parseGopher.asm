@@ -29,6 +29,9 @@ parseGopher
     sta zp_linecount
     sta zp_linecount+1
 
+    lda #$ff
+    sta .startFound
+
 ; which section of the line are we parsing?
 ; 0=type and visible content
 ; 1=selector
@@ -98,9 +101,15 @@ parseGopher
     beq .handleVisible
     cmp #$39 ; 9 - generic binary
     beq .handleVisible
-    cmp #'+' ; + - gopher + info
-    beq .handleVisible
-    cmp #'g' ; G - GIF
+
+    ldy .startFound
+    bpl +
+    jsr readNextByte
+    jmp .selectNextParseMode
+
+;    cmp #'+' ; + - gopher + info
+;    beq .handleVisible
++   cmp #'g' ; G - GIF
     beq .handleVisible
     cmp #$49 ; $49, I - generic image (upper-case i)
     beq .handleVisible
@@ -124,6 +133,9 @@ parseGopher
     nop
 
 .handleVisible
+    lda #0
+    sta .startFound
+
     jsr readNextByte
     bcs .parseComplete
     cmp #9  ; tab. end ascii output
@@ -191,17 +203,14 @@ parseGopher
 
 .storeValueInLinkTable
     ldy #0
-    ;jsr .stashToLinkTable
     jsr writeToLinkTable
     rts
 
 .storePointerInLinkTable
     ldy #0
     lda zp_contentAddress
-    ;jsr .stashToLinkTable
     jsr writeToLinkTable
     lda zp_contentAddress+1
-    ;jsr .stashToLinkTable
     jsr writeToLinkTable
 
 +   rts
@@ -219,4 +228,4 @@ parseGopher
 
 .parseMode       !byte 0 ; $69 for i, $31 for 1, etc
 .parseSeq        !byte 0 ; 0=type specific parsing, 1=selector, 2=hostname, 3=port
-
+.startFound      !byte 0    ; positive=start found.
