@@ -67,7 +67,6 @@ zp_cursorLineContent = $1e    ; and $1f     ; this is the cursor line relative t
 zp_cursorPosScreen = $20 ; and $21   this is the cursor position on screen (content line x 80 + top offset - scroll offset)
 zp_cursorLineScreen = $22   ; the line on the screen where the cursor is (must be within 1 and 24 or so)
 zp_lastLine = $23       ; this is #LAST_LINE when all content lines fit screen lines. is reduced by one for each multi-line. refers to the screen, not the file
-zp_scrollDirectionUp = $24  ; 0=up, else=down
 
 ; used by copytovram.asm
 ; zp_vram_content_addr
@@ -165,12 +164,6 @@ keyStore            !fill 10    ;keeps values $1000-$1009
 
 fileOpError         !byte 0
 
-; used by display.asm
-; cursorOffsets holds the vram-offset for each cursor position
-; this is required to keep track of multi-line text. otherwise we'd just go in incs of 80
-; 25 lines, two bytes each. 23 sould be sufficient, but we can always reduce that
-cursorOffsets  !word 80    ; first offset is always 80 (as long as we're starting in second screenline)
-                !fill 48
 
 retries        !byte 0
 
@@ -192,7 +185,7 @@ main
     lda #$93 ; clear screen
     jsr bsout
 
-    jsr .detectAndDisableSuperCpu
+;    jsr .detectAndDisableSuperCpu
 
     ;jsr detectGeoRAM
 
@@ -302,8 +295,6 @@ main
 
     cmp #17     ;cursor down
     bne +
-    lda #1
-    sta zp_scrollDirectionUp
     jmp .tryCursorDown
 
 ; cursor up and down should know two different operation modes
@@ -312,8 +303,6 @@ main
 
 +   cmp #145 ; cursor up
     bne +
-    lda #0
-    sta zp_scrollDirectionUp
     jmp .tryCursorUp
 
 ;+   cmp #19   ;home
@@ -426,13 +415,14 @@ main
 
 .setToFirstContentLine
     lda #0
-    sta zp_cursorLineScreen
     sta zp_linenumber_start
     sta zp_linenumber_start+1
     sta zp_cursorLineContent
     sta zp_cursorLineContent+1
     sta zp_firstVramContentLine
     sta zp_firstVramContentLine+1
+    lda #FIRST_LINE
+    sta zp_cursorLineScreen
     rts
 
 ; ---------------------
@@ -448,7 +438,7 @@ main
     beq +
     jmp .tryLineScrollDown
 
-+   jsr .calcCursorLineScreen
++   lda zp_cursorLineScreen;jsr .calcCursorLineScreen
 
     ldy zp_linecount+1
     bne +       ; we have more content lines than what fits the screen. no need to check for lower cursor pos
@@ -463,15 +453,17 @@ main
     jmp .tryLineScrollDown
 
 .cursorDown
-+   jsr .drawCursorOneBelow
-    jmp .getUserinput
-
-.drawCursorOneBelow
-    jsr removeCursor
++   jsr removeCursor
     inc zp_cursorLineContent
     bne +
     inc zp_cursorLineContent+1
-+   jmp drawCursor
+
++   inc zp_cursorLineScreen
+    jsr drawCursor
+
+    jmp .getUserinput
+
+;.drawCursorOneBelow
 
 .tryLineScrollDown
 ;    clc
@@ -479,7 +471,7 @@ main
 ;    adc zp_linenumber_start
 ;    cmp zp_linecount    ; is the last visible line also the last content line?
 
-    ; is the last visible line also the last content line?
+    ; is the last visible line also the last line in vram?
     ; zp_tempCalc contains the last visible line
     clc
     lda #VISIBLE_LINES
@@ -496,7 +488,7 @@ main
     cmp zp_lastVramContentLine
     bcc .doLineScrollDown
 
-    ;yes, last line. now check, if RAM holds more lines.
+    ;yes, last line in vram. now check, if RAM holds more lines.
     lda zp_lastVramContentLine+1
     cmp zp_linecount+1
     bcc .loadNextDataIntoVram
@@ -590,7 +582,7 @@ main
     beq +
     jmp .tryLineScrollUp
 
-+   jsr .calcCursorLineScreen
++   lda zp_cursorLineScreen ;jsr .calcCursorLineScreen
     cmp #FIRST_LINE     ; is cursor on first line on screen?
     bne +               ; no
     ;yes. try to scroll up
@@ -608,7 +600,8 @@ main
     sta zp_cursorLineContent
     bcs +
     dec zp_cursorLineContent+1
-+   jmp drawCursor
++   dec zp_cursorLineScreen
+    jmp drawCursor
 
 .tryLineScrollUp
     ; is the first visible line also the first vram line?
@@ -793,7 +786,8 @@ disableIO
     pla
     rts
 
-
+; goes to 2 mhz
+; if super-cpu is present, goes to 20 mhz
 doFast
     lda $ff00
     pha
@@ -806,7 +800,11 @@ doFast
     LDA #$01
     STA $D030
 
-    pla
+    lda $D0B9
+    bmi +       ; top-most bit set, no super-cpu detected
+    sta $d07b   ; turbo on. 20 mhz super-cpu speed
+
++   pla
     sta $ff00
     RTS
 
@@ -815,6 +813,8 @@ setBank15
     STA $FF00
     rts
 
+; goes to 1 mhz
+; if super-cpu is present, disable turbo
 doSlow
     lda $ff00
     pha
@@ -827,7 +827,11 @@ doSlow
     ORA #$10
     STA $D011
 
-    pla
+    lda $D0B9
+    bmi +       ; top-most bit set, no super-cpu detected
+    sta $d07a   ; set super-cpu turbo off (ie to 1 mhz from the c128's speed register we just set)
+
++   pla
     sta $ff00
     rts
 
@@ -883,7 +887,7 @@ recoverZp
 
 .detectAndDisableSuperCpu
     lda $D0B9
-    bpl +   ; top-most bit not set, no super-cpu detected
+    bmi +   ; top-most bit set, no super-cpu detected
 
     lda #0
     sta $D07A   ; set super cpu to normal speed (ie 1 or 2 mhz, but not 20)

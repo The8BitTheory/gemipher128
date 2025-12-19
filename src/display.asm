@@ -3,18 +3,9 @@
 ; zp_linkTablePosition will always point to the beginning of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
-    ; we run into infinite loops here if plain text content has less lines than available screen lines (23 usually)
-    ; this is because of we only check scroll-up yes or no. but not "no scroll"
-    ; this is a quick and dirty hack to get out of this loop
-    ldx #25
-    stx retries
-
 .displayTextmodeRestart
-    dec retries
-    bne +
-    rts
 
-+   ldy #LAST_LINE
+    ldy #LAST_LINE
     sty zp_lastLine
 
 ; bank 1
@@ -82,7 +73,10 @@ displayTextmode
     jsr AY_to_vdc_regs_Xp1
 
     ldy #0
-    sty zp_tempY    ; we use zp_tempY to count the current displayline. we'll use that for calculating cursor position offsets
+    sty zp_tempY    ; we use zp_tempY to count the current contentline.
+    ldy #FIRST_LINE
+    sty .currentScreenLine      ; initialize currentScreenLine to topmost visible line
+    jsr .writeScreenToContentLine
 
 ;-----------------------------------------
 ; here, printing the line is triggered 
@@ -94,27 +88,14 @@ displayTextmode
 ; for each line, screen-ram is increased by 80
 ; the block-copy source increases automatically with each copy operation
 
+; renderloop for all visible content lines on screen
 -   jsr .displayLine
-    bcc ++
-    lda zp_scrollDirectionUp
-    beq +
-    ; scroll direction down ()
-    inc zp_linenumber_start
-    lda zp_scrollModeCrsr
-    bne +
-    inc zp_cursorLineScreen
-+   jmp .displayTextmodeRestart ;restart building screen one content line later
 
-    ; scroll direction up (scroll )
-+   dec zp_linenumber_start
-    lda zp_scrollModeCrsr
-    bne +
-    dec zp_cursorLineScreen
-+   jmp .displayTextmodeRestart ;restart building screen one content line earlier
-
-++  jsr .incVramLineOffsetPosition
+    jsr .incVramLineOffsetPosition
     jsr .incOutputLineNumber
     inc zp_tempY
+    inc .currentScreenLine
+    jsr .writeScreenToContentLine
 
     lda zp_scrollModeCrsr
     bne +
@@ -137,19 +118,18 @@ drawCursor
     beq +
     jmp .drawPlainTextStatusline
 
-+   sec
-    lda zp_cursorLineContent
-    sbc zp_linenumber_start
-    sta zp_tempY
++   ldx zp_cursorLineScreen
     clc
-    adc zp_tempY
-    tax
-
-    lda cursorOffsets,x
-    sta zp_cursorPosScreen
-    inx
-    lda cursorOffsets,x
+    lda #0
     sta zp_cursorPosScreen+1
+    
+-   adc #80
+    sta zp_cursorPosScreen
+    bcc +
+    inc zp_cursorPosScreen+1
+    clc
++   dex
+    bne -
 
     lda #62 ; >
     ldx zp_cursorPosScreen+1
@@ -170,9 +150,17 @@ drawCursor
     jsr .drawPlainTextStatusline
 
     ; prepare values we want to show (type, selector, host, port)
-    lda zp_cursorLineContent
+    ; first, get content line from current screenline
+    clc
+    lda zp_cursorLineScreen
+    adc zp_cursorLineScreen
+    tax
+
+    lda .screenToContentLine,x
+    ;lda zp_cursorLineContent
     sta zp_tempCalc
-    lda zp_cursorLineContent+1
+    lda .screenToContentLine+1,x
+    ;lda zp_cursorLineContent+1
     sta zp_tempCalc+1
     lda zp_linkTableIncr
     sta zp_tempX
@@ -186,49 +174,44 @@ drawCursor
     adc #>LINKTABLE_ADDRESS
     sta zp_linkTablePosition+1
 
-
     lda #zp_linkTablePosition
     sta c_fetch_zp
 
     ; load line type
     ldy #0
-    ;jsr .fetchFromContentBankOffsetY
     lda (zp_linkTablePosition),y
-    iny
     sta zp_currentTypePtr
-    ;jsr .fetchFromContentBankOffsetY
-    lda (zp_linkTablePosition),y
     iny
+    
+    lda (zp_linkTablePosition),y
     sta zp_currentTypePtr+1
+    iny
 
     iny ;skip currentLength
 
-    ;jsr .fetchFromContentBankOffsetY
     lda (zp_linkTablePosition),y
-    iny
     sta zp_currentSelectorPtr
-    ;jsr .fetchFromContentBankOffsetY
-    lda (zp_linkTablePosition),y
     iny
+
+    lda (zp_linkTablePosition),y
     sta zp_currentSelectorPtr+1
-
-    ;jsr .fetchFromContentBankOffsetY
-    lda (zp_linkTablePosition),y
     iny
+
+    lda (zp_linkTablePosition),y
     sta zp_currentHostPtr
-    ;jsr .fetchFromContentBankOffsetY
-    lda (zp_linkTablePosition),y
     iny
-    sta zp_currentHostPtr+1
 
-    ;jsr .fetchFromContentBankOffsetY
     lda (zp_linkTablePosition),y
+    sta zp_currentHostPtr+1
     iny
+
+    lda (zp_linkTablePosition),y
     sta zp_currentPortPtr
-    ;jsr .fetchFromContentBankOffsetY
-    lda (zp_linkTablePosition),y
     iny
+    
+    lda (zp_linkTablePosition),y
     sta zp_currentPortPtr+1
+    iny
 
     lda #zp_currentTypePtr
     sta c_fetch_zp
@@ -627,9 +610,9 @@ removeCursor
 ++  sta zp_visibleLength+1
 
 ; go to the right ram-content offset (increments of 10 or 3, depending on file type)
-    jsr .resetLinkTablePosition
-    rts
-    nop
+;    jsr .resetLinkTablePosition
+;    rts
+;    nop
 
 ; this sets the zp_linkTablePosition value to the first byte of the topmost line on screen
 .resetLinkTablePosition
@@ -700,80 +683,100 @@ removeCursor
     sec    
     lda zp_vram_screenram
     sbc #1
-    sta cursorOffsets,x
+    sta .cursorOffsets,x
     inx
     lda zp_vram_screenram+1
-    sta cursorOffsets,x
+    sta .cursorOffsets,x
+
+    rts
+
+.writeScreenToContentLine
+    clc
+    lda .currentScreenLine
+    adc .currentScreenLine
+    tax
+
+    clc
+    lda zp_linenumber_start
+    adc zp_tempY
+    sta .screenToContentLine,x
+    lda zp_linenumber_start+1
+    adc #0
+    sta .screenToContentLine+1,x
 
     rts
 
 .displayLine
     jsr .readVisibleLength
-    beq +
+    ;beq ++
 
-    ; low-byte in A
--   cmp #79
-    bcc +
+    
+-   lda zp_visibleLength+1    ; check
+    bne .longerThanOneScreenLine
+    lda zp_visibleLength
+    cmp #79
+    bcc .shorterThanOneScreenLine
 
-    ; line longer than 75 characters
+    ; line longer than 79 characters
+.longerThanOneScreenLine
     sec
+    lda zp_visibleLength
     sbc #79
     sta zp_visibleLength
-    lda #79
+    bcs +
+    dec zp_visibleLength+1
++   lda #79
     jmp ++
 
-    ; line shorter than 75 characters
-+   ldy #0
+    ; line shorter than 79 characters
+.shorterThanOneScreenLine
+    ldy #0
     sty zp_visibleLength
-
-    ; this implies a maximum line-width of 255 visible characters
-++  ldy #0  ; high-byte in Y is zero anyways, coming out of jsr .readVisibleLength above
+    
+++  ldy #0  ; high-byte in Y is zero anyways, because we print 79 chars max
     jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
     
+    lda zp_visibleLength+1  ;check if we have to handle multi-line content
+    bne +
     lda zp_visibleLength
-    beq .displayDone
-    dec zp_lastLine
-    ldx zp_tempX    ;contains the nr of lines left to print
+    beq .displayDone    ; hb and lb are zero. nothing left to print
++   ldx zp_tempX    ;contains the nr of lines left on screen for printing
     cpx #1
-    bne +       ; not on the last line, keep going
-    sec
-    rts       ; we are on the last line. set carry flag to trigger re-print of full page one line below
+    bne .drawNextLine       ; not on the last line, keep going
+    rts       ; we are on the last line. stop printing despite there being more text in the current content line
     
-+   jsr .incOutputLineNumber
+.drawNextLine
+    jsr .incOutputLineNumber
+    jsr .writeScreenToContentLine
     lda zp_visibleLength
+    inc .currentScreenLine
+    jsr .writeScreenToContentLine
+
     jmp -
 
 .displayDone
-    clc
     rts
 
 .readLineType
-;    lda c_fetch_zp
-;    pha
-
     lda #zp_linkTablePosition
     sta c_fetch_zp
 
-    ; load line type
+    ; we need the offset of the line type in the linktable first
     ldy #0
-    ;jsr .fetchFromContentBankOffsetY
     lda (zp_linkTablePosition),y
-    iny
     sta zp_memPtr
-    ;jsr .fetchFromContentBankOffsetY
-    lda (zp_linkTablePosition),y
     iny
+    lda (zp_linkTablePosition),y
     sta zp_memPtr+1
+    iny
 
     lda #zp_memPtr
     sta c_fetch_zp
 
+; load line type from the offset we just calculated
+; the actual data is stored in bank 1
     ldy #0
     jsr .fetchFromContentBankOffsetY
-
-
-;    pla
-;    sta c_fetch_zp
     rts
 
 .setAttributeRamToScreenLine
@@ -782,9 +785,9 @@ removeCursor
     adc zp_tempX
     tax
 
-    lda cursorOffsets,x
+    lda .cursorOffsets,x
     sta zp_memPtr
-    lda cursorOffsets+1,x
+    lda .cursorOffsets+1,x
     sta zp_memPtr+1
 
     clc
@@ -805,7 +808,7 @@ removeCursor
     jsr A_to_vdc_reg_X
 
     ldy #0
-    lda #78   
+    lda #78
     jmp vdc_do_YYAA_cycles
 
 .makeLineBlack
@@ -815,15 +818,25 @@ removeCursor
     jsr A_to_vdc_reg_X
 
     ldy #0
-    lda #78   
+    lda #78
     jmp vdc_do_YYAA_cycles
 
 .readVisibleLength
     ldy #2
     lda (zp_vramLineOffsets),y
-;    ldx zp_contentBank
-;    jsr c_fetch
     sta zp_visibleLength
+
+    lda zp_pageType
+    cmp #30 ; plain text
+    bne +
+    ; line-length stored in 2 bytes
+    iny
+    lda (zp_vramLineOffsets),y    ; plain text
+    jmp ++
++   lda #0  ; gopher
+    
+++  sta zp_visibleLength+1
+
     rts
 
 .clearScreen
@@ -1027,3 +1040,13 @@ multiply
  
 
 .textLineNr       !text "LineNr: ",0
+
+; cursorOffsets holds the logical linenumber for each line on screen
+; this is required to react to multi-line text correctly
+; a gopher link line over two lines has line type and selector coming from the same offset in linktable
+; 25 lines, two bytes each. 23 sould be sufficient, but we can always reduce that
+.cursorOffsets  !word 80    ; first offset is always 80 (as long as we're starting in second screenline)
+                !fill 50
+
+.screenToContentLine    !fill 52    ; contains offset to contentline per screenline. needed to handle multi-line content
+.currentScreenLine      !byte 0     ; what line are we rendering currently

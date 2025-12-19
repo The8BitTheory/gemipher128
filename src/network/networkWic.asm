@@ -295,22 +295,32 @@ requestContent
     +print txtTcpRead
     
 .readIncomingData
+    lda #'.'
+    jsr bsout
     +wic64_execute tcpRead, response, 5
     bcc +
     jmp .endWithTimeout    ; this means timeout
-    ;jsr .writeDebug
+
++   lda ramLeft+1   ; we are still waiting for a response
+    bne +
+    lda ramLeft
+    bne +
+ 
 +   lda wic64_response_size
-    bne +
+    bne .nextRequestStage
     lda wic64_response_size+1
-    bne +
+    bne .nextRequestStage
     dec zp_tempY
     bne .readIncomingData
     jmp .allResponseRead
 
-+   ldy #0
+.nextRequestStage
+    ldy #5
     sty zp_tempY
     jmp .isMoreDataAvailable
 .readResponsePart
+    lda #','
+    jsr bsout
     +wic64_execute tcpRead, response, 5
     bcs .allResponseRead    ; this means timeout
     lda ramLeft+1
@@ -318,7 +328,7 @@ requestContent
     lda ramLeft
     bne .isMoreDataAvailable
     jmp .allResponseRead
-    ;jsr .writeDebug
+
 .isMoreDataAvailable
     lda wic64_bytes_to_transfer+1
     bne .readResponsePart
@@ -428,9 +438,9 @@ requestContent
     ; check whether we have RAM left
     dec ramLeft+1
     bne +
-    +print txtTcpClose
+    ;+print txtTcpClose
     +wic64_execute tcpClose, response
-    +print txtDone
+    +print txtRamFull
     +wic64_set_store_instruction .storeInstructionDrop
 
 +   rts
@@ -522,6 +532,7 @@ txtTcpRead          !text "TCP Read... ",0
 txtTcpWrite         !text "TCP Write... ",0
 txtTcpClose         !text "TCP Close... ", 0
 txtTcpAvlbl         !text "TCP Available... ",0
+txtRamFull          !text "RAM Full. Connection closed. ",0
 txtDone             !text "done",$d,0
 
 tcpOpen             !byte "R", WIC64_TCP_OPEN
