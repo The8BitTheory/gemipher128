@@ -3,7 +3,6 @@
 ; zp_linkTablePosition will always point to the beginning of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
-.displayTextmodeRestart
     lda zp_pageType
     cmp #$30
     bne +

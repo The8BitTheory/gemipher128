@@ -289,7 +289,7 @@ main
 ; - next page (in history)      - commodore + cursor right
 ; - page up/down                - commodore + up/down
 
-.getUserinput
+getUserInput
 -   jsr k_getin
 ;-   lda 212
 ;    cmp #88
@@ -341,7 +341,7 @@ main
     
     lda zp_pageType
     cmp #$31
-    bne .getUserinput
+    bne getUserInput
 
     lda #1
     sta zp_navModeHistory   ; not navigating in history
@@ -390,6 +390,10 @@ main
     bne +
     jmp .requestNewContent
 
++   cmp #'G' ; goto
+    bne +
+    jmp activateAddressEnterMode
+
 +   cmp #'F'; speed
     bne ++
     lda zp_fastmode
@@ -403,7 +407,7 @@ main
 
 ++  cmp #'X'
     beq +
-    jmp .getUserinput
+    jmp getUserInput
 
 ; we're done, clean the campground before leaving
 ;    lda #27
@@ -446,7 +450,7 @@ main
     bne +       ; we have more content lines than what fits the screen. no need to check for lower cursor pos
     cmp zp_linecount
     bne +
-    jmp .getUserinput   ; less content than screen lines, and we reached the last content line
+    jmp getUserInput   ; less content than screen lines, and we reached the last content line
 
 +   cmp zp_lastLine ; is cursor on last screen-line?
     bne .cursorDown   ; not on the last screen-line, draw one line below
@@ -463,7 +467,7 @@ main
 +   inc zp_cursorLineScreen
     jsr drawCursor
 
-    jmp .getUserinput
+    jmp getUserInput
 
 ;.drawCursorOneBelow
 
@@ -498,7 +502,7 @@ main
     cmp zp_linecount
     bcc .loadNextDataIntoVram
 
-    jmp .getUserinput   ; no. don't do anything, get next input from user
+    jmp getUserInput   ; no. don't do anything, get next input from user
 
 .doLineScrollDown
     lda zp_scrollModeCrsr
@@ -590,7 +594,7 @@ main
 
     ;no. just draw cursor one line above
 +   jsr .drawCursorOneAbove
-    jmp .getUserinput
+    jmp getUserInput
 
 .drawCursorOneAbove
     jsr removeCursor
@@ -619,7 +623,7 @@ main
     lda zp_firstVramContentLine
     bne .loadPrevDataIntoVram
 
-    jmp .getUserinput
+    jmp getUserInput
 
 .doLineScrollUp
 +   sec
@@ -723,7 +727,7 @@ main
     adc #1
     cmp zp_historyStackSize
     bne +   
-    jmp .getUserinput   ; no next entry in stack
+    jmp getUserInput   ; no next entry in stack
 
 +   inc zp_historyStackPos
     jmp .commonHistoryPageHandling
@@ -731,7 +735,7 @@ main
 .prevHistoryPage
     lda zp_historyStackPos
     bne +   
-    jmp .getUserinput   ; no previous entry in stack
+    jmp getUserInput   ; no previous entry in stack
 
 +   dec zp_historyStackPos
 .commonHistoryPageHandling
@@ -911,6 +915,7 @@ recoverZp
 !src "src/parsers/commonParse.asm"
 !src "src/copy/copyCommon.asm"
 !src "src/display.asm"
+!src "src/input/address.asm"
 
 
 txtReu      !text "REU: ",0
