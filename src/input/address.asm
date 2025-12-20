@@ -84,3 +84,6 @@ activateAddressEnterMode
 
 .posCursorX     !byte 0
 .posCursorY     !byte 0
+.addressSizeL   !byte 0
+.addressSizeH   !byte 0
+.address        !fill 256

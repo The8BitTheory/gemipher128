@@ -12,6 +12,22 @@ loadInitialPageFromDisk
     sta zp_responseSize
     sta zp_responseSize+1
 
+    lda #<diskHost
+    sta zp_currentHostPtr
+    lda #>diskHost
+    sta zp_currentHostPtr+1
+
+    lda #<diskPort; $ba ;186, contains current drive number
+    sta zp_currentPortPtr
+    lda #>diskPort
+    sta zp_currentPortPtr+1
+
+    lda #<selectorContent
+    sta zp_currentSelectorPtr
+    lda #>selectorContent
+    sta zp_currentSelectorPtr+1
+    jsr setFromHistory
+
     jsr loadContentFromDisk
 
     lda $ae

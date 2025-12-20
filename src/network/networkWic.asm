@@ -210,10 +210,12 @@ detectAndInitializeWic64
 
 .connTimeout
     +print txtTimeout
+    +wic64_finalize
     rts
 
 .notConnected
     +print txtNotConnected
+    +wic64_finalize
     rts
 
 .noWicDetected
@@ -228,6 +230,7 @@ detectAndInitializeWic64
     rts
 
 .handleWic64Error
+    +wic64_finalize
     lda zp_contentAddress
     sta zp_responseSize
 

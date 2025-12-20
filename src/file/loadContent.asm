@@ -98,5 +98,11 @@ loadContentFromDisk
 .byteCount      !byte 0
 .maxBytes = 24
 
-nameContent !pet "start.gop"
+diskHost        !text "device",$9
+diskPort        !text "8\r\n"
+
+selectorContent !text "/"
+nameContent     !pet "start.gop"
 nameContentLength = *-nameContent
+                !byte $9        ;this byte is for displaying the filename on screen like a gopher selector.
+                                ; it is irrelevant for loading from disk

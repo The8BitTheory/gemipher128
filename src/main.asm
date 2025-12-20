@@ -216,7 +216,7 @@ main
     jsr loadInitialPageFromDisk
     jmp .afterRequest
 
-.requestNewContent
+requestNewContent
     jsr requestContent
 
     ; set the cursor line to zero here, that's important for calculating the right screen area for display
@@ -328,13 +328,13 @@ getUserInput
     bne +
     jsr setBkm1GopherHostSelector
     jsr setFromHistory
-    jmp .requestNewContent
+    jmp requestNewContent
 
 +   cmp #$32 ; 2 . second bookmark
     bne +
     jsr setBkm2GopherHostSelector
     jsr setFromHistory
-    jmp .requestNewContent
+    jmp requestNewContent
 
 +   cmp #13 ;return key
     bne ++
@@ -354,9 +354,8 @@ getUserInput
 +   sta zp_pageType     ; this is important. all processing of the next page is based on this
     inc zp_historyStackPos
 .prepareRequest
-    
     jsr setNewGopherHostSelector
-    jmp .requestNewContent
+    jmp requestNewContent
 
 ++  cmp #19 ;home
     bne ++
@@ -379,7 +378,7 @@ getUserInput
 ++  cmp #'H' ;go home
     bne +
     jsr setInitialGopherHostSelector
-    jmp .requestNewContent
+    jmp requestNewContent
 
 +   cmp #'S' ; go to startpage
     bne +
@@ -388,7 +387,7 @@ getUserInput
 
 +   cmp #'R' ;reload
     bne +
-    jmp .requestNewContent
+    jmp requestNewContent
 
 +   cmp #'G' ; goto
     bne +
