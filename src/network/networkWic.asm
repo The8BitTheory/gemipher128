@@ -239,7 +239,7 @@ detectAndInitializeWic64
     jmp .connTimeout
 +   rts
 
-requestContent
+initRamLeft
     sec
     lda #<CONTENT_END_ADDRESS
     sbc #<CONTENT_ADDRESS
@@ -247,6 +247,10 @@ requestContent
     lda #>CONTENT_END_ADDRESS
     sbc #>CONTENT_ADDRESS
     sta ramLeft+1
+    rts
+
+requestContent
+    jsr initRamLeft
 
     lda zp_perm_target
     cmp #1
@@ -284,13 +288,13 @@ requestContent
     +print txtTcpOpen
     +wic64_execute tcpOpen, openResponse, 5
     bcc +
-    jmp .connTimeout
+    jmp createTimeoutPage
 
 +   +print txtDone
     +print txtTcpWrite
     +wic64_execute tcpWrite, writeResponse, 5
     bcc +
-    jmp .connTimeout
+    jmp createTimeoutPage
 +   +print txtDone
 
     lda #$ff

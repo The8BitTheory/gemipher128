@@ -307,11 +307,6 @@ getUserInput
     bne +
     jmp .tryCursorUp
 
-;+   cmp #19   ;home
-;    bne +
-;    jsr setInitialGopherHostSelector
-;    jmp .requestNewContent
-
 +   cmp #157 ;cursor left - previous page in history, if available
     bne +
     lda #0
@@ -915,6 +910,7 @@ recoverZp
 !src "src/copy/copyCommon.asm"
 !src "src/display.asm"
 !src "src/input/address.asm"
+!src "src/information.asm"
 
 
 txtReu      !text "REU: ",0
