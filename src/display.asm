@@ -426,6 +426,7 @@ drawCursor
     ldx #31
     jsr A_to_vdc_reg_X
 
+    inc addressPos
     dec zp_tempCalc
     beq +
     iny
@@ -998,11 +999,11 @@ writeCurrentGopherToHeadline
     ldx #$00
     jsr A_to_vram_XXYY
 
-
     ldx #64
     stx zp_tempX
     ldy #02
     lda #00
+    sta addressPos  ; this is used for cursorposition when entering a user-defined address
     jsr AY_to_vdc_regs_18_19
 
     lda #<tcpOpenHostPort
@@ -1020,10 +1021,12 @@ writeCurrentGopherToHeadline
     lda #'/'
     jsr toScreencode
     jsr .printAcc
+    inc addressPos
 
     lda zp_pageType
     jsr toScreencode
     jsr .printAcc
+    inc addressPos
 
     lda #<tcpWriteSelector
     sta zp_memPtr
