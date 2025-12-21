@@ -990,17 +990,6 @@ writeCurrentGopherToHeadline
 
     jsr fillLine0WithSpaces
 
-; print rounded corners top left and right
-    lda #96
-    ldy #$00
-    ldx #$00
-    jsr A_to_vram_XXYY
-
-    lda #97
-    ldy #$4f
-    ldx #$00
-    jsr A_to_vram_XXYY
-
     ldx #64
     stx zp_tempX
     ldy #02
@@ -1056,7 +1045,18 @@ fillLine0WithSpaces
     ; set count (79 characters)
     lda #$4f
     ldy #$00
-    jmp vdc_do_YYAA_cycles
+    jsr vdc_do_YYAA_cycles
+
+; print rounded corners top left and right
+    lda #96
+    ldy #$00
+    ldx #$00
+    jsr A_to_vram_XXYY
+
+    lda #97
+    ldy #$4f
+    ldx #$00
+    jmp A_to_vram_XXYY
 
 
 multiply

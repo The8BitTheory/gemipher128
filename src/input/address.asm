@@ -189,7 +189,7 @@ writeToAddress
     rts
 
 .invalidAddress
-    jmp .handleInput
+    jmp .cancelAddressEnterMode
 
 .leaveAddressEnterMode
     jsr .disableCursor
@@ -197,7 +197,12 @@ writeToAddress
 
 ; turns user input into tokens ready for request
 .parseAddress
-    ldx #0  ; read index
+    lda addressPos
+    bne +
+    sec
+    rts
+    
++   ldx #0  ; read index
 
 ; parse hostname (parse ends with :, request data ends with $9)
 -   lda .address,x
