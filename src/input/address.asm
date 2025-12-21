@@ -15,7 +15,11 @@ activateAddressEnterMode
 -   jsr k_getin
     beq -
 
-    cmp #13
+    cmp #3
+    bne +
+    jmp .cancelAddressEnterMode
+
++   cmp #13
     bne +
     jmp .evaluateInput
 
@@ -136,6 +140,7 @@ writeToAddress
 
 .evaluateInput
     jsr .leaveAddressEnterMode
+    jsr .clearHostPortSelector
     jsr .parseAddress
     bcs .invalidAddress
     jsr .setRequestPointers
@@ -159,6 +164,9 @@ writeToAddress
 -   sta .address,x
     dex
     bne -
+
+.clearHostPortSelector
+    lda #0
 
 ; 64 bytes
     ldx #63
@@ -216,7 +224,7 @@ writeToAddress
 -   lda .address,x
     beq +
     cmp #'/'
-    beq +
+    beq .concludePort
     sta .port,y
     iny
     inx
@@ -255,8 +263,18 @@ writeToAddress
 .parseSelector
     ldy #0
     inx
--   lda .address,x
+
+; check if first character of selector is a /
+    lda .address,x
+    cmp #'/'
+    beq +   ; yes, it is
+    
+    lda #'/'            ; no, it isn't. add it manually
     sta .selector,y
+    iny
+
+-   lda .address,x
++   sta .selector,y
     iny
     inx
     cpx addressPos
@@ -390,6 +408,12 @@ writeToAddress
     tay
     pla
     rts
+
+; this recovers the previous content of the headerline and leaves address entry mode
+.cancelAddressEnterMode
+    jsr .leaveAddressEnterMode
+    jsr writeCurrentGopherToHeadline
+    jmp getUserInput
 
 .posCursorX     !byte 0     ; screen coordinate
 .posCursorY     !byte 0     ; screen coordinate
