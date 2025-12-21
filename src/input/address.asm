@@ -3,13 +3,7 @@
 .FIRST_POS_X    = 2
 
 activateAddressEnterMode
-    lda #00
-    sta .posCursorY
-    
-    clc
-    lda addressPos
-    adc #2
-    sta .posCursorX
+    jsr .resetCursorPosition
 
     ; read into .address what we currently have in the address line
 
@@ -24,6 +18,10 @@ activateAddressEnterMode
     cmp #13
     bne +
     jmp .evaluateInput
+
++   cmp #147    ;clear
+    bne +
+    jmp .clearInput
 
 +   cmp #20 ;delete key
     bne +
@@ -62,11 +60,12 @@ activateAddressEnterMode
 ; eval printable ascii characters: 32-127. we'll get codes from 32-95. 96-126 will come as 192-222
     ldx addressPos
     cpx #75
-    bne +
+    bne writeAsciiToAddress
     sec
     rts
 
-+   cmp #32; drop everything < 32
+writeAsciiToAddress
+    cmp #32; drop everything < 32
     bcs +   ; value is >= 32
     sec
     rts
@@ -142,6 +141,44 @@ writeToAddress
     jsr .setRequestPointers
     jmp requestNewContent
     ;jmp getUserInput
+
+.clearInput
+    jsr .clearAddressHostPortSelector
+    jsr .resetCursorPosition
+    jsr .setCursorPosition
+    jsr fillLine0WithSpaces
+
+    jmp .handleInput
+
+.clearAddressHostPortSelector
+    lda #0
+    sta addressPos
+
+; 256 bytes
+    ldx #$00
+-   sta .address,x
+    dex
+    bne -
+
+; 64 bytes
+    ldx #63
+-   sta .host,x
+    dex
+    bpl -
+
+; 7 bytes
+    ldx #6
+-   sta .port,x
+    dex
+    bpl -
+
+; 256 bytes
+    ldx #$00
+-   sta .selector,x
+    dex
+    bne -
+
+    rts
 
 .invalidAddress
     jmp .handleInput
@@ -256,8 +293,6 @@ writeToAddress
     lda #$09
     sta .host,x
 
-    ;jmp .setDefaultPort
-    ;jmp .concludePort
 
 .setDefaultPort
     ; first, conclude host
@@ -318,6 +353,16 @@ writeToAddress
     jsr .calcCursorAddrToAY
     ldx #14
     jmp AY_to_vdc_regs_Xp1
+
+.resetCursorPosition
+    lda #00
+    sta .posCursorY
+
+    clc
+    lda addressPos
+    adc #2
+    sta .posCursorX
+    rts
 
 .calcCursorAddrToAY
     lda #0

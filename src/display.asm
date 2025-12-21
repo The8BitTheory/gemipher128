@@ -422,11 +422,13 @@ drawCursor
 -   lda (zp_memPtr),y
     cmp #$d
     beq +
+    pha
+    jsr writeToAddress
+    pla
     jsr toScreencode
     ldx #31
     jsr A_to_vdc_reg_X
 
-    inc addressPos
     dec zp_tempCalc
     beq +
     iny
@@ -1019,14 +1021,18 @@ writeCurrentGopherToHeadline
     jsr .printHeaderLineUntilTab
 
     lda #'/'
+    pha
+    jsr writeToAddress
+    pla
     jsr toScreencode
     jsr .printAcc
-    inc addressPos
 
     lda zp_pageType
+    pha
+    jsr writeToAddress
+    pla
     jsr toScreencode
     jsr .printAcc
-    inc addressPos
 
     lda #<tcpWriteSelector
     sta zp_memPtr
