@@ -538,6 +538,85 @@ wic64mexRequest
     +wic64_execute httpPostDataCmd, response
     lda wic64_status
 
+    jsr .readMexResponse
+
+; check the response
++   ldx #0
+    lda response,x
+    beq +
+    jmp .handleTmpProblem
+
+; read the json-url
++   ldy #0
+    inx
+-   lda response,x
+    sta mexPlaylistUrl,y
+    inx
+    iny
+    cpx wic64_response_size
+    bne -
+    lda #0
+    sta mexPlaylistUrl,x
+
+; submit the json-url to mex
+    ;https://mex.wic64.net/r/<absolute-url-to-the-playlist-file.json but without https://>
+    ; concatenate mexServer, mexUrlRegister, mexPlaylistUrl (after second /)
+
+    ldx #0  ; read index
+    ldy #0  ; write index
+-   lda mexServer,x
+    beq +
+    sta httpGetUrl,y
+    inx
+    iny
+    jmp -
+
++   ldx #0
+-   lda mexUrlRegister,x
+    beq +
+    sta httpGetUrl,y
+    inx
+    iny
+    jmp -
+
+; skip https
++   ldx #8
+-   lda mexPlaylistUrl,x
+    beq +
+    sta httpGetUrl,y
+    inx
+    iny
+    jmp -
+
++   sty httpGetSizeL
+    +wic64_execute httpGetCmd, response
+
+    jsr .readMexResponse
+    lda response
+    beq +
+    jmp .handleMexProblem
+
++   ldx #1
+    ldy #0
+-   lda response,x
+    sta mexSessionId,y
+    inx
+    iny
+    cpy wic64_response_size
+    bne -
+
+    ldy #4
+    ldx #0
+-   lda mexSessionId,x
+    sta mexJoinCode,x
+    inx
+    dey
+    bne -
+
+    rts
+    nop
+
+.readMexResponse
 -   lda #'x'
     jsr bsout
     +wic64_execute tcpRead, response, 5
@@ -550,110 +629,30 @@ wic64mexRequest
     bne +
     jmp -
 
-; check the response
-+   ldx #0
-    lda response,x
-    bne .handleProblem
++   rts
 
-; read the json-url
-    ldy #0
-    inx
--   lda response,x
-    sta mexPlaylistUrl,y
-    inx
-    iny
-    cpx wic64_response_size
-    bne -
-
-; submit the json-url to mex
-    ;/r/<absolute-url-to-the-playlist-file.json but without https://>
-
-    
-
+.handleMexProblem
+    +print .txtUnknownMexError
+    sec
     rts
     nop
 
-.handleProblem
+.handleTmpProblem
     cmp #1
     bne +
     +print .txtMexNoData
+    sec
     rts
 
 +   cmp #2
     bne +
     +print .txtMexInvalidJson
+    sec
     rts
 
     +print .txtUnknownMexError
+    sec
 +   rts
-setNewMexHostSelector
-
-    ldx #1
-    lda mmuBankConfig,x
-    sta zp_hostSelBank
-
-    ldy #0
-    ;sty httpPostUrlSizeL
-    ;sty httpPostUrlSizeH
-    sty httpPostDataSizeL
-    sty httpPostDataSizeH
-    sty zp_tempX
-
-    lda #zp_currentHostPtr
-    sta c_fetch_zp
-
--   ldx zp_hostSelBank
-    jsr c_fetch
-    cmp #9
-    beq +
-    ldx zp_tempX
-    sta tcpOpenHostPort,x
-    inc zp_tempX
-    jsr .incOpenSize
-    jmp -
-
-+   lda #':'
-    ldx zp_tempX
-    sta tcpOpenHostPort,x
-    inc zp_tempX
-    jsr .incOpenSize
-
-    ldy #0
-    lda #zp_currentPortPtr
-    sta c_fetch_zp
-
--   ldx zp_hostSelBank
-    jsr c_fetch
-    cmp #$0d
-    beq +
-    ldx zp_tempX
-    sta tcpOpenHostPort,x
-    inc zp_tempX
-    jsr .incOpenSize
-    jmp -
-
-+   ldy #0
-    sty zp_tempX
-    lda #zp_currentSelectorPtr
-    sta c_fetch_zp
-
--   ldx zp_hostSelBank
-    jsr c_fetch
-    cmp #$0d
-    bne +
-    iny
-    jmp -
-+   cmp #$0a
-    bne +
-    jmp .writeCrLf
-+   cmp #9
-    ;beq .writeCrLf
-    ldx zp_tempX
-    sta tcpWriteSelector,x
-    inc zp_tempX
-    iny
-    jsr .incWriteSize
-    jmp -
 
 .reuAvlblRam        !word 0 ; how much ram is left in the current reu bank
 .reuAvlblBank       !byte 0 ; how many banks are left once the current one is filled
@@ -693,8 +692,19 @@ httpPostDataTrail   !text $22,","
                     !text "}]"
 httpPostDataSize = * - httpPostData
 
-mexPlaylistUrl      !fill 40        ; this is returned from tmpmex
+httpGetCmd          !byte "R", WIC64_HTTP_GET
+httpGetSizeL        !byte 0
+httpGetSizeH        !byte 0
+httpGetUrl          !fill 64
+
+
+mexPlaylistUrl      !fill 64        ; this is returned from tmpmex. should be 40 chars
 mexSessionId        !fill 8         ; this is returned from mex
+mexServer           !text "https://mex.wic64.net/",0
+mexUrlRegister      !text "r/",0    ; register session-id to get a join code
+mexUrlSwap          !text "P/",0    ; swap json-url of existing session
+mexUrlJoin          !text "l/",0    ; shown to the user so they can connect the player-device
+mexJoinCode         !byte 4
 
 tcpOpen             !byte "R", WIC64_TCP_OPEN
 tcpOpenSizeL        !byte 0

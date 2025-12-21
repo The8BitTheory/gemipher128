@@ -51,7 +51,11 @@ createSoundPage
 
     jsr wic64mexRequest
 
-    +writeToBank1 
+    +writeToBank1 .txtSoundUrl
+    +writeToBank1 mexServer
+    +writeToBank1 mexUrlJoin
+    +writeToBank1 mexJoinCode
+    +writeToBank1 .txtTrail
 
 
     lda #$31
