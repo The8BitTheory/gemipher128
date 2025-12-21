@@ -416,12 +416,9 @@ requestContent
 
     jmp .closeConnection
 
-
 .storeInstructionDrop
-    jsr .dropWicTraffic
-
-.dropWicTraffic
-    rts
+    nop
+    nop
     nop
 
 .storeInstructionBank1
@@ -522,8 +519,141 @@ requestContent
 +   adc #54
     rts
 
+    ; HTTP-POST x-www-form-urlencoded http://x.wic64.net/mextmp/
+    ; returns:
+    ;  statusbyte 0: ok, 1: no data in post-body, 2: invalid json
+    ;  the rest of the return is a URL (eg https://x.wic64.net/mextmp/?id=F8iGhNJz)
+wic64mexRequest
+    lda #$93 ; clear screen
+    jsr bsout
 
+    jsr doSlow
 
+    +wic64_reset_store_instruction
+
+    +wic64_execute httpPostUrlCmd, response
+    ; response should contain a new, full URL, including a unique ID
+    lda wic64_status
+
+    +wic64_execute httpPostDataCmd, response
+    lda wic64_status
+
+-   lda #'x'
+    jsr bsout
+    +wic64_execute tcpRead, response, 5
+    bcc +
+    jmp .endWithTimeout    ; this means timeout
+ 
++   lda wic64_response_size
+    bne +
+    lda wic64_response_size+1
+    bne +
+    jmp -
+
+; check the response
++   ldx #0
+    lda response,x
+    bne .handleProblem
+
+; read the json-url
+    ldy #0
+    inx
+-   lda response,x
+    sta mexPlaylistUrl,y
+    inx
+    iny
+    cpx wic64_response_size
+    bne -
+
+; submit the json-url to mex
+    ;/r/<absolute-url-to-the-playlist-file.json but without https://>
+
+    
+
+    rts
+    nop
+
+.handleProblem
+    cmp #1
+    bne +
+    +print .txtMexNoData
+    rts
+
++   cmp #2
+    bne +
+    +print .txtMexInvalidJson
+    rts
+
+    +print .txtUnknownMexError
++   rts
+setNewMexHostSelector
+
+    ldx #1
+    lda mmuBankConfig,x
+    sta zp_hostSelBank
+
+    ldy #0
+    ;sty httpPostUrlSizeL
+    ;sty httpPostUrlSizeH
+    sty httpPostDataSizeL
+    sty httpPostDataSizeH
+    sty zp_tempX
+
+    lda #zp_currentHostPtr
+    sta c_fetch_zp
+
+-   ldx zp_hostSelBank
+    jsr c_fetch
+    cmp #9
+    beq +
+    ldx zp_tempX
+    sta tcpOpenHostPort,x
+    inc zp_tempX
+    jsr .incOpenSize
+    jmp -
+
++   lda #':'
+    ldx zp_tempX
+    sta tcpOpenHostPort,x
+    inc zp_tempX
+    jsr .incOpenSize
+
+    ldy #0
+    lda #zp_currentPortPtr
+    sta c_fetch_zp
+
+-   ldx zp_hostSelBank
+    jsr c_fetch
+    cmp #$0d
+    beq +
+    ldx zp_tempX
+    sta tcpOpenHostPort,x
+    inc zp_tempX
+    jsr .incOpenSize
+    jmp -
+
++   ldy #0
+    sty zp_tempX
+    lda #zp_currentSelectorPtr
+    sta c_fetch_zp
+
+-   ldx zp_hostSelBank
+    jsr c_fetch
+    cmp #$0d
+    bne +
+    iny
+    jmp -
++   cmp #$0a
+    bne +
+    jmp .writeCrLf
++   cmp #9
+    ;beq .writeCrLf
+    ldx zp_tempX
+    sta tcpWriteSelector,x
+    inc zp_tempX
+    iny
+    jsr .incWriteSize
+    jmp -
 
 .reuAvlblRam        !word 0 ; how much ram is left in the current reu bank
 .reuAvlblBank       !byte 0 ; how many banks are left once the current one is filled
@@ -541,6 +671,30 @@ txtTcpClose         !text "TCP Close... ", 0
 txtTcpAvlbl         !text "TCP Available... ",0
 txtRamFull          !text "RAM Full. Connection closed. ",0
 txtDone             !text "done",$d,0
+
+.txtMexNoData        !text "Mex: data field missing from post",0
+.txtMexInvalidJson   !text "Mex: invalid json",0
+.txtUnknownMexError  !text "Mex: unknown problem",0
+
+httpPostUrlCmd      !byte "R", WIC64_HTTP_POST_URL
+httpPostUrlSizeL    !byte 26
+httpPostUrlSizeH    !byte 0
+httpPostUrl         !text "http://x.wic64.net/mextmp/"
+
+httpPostDataCmd     !byte "R", WIC64_HTTP_POST_DATA
+httpPostDataSizeL   !byte httpPostDataSize
+httpPostDataSizeH   !byte 0
+httpPostData
+httpPostDataLoad    !text "[{"
+                    !text $22,"url",$22,":",$22
+httpPostDataAddress !text "http://gopher.semmel.ch/mp3/ABS-Magazin--Interview_mit_Bitreich_Gopher.mp3"
+httpPostDataTrail   !text $22,","
+                    !text $22,"rewindOnPlay",$22,":true"
+                    !text "}]"
+httpPostDataSize = * - httpPostData
+
+mexPlaylistUrl      !fill 40        ; this is returned from tmpmex
+mexSessionId        !fill 8         ; this is returned from mex
 
 tcpOpen             !byte "R", WIC64_TCP_OPEN
 tcpOpenSizeL        !byte 0

@@ -144,6 +144,8 @@ writeToAddress
     jsr .parseAddress
     bcs .invalidAddress
     jsr .setRequestPointers
+    lda #1
+    sta zp_navModeHistory
     jmp requestNewContent
     ;jmp getUserInput
 

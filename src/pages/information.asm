@@ -36,6 +36,32 @@
     sta c_stash_zp
     rts
 
+createSoundPage
+    jsr .initInfoPage
+    +writeToBank1 .txtEmptyLine
+    +writeToBank1 .txtSound0
+
+    +writeToBank1 .txtEmptyLine
+    +writeToBank1 .txtSound1
+    +writeToBank1 .txtSound2
+
+    +writeToBank1 .txtEmptyLine
+    
+    ; create wic64mex json with url of file to play
+
+    jsr wic64mexRequest
+
+    +writeToBank1 
+
+
+    lda #$31
+    sta zp_currentType
+
+    +writeToBank1 .txtEmptyLine
+    +writeToBank1 .txtDot
+
+    rts
+
 createUnsupportedPage
     jsr .initInfoPage
     +writeToBank1 .txtUnsupported
@@ -49,7 +75,7 @@ createTimeoutPage
     +writeToBank1 .txtEmptyLine
     +writeToBank1 .txtTimeout1
     +writeToBank1 .txtTimeout2
-    
+     
     +writeToBank1 .txtEmptyLine
     +writeToBank1 .txtTimeout3
     +writeToBank1 .txtTimeoutR
@@ -60,7 +86,7 @@ createTimeoutPage
     +writeToBank1 .txtTimeoutCrsr
     +writeToBank1 .txtEmptyLine
     +writeToBank1 .txtEmptyLine
-    
+
     rts
 
 storeInfopageInBank1
@@ -78,7 +104,15 @@ storeInfopageInBank1
 
 +   rts
 
+.txtDot         !text ".",$0d,$0a,$0
 .txtUnsupported !text "iThis content can't be displayed.",$09," ",$09," ",$09," ",$0d,$0a,$0
+
+.txtSound0      !text "iThis sound file can't be played back on the C128.",$09," ",$09," ",$09," ",$0d,$0a,$0
+.txtSound1      !text "iScan this QR-Code to play it using the WiC64-Media-Extension",$09," ",$09," ",$09," ",$0d,$0a,$0
+.txtSound2      !text "i Playback will be done through the browser on your mobile phone or tablet",$09," ",$09," ",$09," ",$0d,$0a,$0
+.txtSoundUrl    !text "i URL: "
+
+.txtTrail       !text $09," ",$09," ",$09," ",$0d,$0a,$0
 
 .txtEmptyLine !text "i",$09," ",$09," ",$09," ",$0d,$0a,$0
 

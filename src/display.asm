@@ -272,7 +272,9 @@ drawCursor
     beq +
     cmp #$31 ;1 -> directory
     beq +
-    jmp ++
+    cmp #'s' ;h -> audio files
+    beq +
+    jmp .passiveLine
 
 +   lda #$07
     ldy #$ab
@@ -307,7 +309,8 @@ drawCursor
     lda zp_tempX
     beq .doneStatusline
 
-++  lda #' '
+.passiveLine    ; a line that doesn't do anything. can be info lines or unsupported types
+    lda #' '
 -   jsr toScreencode
     ldx #31
     jsr A_to_vdc_reg_X

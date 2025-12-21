@@ -93,7 +93,8 @@ zp_historyStackPos = $34    ; the position (entry) in the history stack. (multip
 zp_historyStackSize = $35   ; the nr of entries in the history stack. (multiply x 12 to get stack offset per entry)
 zp_historyStackAddress = $36; and $37. holds the address of the current entry (ie HISTORY_STACK + stackpos*12)
 zp_hostSelBank = $38        ; where to read host,port,selector from (1 for current page, 0 for history)
-zp_navModeHistory = $39     ; 0=navigation via history stack (cursor keys), else=navigation via return key
+zp_navModeHistory = $39     ; 0=navigation via history stack (cursor keys)
+                            ; else=navigation via return key or manual address (modify history)
                             ; (0 means no stack updates, only changing stack position, 1 means push new page to stack)
 zp_tempCalc     = $3a ; and $3b
 
@@ -335,17 +336,21 @@ getUserInput
     bne ++
     
     lda zp_pageType
-    cmp #$31
+    cmp #$31                ; only accept return key when showing a gopher dir
     bne getUserInput
 
     lda #1
     sta zp_navModeHistory   ; not navigating in history
     lda zp_currentType
-    cmp #$30
+    cmp #$30    ; text file. show in gopher viewer (special plain text handling mode)
     beq +
-    cmp #$31
+    cmp #$31    ; gopher dir. show in gopher viewer
     beq +
-    jmp -
+    cmp #'s'    ; sound file. show information page
+    bne -
+    jsr createSoundPage
+    jmp .afterRequest
+
 +   sta zp_pageType     ; this is important. all processing of the next page is based on this
     inc zp_historyStackPos
 .prepareRequest
@@ -910,7 +915,8 @@ recoverZp
 !src "src/copy/copyCommon.asm"
 !src "src/display.asm"
 !src "src/input/address.asm"
-!src "src/information.asm"
+!src "src/pages/information.asm"
+;!src "src/pages/sound.asm"
 
 
 txtReu      !text "REU: ",0
