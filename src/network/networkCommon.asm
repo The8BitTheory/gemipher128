@@ -11,19 +11,19 @@ setParamsForGopherPage
 setInitialGopherHostSelectorCommon
     jsr setParamsForGopherPage
 
-    lda #<startGopher
+    lda #<homeGopher
     sta zp_currentHostPtr
-    lda #>startGopher
+    lda #>homeGopher
     sta zp_currentHostPtr+1
 
-    lda #<startPort
+    lda #<homePort
     sta zp_currentPortPtr
-    lda #>startPort
+    lda #>homePort
     sta zp_currentPortPtr+1
 
-    lda #<startSelector
+    lda #<homeSelector
     sta zp_currentSelectorPtr
-    lda #>startSelector
+    lda #>homeSelector
     sta zp_currentSelectorPtr+1
 
     ldx #0

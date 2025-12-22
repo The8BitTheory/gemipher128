@@ -17,7 +17,7 @@ wic64_optimize_for_size = 0
 
 setInitialGopherHostSelector
     jsr setInitialGopherHostSelectorCommon
-    jmp  .setWithBankSet
+    jmp .setWithBankSet
 
 setBkm1GopherHostSelector
     ldx #0
@@ -39,9 +39,9 @@ setBkm1GopherHostSelector
     lda #>bkm1Server
     sta zp_currentHostPtr+1
 
-    lda #<startPort
+    lda #<homePort
     sta zp_currentPortPtr
-    lda #>startPort
+    lda #>homePort
     sta zp_currentPortPtr+1
 
     lda #<bkm1Selector
@@ -71,9 +71,9 @@ setBkm2GopherHostSelector
     lda #>bkm2Server
     sta zp_currentHostPtr+1
 
-    lda #<startPort
+    lda #<homePort
     sta zp_currentPortPtr
-    lda #>startPort
+    lda #>homePort
     sta zp_currentPortPtr+1
 
     lda #<bkm2Selector
@@ -532,12 +532,12 @@ wic64mexRequest
     +wic64_reset_store_instruction
 
     +wic64_execute httpPostUrlCmd, response
-    ; response should contain a new, full URL, including a unique ID
     lda wic64_status
 
     +wic64_execute httpPostDataCmd, response
     lda wic64_status
 
+; response should contain a new, full playlist URL, including a unique ID
     jsr .readMexResponse
 
 ; check the response
@@ -591,6 +591,7 @@ wic64mexRequest
 +   sty httpGetSizeL
     +wic64_execute httpGetCmd, response
 
+; response should contain the 8 char long session-id
     jsr .readMexResponse
     lda response
     beq +
@@ -605,6 +606,7 @@ wic64mexRequest
     cpy wic64_response_size
     bne -
 
+; the first 4 characters of the session-id form the join code
     ldy #4
     ldx #0
 -   lda mexSessionId,x
@@ -626,6 +628,8 @@ wic64mexRequest
 +   lda wic64_response_size
     bne +
     lda wic64_response_size+1
+    bne +
+    jsr k_getin
     bne +
     jmp -
 
@@ -742,11 +746,9 @@ statusResponse      !fill 40
 
 response            !fill 256
 
-startGopher         !text "gopher.floodgap.com",$9
-;startGopher         !text "gopher.black",$9
-;startGopher         !text "gopher.quux.org",$9
-startPort           !text "70\r\n"
-startSelector       !text "",$9
+homeGopher         !text "gopher.floodgap.com",$9
+homePort           !text "70\r\n"
+homeSelector       !text "",$9
 
 bkm1Server          !text "gopher.floodgap.com",$9
 bkm1Selector        !text "/archive/info-mac/game",$9

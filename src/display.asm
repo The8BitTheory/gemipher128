@@ -109,7 +109,7 @@ displayTextmode
 ; the block-copy source increases automatically with each copy operation
 
 ; renderloop for all visible content lines on screen
--   jsr .displayLine
+-   jsr .displayGopherLine
 
     jsr .incVramLineOffsetPosition  ; where we read line information for block copy
     jsr .incOutputLineNumber        ; where we write lines to
@@ -751,10 +751,8 @@ removeCursor
 
     rts
 
-.displayLine
+.displayGopherLine
     jsr .readVisibleLength
-    ;beq ++
-
     
 -   lda zp_visibleLength+1    ; check
     bne .longerThanOneScreenLine
@@ -785,21 +783,21 @@ removeCursor
     lda zp_visibleLength+1  ;check if we have to handle multi-line content
     bne +
     lda zp_visibleLength
-    beq .displayDone    ; hb and lb are zero. nothing left to print
+    beq .displayGopherDone    ; hb and lb are zero. nothing left to print
 +   ldx .currentScreenLine    ;contains the current line nr that's printed on screen
     cpx #VISIBLE_LINES
-    bne .drawNextLine       ; not on the last line, keep going
+    bne .drawNextGopherLine       ; not on the last line, keep going
     rts       ; we are on the last line. stop printing despite there being more text in the current content line
     nop
 
-.drawNextLine
+.drawNextGopherLine
     jsr .incOutputLineNumber
     jsr .writeScreenToContentLine
     inc .currentScreenLine
 
     jmp -
 
-.displayDone
+.displayGopherDone
     rts
 
 .readLineType

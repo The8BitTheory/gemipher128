@@ -11,6 +11,14 @@
 ; $1000-$2fff invisible content area (we're copying to this area) - 8 kB available in a 16 kB VRAM setup
 ; $3000-$3fff character set (uppercase/lowercase)
 
+; TODO: plain text should be written in screen-layout to $1000 in vram, not gapless like gopher dirs.
+;       the reason is that linenumbers don't matter, as no selector information is related to single lines.
+;       also, display of lines larger than 256 chars makes trouble. less is fine for gopher, so we can keep that.
+;       and for plain text, we just copy line by line into vram as it would look on screen
+;       and from there, copy it 1:1 into the visible area, line by line.
+;       so, for text files we don't need vramoffsets, just the information where data ends in relation to RAM, so
+;        we know where to copy next or previous data from.
+
 !zone ramToVram
 
 copyToVram
