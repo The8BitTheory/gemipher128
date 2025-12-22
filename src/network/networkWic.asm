@@ -534,6 +534,7 @@ wic64mexRequest
     +wic64_execute httpPostUrlCmd, response
     lda wic64_status
 
+; send json to mextmp
     +wic64_execute httpPostDataCmd, response
     lda wic64_status
 
@@ -556,7 +557,7 @@ wic64mexRequest
     cpx wic64_response_size
     bne -
     lda #0
-    sta mexPlaylistUrl,x
+    sta mexPlaylistUrl,y
 
 ; submit the json-url to mex
     ;https://mex.wic64.net/r/<absolute-url-to-the-playlist-file.json but without https://>
@@ -593,6 +594,7 @@ wic64mexRequest
 
 ; response should contain the 8 char long session-id
     jsr .readMexResponse
+    bcs .exitMexWithProblem
     lda response
     beq +
     jmp .handleMexProblem
@@ -615,17 +617,33 @@ wic64mexRequest
     dey
     bne -
 
+    clc
+    rts
+    nop
+
+.exitMexWithProblem
+    sec
     rts
     nop
 
 .readMexResponse
+    lda #0
+    sta zp_responseSize
+    sta zp_responseSize+1
+    sta zp_contentLength
+    sta zp_contentLength+1
+
 -   lda #'x'
     jsr bsout
     +wic64_execute tcpRead, response, 5
     bcc +
     jmp .endWithTimeout    ; this means timeout
  
-+   lda wic64_response_size
++   ;lda wic64_status
+    ;bne .handleMexProblem
+    lda zp_responseSize
+    bne +
+    lda wic64_response_size
     bne +
     lda wic64_response_size+1
     bne +
@@ -633,7 +651,9 @@ wic64mexRequest
     bne +
     jmp -
 
-+   rts
++   clc
+    rts
+    nop
 
 .handleMexProblem
     +print .txtUnknownMexError

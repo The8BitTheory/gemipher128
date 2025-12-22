@@ -48,10 +48,11 @@ createSoundPage
     +writeToBank1 .txtEmptyLine
     
     ; create wic64mex json with url of file to play
-
     jsr wic64mexRequest
+    bcc +
+    jmp .endCreateSoundPage
 
-    +writeToBank1 .txtSoundUrl
++   +writeToBank1 .txtSoundUrl
     +writeToBank1 mexServer
     +writeToBank1 mexUrlJoin
     +writeToBank1 mexJoinCode
@@ -64,7 +65,9 @@ createSoundPage
     +writeToBank1 .txtEmptyLine
     +writeToBank1 .txtDot
 
+.endCreateSoundPage
     rts
+
 
 createUnsupportedPage
     jsr .initInfoPage
