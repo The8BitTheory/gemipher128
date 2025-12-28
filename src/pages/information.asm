@@ -23,8 +23,22 @@
     inc zp_tempX
     jmp -
 
++   
+}
+
+!macro writeLnToBank1 .nullTerminatedGopherLine {
+    ldx #0
+    stx zp_tempX
+-   ldx zp_tempX
+    lda .nullTerminatedGopherLine,x
+    beq +
+    jsr storeInfopageInBank1
+    inc zp_tempX
+    jmp -
+
 +   inc zp_linecount
 }
+
 
 .initInfoPage
     lda #0
@@ -37,65 +51,219 @@
     rts
 
 createSoundPage
-    jsr .initInfoPage
-    +writeToBank1 .txtEmptyLine
-    +writeToBank1 .txtSound0
-
-    +writeToBank1 .txtEmptyLine
-    +writeToBank1 .txtSound1
-    +writeToBank1 .txtSound2
-
-    +writeToBank1 .txtEmptyLine
+    jsr writeCurrentGopherToHeadline
     
+    jsr doSlow
+    +wic64_reset_store_instruction
     ; create wic64mex json with url of file to play
     jsr wic64mexRequest
     bcc +
     jmp .endCreateSoundPage
 
+
++   jsr doFast
+    jsr .initInfoPage
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtSound0
+
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtSound1
+    +writeLnToBank1 .txtSound2
+
+    +writeLnToBank1 .txtEmptyLine
+
 +   +writeToBank1 .txtSoundUrl
     +writeToBank1 mexServer
     +writeToBank1 mexUrlJoin
     +writeToBank1 mexJoinCode
-    +writeToBank1 .txtTrail
+    +writeLnToBank1 txtTrail
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtDot
 
-
-    lda #$31
+    lda #'s'
     sta zp_currentType
-
-    +writeToBank1 .txtEmptyLine
-    +writeToBank1 .txtDot
 
 .endCreateSoundPage
     rts
 
+playbackCurrentAudio
+    jsr wic64_reset_store_instruction
+    jsr createMexUrl
+    
+    ldx #0
+-   lda mexUrlPlay,x
+    beq +
+    sta httpGetUrl,y
+    inx
+    iny
+    jmp -
+
+; skip https
++   ldx #0
+-   lda mexSessionId,x
+    beq +
+    sta httpGetUrl,y
+    inx
+    iny
+    jmp -
+
++   lda #'/'
+    sta httpGetUrl,y
+
+    iny
+    lda #$30
+    sta httpGetUrl,y
+
+    iny
+    lda #$30
+    sta httpGetUrl,y
+
+    iny
+;    lda #0
+;    sta httpGetUrl,y
+
+    sty httpGetSizeL
+    jsr doSlow
+    +wic64_execute httpGetCmd, response
+    jsr doFast
+    lda response
+    beq +
+    
+    clc
+    adc #$30
+    +print .txtStatus
+    jsr bsout
+    lda #$0d
+    jsr bsout
+
++   jmp getUserInput
+
+mexConnectionCheck
+    jsr wic64_reset_store_instruction
+    jsr createMexUrl
+    
+    ldx #0
+-   lda mexUrlCheck,x
+    beq +
+    sta httpGetUrl,y
+    inx
+    iny
+    jmp -
+
+
++   ldx #0
+-   lda mexSessionId,x
+    beq +
+    sta httpGetUrl,y
+    inx
+    iny
+    jmp -
+
++   sty httpGetSizeL
+    jsr doSlow
+    +wic64_execute httpGetCmd, response
+    jsr doFast
+    lda response
+    beq +
+    
+    clc
+    adc #$30
+    +print .txtConnectionstatus
+    jsr bsout
+    lda #$0d
+    jsr bsout
+
++   jmp getUserInput
 
 createUnsupportedPage
     jsr .initInfoPage
-    +writeToBank1 .txtUnsupported
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtUnsupported
+    
+    ; write the filename, which is the part after the last / of the selector
+
+    ; first, find the last /
+    ;  set indfet pointer
+    lda #zp_currentSelectorPtr
+    sta c_fetch_zp
+
+    ldy #0
+-   ldx zp_contentBank
+    jsr c_fetch
+    cmp #$09    ; tab ends the selector string
+    beq .writeFilename
+    cmp #'/'
+    bne +   ; no /, go to next line
+    sty .slashPos   ; store current position as slashPos
++   iny
+    jmp -
+
+.writeFilename
+    lda #$69
+    jsr storeInfopageInBank1
+
+    ldy .slashPos
+    sty zp_tempY
+-   ldy zp_tempY
+    ldx zp_contentBank
+    jsr c_fetch
+    cmp #$09
+    beq .writeRemainingLines
+    jsr storeInfopageInBank1
+    inc zp_tempY
+    jmp -
+
+.writeRemainingLines
+    +writeLnToBank1 txtTrail
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtOptionG
+    +writeLnToBank1 .txtOptionH
+    +writeLnToBank1 .txtOptionS
+    +writeLnToBank1 .txtOptionX
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtDot
+
     rts
+
+; downloading a file to disk via bsave-like code.
+; acc has to hold the byte to write
+; - lda whatever
+;   JSR $E503	; -ciout-  Print Serial
+;   JSR $FFE1	; (istop)       Test-Stop Vector [F66E], ie STOP key
+;   BEQ $F5B5	; Terminate Serial Input
+;   JSR $EEC1	; Bump Address
+;   BNE -
+
+; when end of data is reached:
+; jmp $f59b 
+
 
 createTimeoutPage
     jsr .initInfoPage
-    +writeToBank1 .txtEmptyLine
-    +writeToBank1 .txtTimeout0
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtTimeout0
     
-    +writeToBank1 .txtEmptyLine
-    +writeToBank1 .txtTimeout1
-    +writeToBank1 .txtTimeout2
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtTimeout1
+    +writeLnToBank1 .txtTimeout2
      
-    +writeToBank1 .txtEmptyLine
-    +writeToBank1 .txtTimeout3
-    +writeToBank1 .txtTimeoutR
-    +writeToBank1 .txtTimeoutG
-    +writeToBank1 .txtTimeoutH
-    +writeToBank1 .txtTimeoutS
-    +writeToBank1 .txtTimeoutX
-    +writeToBank1 .txtTimeoutCrsr
-    +writeToBank1 .txtEmptyLine
-    +writeToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtKeyOptions
+    +writeLnToBank1 .txtTimeoutR
+    +writeLnToBank1 .txtOptionCrsr
+    +writeLnToBank1 .txtOptionG
+    +writeLnToBank1 .txtOptionH
+    +writeLnToBank1 .txtOptionS
+    +writeLnToBank1 .txtOptionX
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtDot
 
     rts
 
+; this is used to create a gopher-dir on-the-fly
 storeInfopageInBank1
     ldy #0
     ldx zp_contentBank
@@ -111,25 +279,31 @@ storeInfopageInBank1
 
 +   rts
 
+.slashPos       !byte 0
+
 .txtDot         !text ".",$0d,$0a,$0
 .txtUnsupported !text "iThis content can't be displayed.",$09," ",$09," ",$09," ",$0d,$0a,$0
 
 .txtSound0      !text "iThis sound file can't be played back on the C128.",$09," ",$09," ",$09," ",$0d,$0a,$0
 .txtSound1      !text "iScan this QR-Code to play it using the WiC64-Media-Extension",$09," ",$09," ",$09," ",$0d,$0a,$0
 .txtSound2      !text "i Playback will be done through the browser on your mobile phone or tablet",$09," ",$09," ",$09," ",$0d,$0a,$0
-.txtSoundUrl    !text "i URL: "
+.txtSoundUrl    !text "i URL: ",0
 
-.txtTrail       !text $09," ",$09," ",$09," ",$0d,$0a,$0
+txtTrail       !text $09," ",$09," ",$09," ",$0d,$0a,$0
 
 .txtEmptyLine !text "i",$09," ",$09," ",$09," ",$0d,$0a,$0
 
 .txtTimeout0    !text "iThis page couldn't be loaded.",$09," ",$09," ",$09," ",$0d,$0a,$0
 .txtTimeout1    !text "iPlease check if the address is correct",$09," ",$09," ",$09," ",$0d,$0a,$0
 .txtTimeout2    !text "iIf it is, the host might be unavailable temporary",$09," ",$09," ",$09," ",$0d,$0a,$0
-.txtTimeout3    !text "iYou can press the following keys to continue",$09," ",$09," ",$09," ",$0d,$0a,$0
+.txtKeyOptions  !text "iYou can press the following keys to continue",$09," ",$09," ",$09," ",$0d,$0a,$0
 .txtTimeoutR    !text "iR - Reload page",$09," ",$09," ",$09," ",$0d,$0a,$0
-.txtTimeoutG    !text "iG - Go to a new address",$09," ",$09," ",$09," ",$0d,$0a,$0
-.txtTimeoutH    !text "iH - Go to gopher.floodgap.com",$09," ",$09," ",$09," ",$0d,$0a,$0
-.txtTimeoutS    !text "iS - Go to startpage",$09," ",$09," ",$09," ",$0d,$0a,$0
-.txtTimeoutX    !text "iX - Exit to Basic",$09," ",$09," ",$09," ",$0d,$0a,$0
-.txtTimeoutCrsr !text "iCursor left to go back in history",$09," ",$09," ",$09," ",$0d,$0a,$0
+.txtOptionG    !text "iG - Go to a new address",$09," ",$09," ",$09," ",$0d,$0a,$0
+.txtOptionH    !text "iH - Go to gopher.floodgap.com",$09," ",$09," ",$09," ",$0d,$0a,$0
+.txtOptionS    !text "iS - Go to startpage",$09," ",$09," ",$09," ",$0d,$0a,$0
+.txtOptionX    !text "iX - Exit to Basic",$09," ",$09," ",$09," ",$0d,$0a,$0
+.txtOptionCrsr !text "iCursor left to go back in history",$09," ",$09," ",$09," ",$0d,$0a,$0
+
+.txtStatus      !text "Statuscode: ",0
+.txtConnectionstatus    !text "Connectionstatus (0=ok, 1=error/invalid session, 2=no browser connected): ",0
+

@@ -272,7 +272,15 @@ drawCursor
     beq +
     cmp #$31 ;1 -> directory
     beq +
-    cmp #'s' ;h -> audio files
+    cmp #$34    ; binary
+    beq +
+    cmp #$35    ; dos binary
+    beq +
+    cmp #$36    ; uuencoded text (probably a binary?)
+    beq +
+    cmp #$39 ; 9 -> generic binary
+    beq +
+    cmp #'s' ;s -> audio files
     beq +
     jmp .passiveLine
 

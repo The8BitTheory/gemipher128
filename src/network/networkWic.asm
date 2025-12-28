@@ -519,6 +519,7 @@ requestContent
 +   adc #54
     rts
 
+
     ; HTTP-POST x-www-form-urlencoded http://x.wic64.net/mextmp/
     ; returns:
     ;  statusbyte 0: ok, 1: no data in post-body, 2: invalid json
@@ -531,27 +532,45 @@ wic64mexRequest
 
     +wic64_reset_store_instruction
 
+    +print .txtPostUrl
+    +print httpPostUrl
     +wic64_execute httpPostUrlCmd, response
+    +print txtDone
+    lda #$0d
+    jsr bsout
+
     lda wic64_status
 
 ; send json to mextmp
+    +print .txtPostData
+    +print httpPostData
     +wic64_execute httpPostDataCmd, response
     lda wic64_status
+    +print txtDone
+    lda #$0d
 
 ; response should contain a new, full playlist URL, including a unique ID
-    jsr .readMexResponse
+;    +print .txtReadResponse
+;    jsr .readMexResponse
+;    +print txtDone
+;-   jsr k_getin
+;    beq -
+
 
 ; check the response
-+   ldx #0
+    ldx #0
     lda response,x
     beq +
     jmp .handleTmpProblem
 
 ; read the json-url
-+   ldy #0
++   lda #$0d
+    jsr bsout
+    ldy #0
     inx
 -   lda response,x
     sta mexPlaylistUrl,y
+    jsr bsout
     inx
     iny
     cpx wic64_response_size
@@ -563,16 +582,8 @@ wic64mexRequest
     ;https://mex.wic64.net/r/<absolute-url-to-the-playlist-file.json but without https://>
     ; concatenate mexServer, mexUrlRegister, mexPlaylistUrl (after second /)
 
-    ldx #0  ; read index
-    ldy #0  ; write index
--   lda mexServer,x
-    beq +
-    sta httpGetUrl,y
-    inx
-    iny
-    jmp -
-
-+   ldx #0
+    jsr createMexUrl
+    ldx #0
 -   lda mexUrlRegister,x
     beq +
     sta httpGetUrl,y
@@ -589,33 +600,58 @@ wic64mexRequest
     iny
     jmp -
 
-+   sty httpGetSizeL
-    +wic64_execute httpGetCmd, response
+;+   iny
+;    lda #0
+;    sta httpGetUrl,y
+
++   lda #$0d
+    jsr bsout
+
+    +print .txtSendPlaylist
+    +print httpGetUrl
+    sty httpGetSizeL
+    +wic64_execute httpGetCmd, mexSessionResponse
+    +print txtDone
+    lda #$d
+    jsr bsout
+;-   jsr k_getin
+;    beq -
 
 ; response should contain the 8 char long session-id
-    jsr .readMexResponse
-    bcs .exitMexWithProblem
-    lda response
+    ;jsr .readMexResponse
+    ;bcs .exitMexWithProblem
+    lda mexSessionResponse
     beq +
     jmp .handleMexProblem
 
-+   ldx #1
-    ldy #0
--   lda response,x
-    sta mexSessionId,y
-    inx
-    iny
-    cpy wic64_response_size
-    bne -
+;+   ldx #1
+;    ldy #0
+;-   lda response,x
+;    sta mexSessionId,y
+;    inx
+;    iny
+;    cpx wic64_response_size
+;    bne -
 
 ; the first 4 characters of the session-id form the join code
-    ldy #4
++   ldy #4
     ldx #0
 -   lda mexSessionId,x
     sta mexJoinCode,x
     inx
     dey
     bne -
+
+    +print mexServer
+    +print mexUrlJoin
+    +print mexJoinCode
+    +print txtTrail
+
+;    +print .txtPressKey
+;-   jsr k_getin
+;    beq -
+
+    jsr doFast
 
     clc
     rts
@@ -625,6 +661,18 @@ wic64mexRequest
     sec
     rts
     nop
+
+createMexUrl
+    ldx #0  ; read index
+    ldy #0  ; write index
+-   lda mexServer,x
+    beq +
+    sta httpGetUrl,y
+    inx
+    iny
+    jmp -
+
++   rts
 
 .readMexResponse
     lda #0
@@ -693,7 +741,7 @@ txtTcpWrite         !text "TCP Write... ",0
 txtTcpClose         !text "TCP Close... ", 0
 txtTcpAvlbl         !text "TCP Available... ",0
 txtRamFull          !text "RAM Full. Connection closed. ",0
-txtDone             !text "done",$d,0
+txtDone             !text $d,"done",$d,0
 
 .txtMexNoData        !text "Mex: data field missing from post",0
 .txtMexInvalidJson   !text "Mex: invalid json",0
@@ -702,7 +750,7 @@ txtDone             !text "done",$d,0
 httpPostUrlCmd      !byte "R", WIC64_HTTP_POST_URL
 httpPostUrlSizeL    !byte 26
 httpPostUrlSizeH    !byte 0
-httpPostUrl         !text "http://x.wic64.net/mextmp/"
+httpPostUrl         !text "http://x.wic64.net/mextmp/",0
 
 httpPostDataCmd     !byte "R", WIC64_HTTP_POST_DATA
 httpPostDataSizeL   !byte httpPostDataSize
@@ -715,6 +763,7 @@ httpPostDataTrail   !text $22,","
                     !text $22,"rewindOnPlay",$22,":true"
                     !text "}]"
 httpPostDataSize = * - httpPostData
+                    !byte 0
 
 httpGetCmd          !byte "R", WIC64_HTTP_GET
 httpGetSizeL        !byte 0
@@ -723,12 +772,25 @@ httpGetUrl          !fill 64
 
 
 mexPlaylistUrl      !fill 64        ; this is returned from tmpmex. should be 40 chars
+mexSessionResponse  !byte 0
 mexSessionId        !fill 8         ; this is returned from mex
+                    !byte 0
 mexServer           !text "https://mex.wic64.net/",0
+mexUrlCheck         !text "c/",0    ; connection check
 mexUrlRegister      !text "r/",0    ; register session-id to get a join code
 mexUrlSwap          !text "P/",0    ; swap json-url of existing session
 mexUrlJoin          !text "l/",0    ; shown to the user so they can connect the player-device
-mexJoinCode         !byte 4
+mexUrlPlay          !text "p/",0    ; plus /session/song
+mexUrlPause         !text "h/",0    ; plus /session/song
+mexUrlUnpause       !text "u/",0    ; plus /session/song
+mexUrlStop          !text "s/",0    ; plus /session/song
+mexUrlStopAll       !text "a/",0    ; plus session
+mexUrlQrSprites     !text "q/",0    ; plus session
+mexUrlQrPetscii     !text "Q/",0    ; plus session
+mexJoinCode         !fill 4
+                    !byte 0
+
+
 
 tcpOpen             !byte "R", WIC64_TCP_OPEN
 tcpOpenSizeL        !byte 0
@@ -777,3 +839,9 @@ bkm1Type            !byte $31
 bkm2Server          !text "sdf.org",$9
 bkm2Selector        !text "/users/alberti/aboutme/211995069-Internet-Gopher-Bridge-to-the-Web-Alberti.txt", $9
 bkm2Type            !byte $30
+
+.txtPostUrl !text "Setting POST URL to ",0
+.txtPostData !text "Setting POST data to ",0
+.txtReadResponse !text "Reading response",0
+.txtSendPlaylist !text "Sending playlist to mex",0
+.txtPressKey    !text "press key to continue",0

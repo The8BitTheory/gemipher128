@@ -75,7 +75,7 @@ loadContentFromDisk
         JSR $FFCC     ; call CLRCHN
         RTS
 .error
-        ; Akkumulator contains BASIC error code
+        ; Accumulator contains BASIC error code
 
         ; most likely errors:
         ; A = $05 (DEVICE NOT PRESENT)

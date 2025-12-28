@@ -46,6 +46,7 @@ DMA = $03f0 ;y holds the value for the command register, A holds the value for t
 ;  will need to either copy data to bank 0 for VDC-related things, or make VDC libs interact with bank 1
 
 ; zero page addresses. we use $0a-$8f ($7a and up is used by vdc-basic)
+; x16: $22-$7f is available for use
 zp_contentAddress = $0a ; and $0b
 zp_linecount = $0c  ; and $0d. the number of lines in the file/directory/... (might be more than what fits RAM or VRAM)
 zp_tempX = $0e      ; used to hold x register when working with FAR routines
@@ -138,13 +139,13 @@ k_getin = $eeeb
 k_scnkey= $c651
 bsout = $ffd2
 
-!macro print textaddress {
+!macro print .textaddress {
     pha
     txa
     pha
 
     ldx #0
--   lda textaddress,x
+-   lda .textaddress,x
     beq +
     jsr bsout
     inx
@@ -156,7 +157,7 @@ bsout = $ffd2
 }
 
 *=$1c01
-!byte $0b,$1c,$b5,$07,$9e,$20,$37,$34,$32,$34,$00,$00,$00
+!byte $0b,$08,$b5,$07,$9e,$20,$37,$34,$32,$34,$00,$00,$00
 
 ; these are the mappings from basic's bank command to the actual mmu config-register values
 mmuBankConfig       !byte $3F,$7F,$BF,$FF,$16,$56,$96,$D6,$2A,$6A,$AA,$EA,$06,$0A,$01,$00
@@ -332,6 +333,17 @@ getUserInput
     jsr setFromHistory
     jmp requestNewContent
 
++   cmp #'P'
+    bne +
+;    lda zp_pageType
+;    cmp #'s'
+;    bne getUserInput
+    jmp playbackCurrentAudio
+
++   cmp #'C'
+    bne +
+    jmp mexConnectionCheck
+
 +   cmp #13 ;return key
     bne ++
     
@@ -343,15 +355,35 @@ getUserInput
     sta zp_navModeHistory   ; not navigating in history
     lda zp_currentType
     cmp #$30    ; text file. show in gopher viewer (special plain text handling mode)
-    beq +
+    beq .validLineSelected
     cmp #$31    ; gopher dir. show in gopher viewer
-    beq +
-    cmp #'s'    ; sound file. show information page
-    bne -
-    jsr createSoundPage
+    beq .validLineSelected
+    cmp #$34    ; binary
+    bne +
+    jsr createUnsupportedPage
+    jmp .afterRequest
++   cmp #$35    ; dos binary
+    bne +
+    jsr createUnsupportedPage
+    jmp .afterRequest    
++   cmp #$36    ; uuencoded text (probably a binary?)
+    bne +
+    jsr createUnsupportedPage
+    jmp .afterRequest
++   cmp #$39 ; 9 -> generic binary
+    bne .checkIfSoundLine
+    jsr createUnsupportedPage
     jmp .afterRequest
 
-+   sta zp_pageType     ; this is important. all processing of the next page is based on this
+.checkIfSoundLine
+    cmp #'s'    ; sound file. show information page
+    beq +
+    jmp getUserInput
++   jsr createSoundPage
+    jmp .afterRequest
+
+.validLineSelected
+    sta zp_pageType     ; this is important. all processing of the next page is based on this
     inc zp_historyStackPos
 .prepareRequest
     jsr setNewGopherHostSelector
@@ -392,6 +424,16 @@ getUserInput
 +   cmp #'G' ; goto
     bne +
     jmp activateAddressEnterMode
+
++   cmp #'D' ; download
+    bne +
+    jsr saveContentToDisk
+    jmp getUserInput
+
++   cmp #'L' ; load from disk
+    bne +
+    jsr loadContentFromDisk
+    jmp getUserInput
 
 +   cmp #'F'; speed
     bne ++
@@ -899,6 +941,7 @@ recoverZp
 
 !src "src/file/load.asm"
 !src "src/file/loadContent.asm"
+!src "src/file/saveToDisk.asm"
 !src "src/network/disk.asm"
 !src "src/vdc.asm"
 !src "src/network/networkCommon.asm"
