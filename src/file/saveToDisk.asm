@@ -1,5 +1,69 @@
 !zone saveToDisk
 
+; the different of this to "saveContentToDisk" is
+; - writing the value in Acc to disk directly
+; - no pre-defined diskWriteEndAddress. We write until either disk is full or download is done
+downloadDirectlyToDisk
+    lda #zp_currentSelectorPtr
+    sta c_fetch_zp
+
+    ldy #0
+-   ldx zp_contentBank
+    jsr c_fetch
+    cmp #$09    ; tab ends the selector string
+    beq .writeDiskFilename
+    cmp #'/'
+    bne +   ; no /, go to next line
+    sty .diskFilenameSlashPos   ; store current position as slashPos
++   iny
+    jmp -
+
+.writeDiskFilename
+    ldx #0
+    stx zp_tempX
+    ldy .diskFilenameSlashPos
+    sty zp_tempY
+-   ldy zp_tempY
+    ldx zp_contentBank
+    jsr c_fetch
+    cmp #$09
+    beq +
+    ldx zp_tempX
+    sta diskWriteFilename,x
+    inc zp_tempY
+    inc zp_tempX
+    jmp -
+
+    +wic64_set_store_instruction wic64WriteByteToDiskStoreInstruction
+
++   jsr .prepareDiskWrite
+    ; writing to disk is called by the wic64 store instruction
+    jmp downloadWic2disk
+
+wic64WriteByteToDiskStoreInstruction
+    jsr wic64WriteByteToDisk
+
+; downloading a file to disk via bsave-like code.
+; acc has to hold the byte to write
+wic64WriteByteToDisk
+    stx zp_wic_stash_x
+    sty zp_wic_stash_y
+
+    JSR $E503	; -ciout-  Print Serial
+
+    ldx zp_wic_stash_x
+    ldy zp_wic_stash_y
+    rts
+
+; when end of data is reached:
+wic64CloseFile
+    jmp $f59b 
+
+
+finishDownload
+    jmp .close
+
+
 saveContentToDisk
 ; calculate filename
 ;  this is a 6-byte hash-value, generated from gopher host:port/selector
@@ -22,9 +86,10 @@ saveContentToDisk
     sta diskWriteEndAddress+1
 
     ;for now, use first 13 chars of selector for filename
+    jmp .doDiskIO
 
 
-.doDiskIO
+.prepareDiskWrite
         lda #1
         sta fileOpError
 
@@ -61,6 +126,10 @@ saveContentToDisk
         ldy diskWriteEndAddress+1
         lda #zp_memPtr
 
+        rts
+
+.doDiskIO
+        jsr .prepareDiskWrite
         jsr .saveRaw
         ;jsr $ffd8       ;BSAVE
         
@@ -128,6 +197,7 @@ saveContentToDisk
 
 
 .vectorSave             !word 0
+.diskFilenameSlashPos   !byte 0
 
 diskWriteEndAddress     !word 0
 diskWriteFilename       !pet "saved.gp",0

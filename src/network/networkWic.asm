@@ -191,43 +191,7 @@ setFromHistory
     inc tcpOpenSizeH
 +   rts
 
-detectAndInitializeWic64
-    +print txtDetect
-    +wic64_detect
-    +print txtDone
-    bcc +
-    jmp .noWicDetected
-+   beq +
-    jmp .legacyFirmware
-;+   +wic64_set_error_handler .handleWic64Error
-+   +print txtConnected
-    +wic64_execute wic64IsConnected, connectResponse, 10
-    bcs .connTimeout
-    bne .notConnected
 
-    +print txtDone
-    rts
-
-.connTimeout
-    +print txtTimeout
-    +wic64_finalize
-    rts
-
-.notConnected
-    +print txtNotConnected
-    +wic64_finalize
-    rts
-
-.noWicDetected
-    jsr k_primm
-    !text "No WiC64 detected!",$d,0
-    rts
-
-.legacyFirmware
-    jsr k_primm
-    !text "Firmware too old!",$d,0
-    
-    rts
 
 .handleWic64Error
     +wic64_finalize
@@ -238,6 +202,11 @@ detectAndInitializeWic64
     +wic64_execute wic64GetStMsg, statusResponse
     jmp .connTimeout
 +   rts
+
+.connTimeout
+    +print txtTimeout
+    +wic64_finalize
+    rts
 
 initRamLeft
     sec

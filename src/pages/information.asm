@@ -227,19 +227,6 @@ createUnsupportedPage
 
     rts
 
-; downloading a file to disk via bsave-like code.
-; acc has to hold the byte to write
-; - lda whatever
-;   JSR $E503	; -ciout-  Print Serial
-;   JSR $FFE1	; (istop)       Test-Stop Vector [F66E], ie STOP key
-;   BEQ $F5B5	; Terminate Serial Input
-;   JSR $EEC1	; Bump Address
-;   BNE -
-
-; when end of data is reached:
-; jmp $f59b 
-
-
 createTimeoutPage
     jsr .initInfoPage
     +writeLnToBank1 .txtEmptyLine
