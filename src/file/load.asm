@@ -10,11 +10,6 @@ loadCharsetFromDisk
         LDY #>.filenameCharset
         jmp .loadRoutine
 
-loadSwiftlinkDriverFromDisk
-        lda #.filenameSwiftlinkLength
-        ldx #<.filenameSwiftlink
-        ldy #>.filenameSwiftlink
-
 .loadRoutine
         JSR $FFBD     ; call SETNAM
 
@@ -75,6 +70,3 @@ loadSwiftlinkDriverFromDisk
 
 .filenameCharset     !pet "latin9ui.char"
 .filenameLength=*-.filenameCharset
-
-.filenameSwiftlink      !pet "swiftlib128"
-.filenameSwiftlinkLength=*-.filenameSwiftlink

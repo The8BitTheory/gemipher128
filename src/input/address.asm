@@ -95,17 +95,13 @@ writeAsciiToAddress
     rts
 
 writeToAddress
-;    sta zp_tempA
     stx zp_tempX
-;    sty zp_tempY
     
     ldx addressPos
-    sta .address,x
+    sta address,x
     inc addressPos
 
-;    lda zp_tempA
     ldx zp_tempX
-;    ldy zp_tempY
     clc
     rts
 
@@ -163,7 +159,7 @@ writeToAddress
 
 ; 256 bytes
     ldx #$00
--   sta .address,x
+-   sta address,x
     dex
     bne -
 
@@ -207,7 +203,7 @@ writeToAddress
 +   ldx #0  ; read index
 
 ; parse hostname (parse ends with :, request data ends with $9)
--   lda .address,x
+-   lda address,x
     cmp #':'
     beq .concludeHost   ; hostname complete, append tab
     cmp #'/'
@@ -228,7 +224,7 @@ writeToAddress
 ; parse port (parse ends with /, request data ends with $0d $0a)
     ldy #0      ; y is the write index
     inx
--   lda .address,x
+-   lda address,x
     beq +
     cmp #'/'
     beq .concludePort
@@ -252,11 +248,11 @@ writeToAddress
 ; if second character is no / then no pagetype was given and we're at the selector already
 .parsePageType
     inx
-    lda .address,x
+    lda address,x
     sta .pageType
     
     inx
-    lda .address,x
+    lda address,x
     cmp #'/'
     beq .parseSelector  ; second byte is a /, we successfully parsed the pagetype
     
@@ -272,7 +268,7 @@ writeToAddress
     inx
 
 ; check if first character of selector is a /
-    lda .address,x
+    lda address,x
     cmp #'/'
     beq +   ; yes, it is
     
@@ -280,7 +276,7 @@ writeToAddress
     sta .selector,y
     iny
 
--   lda .address,x
+-   lda address,x
 +   sta .selector,y
     iny
     inx
@@ -424,7 +420,7 @@ writeToAddress
 
 .posCursorX     !byte 0     ; screen coordinate
 .posCursorY     !byte 0     ; screen coordinate
-.address        !fill 256   ; eg gopher.floodgap.com:70/0/selector
+address        !fill 256   ; eg gopher.floodgap.com:70/0/selector
 .host           !fill 64    ; eg gopher.floodgap.com. end with $9
 .port           !fill 7     ; eg 70, but can be 65536. end with $0d$0a
 .selector       !fill 256   ; eg /selector. end with $9

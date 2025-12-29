@@ -4,11 +4,28 @@ Three major pillars of dataflow: input, processing, output
 
 ## Input
 
-### Load content into RAM
-This can be done via Network interface (Wic64, Ultimate, X16, Mega) or be loaded from disk (IEC Kernal, Ultimate DMA)
+### Load content
+This can be done via Network interface (Wic64, Ultimate, X16, Mega) or be loaded from disk (IEC Kernal, Ultimate DMA).
+Loading content is done in two steps:
+- prepare all the parameters (host:port/selector or devicenr/filename)
+- execute the actual loading
+- write content to the target location
+
+Depending on the target, the loading routine might need to be different.
+
+Eg loading from disk to screen allows us to use bload, usually
+Downloading a file from wic64 to disk needs to be able to handle files larger than RAM,
+so that should directly write to disk.
+
+Loading from WiC64 allows for specifying custom store routines. These can go into Bank 1, disk,
+even the VDC or REU and GeoRAM.
+
+Loading from disk could need to go into Bank 1, REU or GeoRAM, and also the VDC chip.
 
 ### Userinput via Keyboard
-Keyboard input should just be readable from kernal routines. Different addresses, but similar behavior.
+Keyboard input should just be readable from kernal routines.
+Different addresses between systems, but similar behavior.
+
 
 ## Processing
 
@@ -39,6 +56,9 @@ For Mega65 and X16 we might be better off using kernel routines, though.
 We can save the currently viewed resource to disk (gopher or text files),
 or the media behind an information page (eg audio files, binaries, images, ...)
 
+The filenames can either be coming from the selector, or the use can provide a custom one.
+As these usually go into different banks (selector is stored in bank 1, userinput in bank 0),
+we should write the name coming from a selector to the same location as userinput.
 
 
 # Common Interfaces

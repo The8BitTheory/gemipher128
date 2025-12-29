@@ -4,67 +4,62 @@
 ; - writing the value in Acc to disk directly
 ; - no pre-defined diskWriteEndAddress. We write until either disk is full or download is done
 downloadDirectlyToDisk
-    lda #zp_currentSelectorPtr
-    sta c_fetch_zp
+    jsr .selectorToFilename
+    jsr .prepareDiskWrite
+    ; writing to disk is called by the wic64 store instruction
+    jmp downloadWic2disk
+
+finishDownload
+    jmp .close
+
+
+.selectorToFilename
+;    lda #zp_currentSelectorPtr
+;    sta c_fetch_zp
+    lda #<address
+    sta zp_memPtr
+    lda #>address
+    sta zp_memPtr+1
 
     ldy #0
--   ldx zp_contentBank
-    jsr c_fetch
-    cmp #$09    ; tab ends the selector string
+-   ;ldx zp_contentBank
+    ;jsr c_fetch
+    lda (zp_memPtr),y
+;    cmp #$09    ; tab ends the selector string
     beq .writeDiskFilename
     cmp #'/'
     bne +   ; no /, go to next line
     sty .diskFilenameSlashPos   ; store current position as slashPos
 +   iny
+    beq .writeDiskFilename
     jmp -
 
 .writeDiskFilename
     ldx #0
     stx zp_tempX
     ldy .diskFilenameSlashPos
+    iny ; skip the /
     sty zp_tempY
 -   ldy zp_tempY
-    ldx zp_contentBank
-    jsr c_fetch
-    cmp #$09
+    lda (zp_memPtr),y
+    ;ldx zp_contentBank
+    ;jsr c_fetch
+;    cmp #$09
     beq +
     ldx zp_tempX
     sta diskWriteFilename,x
     inc zp_tempY
     inc zp_tempX
+
     jmp -
 
-    +wic64_set_store_instruction wic64WriteByteToDiskStoreInstruction
-
-+   jsr .prepareDiskWrite
-    ; writing to disk is called by the wic64 store instruction
-    jmp downloadWic2disk
-
-wic64WriteByteToDiskStoreInstruction
-    jsr wic64WriteByteToDisk
-
-; downloading a file to disk via bsave-like code.
-; acc has to hold the byte to write
-wic64WriteByteToDisk
-    stx zp_wic_stash_x
-    sty zp_wic_stash_y
-
-    JSR $E503	; -ciout-  Print Serial
-
-    ldx zp_wic_stash_x
-    ldy zp_wic_stash_y
++   inx
+    stx diskWriteFilenameLength
     rts
 
-; when end of data is reached:
-wic64CloseFile
-    jmp $f59b 
-
-
-finishDownload
-    jmp .close
-
-
 saveContentToDisk
+; saves content from ram to disk.
+; size of data is known upfront
 ; calculate filename
 ;  this is a 6-byte hash-value, generated from gopher host:port/selector
 ;  hash is converted to base-36 with 13 characters length (allows for ca 67 bits. 64 are used for 8-byte has)
@@ -85,7 +80,8 @@ saveContentToDisk
     adc #0
     sta diskWriteEndAddress+1
 
-    ;for now, use first 13 chars of selector for filename
+    ;for now, use chars after the last slash of selector for filename
+    jsr .selectorToFilename
     jmp .doDiskIO
 
 
@@ -105,10 +101,9 @@ saveContentToDisk
 +       LDY #$00      ; secondary address 2. irrelevant for saves to serial devices
         JSR $FFBA     ; call SETLFS
 
-        lda #1  ; bank to save data from
-        ldx #0  ; bank of filename and drive
+        lda #1  ; bank to save data from $c6
+        ldx #0  ; bank of filename $c7
         jsr $ff68 ; call SETBNK
-
 
         lda $0332
         sta .vectorSave
@@ -130,8 +125,8 @@ saveContentToDisk
 
 .doDiskIO
         jsr .prepareDiskWrite
-        jsr .saveRaw
-        ;jsr $ffd8       ;BSAVE
+        ;jsr .saveRaw
+        jsr $ffd8       ;BSAVE (f53e)
         
         bcs .error
 
@@ -169,6 +164,7 @@ saveContentToDisk
 
 ; save to disk without writing the address to the first two bytes
 .saveRaw
+
     lda $ba     ; current device
     cmp #$04    ; only allow devices >= 4
     bcs +
@@ -185,7 +181,7 @@ saveContentToDisk
     lda #$61
     sta $b9     ; current secondary address
     jsr $f0cb   ; check serial open
-    jsr $f5bc   ; print 'saving'
+    ;jsr $f5bc   ; print 'saving'
     lda $ba     ; current device
     jsr $e33e   ; - listen -
     lda $b9     ; current secondary address

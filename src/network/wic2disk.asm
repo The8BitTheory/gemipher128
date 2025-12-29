@@ -5,22 +5,7 @@ downloadWic2disk
     lda #$93 ; clear screen
     jsr bsout
 
-;    ldy #0
-;    sty tcpWriteSizeL
-;    sty zp_tempX
-;-   ldx zp_contentBank
-;    jsr c_fetch
-;    cmp #$09    ; tab ends the selector string
-;    beq ++
-;    ldx zp_tempX
-;    sta tcpWriteSelector,x
-;    inc tcpWriteSizeL
-;    inc zp_tempX
-;+   iny
-;    jmp -
-
-;++
-    +wic64_set_store_instruction wic64WriteByteToDiskStoreInstruction
+    +wic64_set_store_instruction .wic64WriteByteToDiskStoreInstruction
     
     lda #0
     sta zp_responseSize
@@ -89,7 +74,7 @@ downloadWic2disk
 
 
 .allResponseRead
-    jsr wic64CloseFile
+    jsr .wic64CloseFile
     +wic64_reset_store_instruction
 
     lda #$0d
@@ -133,13 +118,10 @@ downloadWic2disk
     +wic64_execute tcpClose, response
     +print txtDone
 
-    jsr doFast
+    jmp doFast
 
-
-    rts
 
 .endWithTimeout
-
     jmp .closeConnection
 
 .makeItHex
@@ -153,3 +135,22 @@ downloadWic2disk
 
 +   adc #54
     rts
+
+.wic64WriteByteToDiskStoreInstruction
+    jsr .wic64WriteByteToDisk
+
+; downloading a file to disk via bsave-like code.
+; acc has to hold the byte to write
+.wic64WriteByteToDisk
+    stx zp_wic_stash_x
+    sty zp_wic_stash_y
+
+    JSR $E503	; -ciout-  Print Serial
+
+    ldx zp_wic_stash_x
+    ldy zp_wic_stash_y
+    rts
+
+; when end of data is reached:
+.wic64CloseFile
+    jmp $f59b 

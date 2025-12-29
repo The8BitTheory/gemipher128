@@ -29,7 +29,6 @@
 pushToHistoryStack
     ; HISTORY_TABLE is accessed via x-offset only (128 entries, 256 bytes max)
     ; HISTORY_STACK is accessed via (zp_historyStackAddress),y (pointing to the beginning of an entry)
-;    jsr .bankRam00
 
     jsr .resetHistoryStackAddress
 
@@ -39,9 +38,11 @@ pushToHistoryStack
     lda zp_historyStackPos  ; we load position, not size, because we might be in the middle of the history
     adc zp_historyStackPos
     tax
+    bpl +
+    jsr .removeFirstAndReorg
 
 ; set historystackaddress to $b100 + offset from history_table
-    lda HISTORY_TABLE,x
++   lda HISTORY_TABLE,x
     sta zp_historyStackAddress
     inx
     lda HISTORY_TABLE,x
@@ -120,10 +121,24 @@ pushToHistoryStack
     adc #0
     inx
     sta HISTORY_TABLE,x
+    rts
+
+; if the stack is full (127 entries), move all entries down.
+;  The first one will be overwritten and the new entry will be nr 127
+.removeFirstAndReorg
+    ; make room in HISTORY_TABLE
+    ldx #2  ; read index
+    ldy #0  ; write index
+
+-   lda HISTORY_TABLE,x
+    sta HISTORY_TABLE,y
+    iny
+    inx
+    bpl -   ; as long as read-index is 0-127
 
 
 
-    jmp disableBasicRom ; return to "regular" mmu setup for program execution
+    rts
 
 .writeToHistoryStack
     ; use zp_tempX for the reading-y
@@ -236,7 +251,6 @@ initHistoryStack
     sta zp_historyStackPos
     sta zp_historyStackSize
 
-;    jsr .bankRam00
     ldx #0
 -   sta HISTORY_TABLE,x
     dex
@@ -256,10 +270,3 @@ initHistoryStack
     rts
 
 
-; all roms disabled, I/O disabled, all ram of block 0
-;.bankRam00
-;    lda #%00111111
-;    sta $ff00
-;    rts
-
-.stackInputAddr !word 0
