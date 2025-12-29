@@ -130,6 +130,11 @@ readNextByte
     bcs +
     jmp .reachedEof
 
+    ; might make more sense to check leftToParse outside of this
+    ;  because after we return, we check for crlf, which might be
+    ;  the last characters here, but we set the carry flag and then that check is skipped
+    ;  so we have some kind of redundancy here. but maybe it's ok. so, in case of weird trouble
+    ;  related to end of files (too soon, too late), this might be an option to change.
 +   sec
     lda leftToParse
     sbc #1

@@ -12,9 +12,6 @@ keyStore            !fill 10    ;keeps values $1000-$1009
 
 fileOpError         !byte 0
 
-
-retries        !byte 0
-
 size_vram_content   !word 6143  ; available vram for content (after screen-ram, attribute-ram and charset)
 vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-vram copy of blocks
 
@@ -22,8 +19,8 @@ vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-v
 main
     jsr initc128
     jsr c128detect
-    
     jsr disableBasicRom
+
     jsr initHistoryStack
 
 ; load from network
@@ -37,9 +34,6 @@ requestNewContent
     ; set the cursor line to zero here, that's important for calculating the right screen area for display
 .afterRequest
     jsr .setToFirstContentLine
-    
-;    lda #$93 ; clear screen
-;    jsr bsout
 
 ; do the processing
     lda #$0d
@@ -708,29 +702,29 @@ k_indsta
 
 +   rts
 
-!src "src/network/networkWic.asm"
+!src "src/backend/io/networkWic.asm"
 !src "src/init/c128init.asm"
 !src "src/init/c128detect.asm"
-!src "src/network/networkCommon.asm"
+!src "src/backend/io/networkCommon.asm"
 
-!src "src/wic64/wic64.asm"
-!src "src/file/load.asm"
-!src "src/file/loadContent.asm"
-!src "src/file/saveToDisk.asm"
-!src "src/network/disk.asm"
-!src "src/network/wic2disk.asm"
-!src "src/output/vdc.asm"
+!src "src/lib/wic64/wic64.asm"
+!src "src/frontend/io/loadCharset.asm"
+!src "src/backend/io/disk/saveToDisk.asm"
+!src "src/backend/io/disk/disk.asm"
+!src "src/backend/io/disk/loadContent.asm"
+!src "src/backend/io/wic2disk.asm"
+!src "src/frontend/output/vdc.asm"
 !src "src/history.asm"
-!src "src/memory/georam.asm"
-!src "src/memory/reu.asm"
+!src "src/backend/memory/georam.asm"
+!src "src/backend/memory/reu.asm"
 
-!src "src/parsers/parseGopher.asm"
-!src "src/parsers/parsePlainText.asm"
-!src "src/parsers/commonParse.asm"
+!src "src/backend/parsers/parseGopher.asm"
+!src "src/backend/parsers/parsePlainText.asm"
+!src "src/backend/parsers/commonParse.asm"
 !src "src/copy/copyCommon.asm"
 !src "src/display.asm"
-!src "src/input/address.asm"
-!src "src/pages/information.asm"
+!src "src/frontend/input/address.asm"
+!src "src/frontend/pages/information.asm"
 ;!src "src/pages/sound.asm"
 
 

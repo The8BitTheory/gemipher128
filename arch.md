@@ -1,6 +1,10 @@
 # Architecture of Gemipher 128
 
 Three major pillars of dataflow: input, processing, output
+Maybe we should do a Frontend/Backend split.
+Frontend is dealing with user-input (keyboard and mouse) and displaying (vdc, vera, vic-iv, kawari).
+Backend is dealing with I/O related to network and disk.
+
 
 ## Input
 
@@ -20,7 +24,7 @@ so that should directly write to disk.
 Loading from WiC64 allows for specifying custom store routines. These can go into Bank 1, disk,
 even the VDC or REU and GeoRAM.
 
-Loading from disk could need to go into Bank 1, REU or GeoRAM, and also the VDC chip.
+Loading from disk could go into Bank 1, REU or GeoRAM, or also the VDC chip.
 
 ### Userinput via Keyboard
 Keyboard input should just be readable from kernal routines.

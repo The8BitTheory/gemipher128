@@ -13,7 +13,7 @@ wic64_include_load_and_run = 0
 wic64_include_enter_portal = 0
 wic64_optimize_for_size = 0
 
-!src "src/wic64/wic64.h"
+!src "src/lib/wic64/wic64.h"
 
 setInitialGopherHostSelector
     jsr setInitialGopherHostSelectorCommon

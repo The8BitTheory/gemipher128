@@ -45,4 +45,4 @@ initVdc
 
     rts
 
-!src "src/vdcbasic/vdcbasic.asm"
+!src "src/lib/vdcbasic/vdcbasic.asm"

@@ -48,7 +48,7 @@
   !source <6502/std.a>    ; for +bit16
   !source <6502/opcodes.a>  ; for AND/ORA self-mods
 ;!source <cbm/c128/kernal.a> ; for k_primm
-  !source "src/vdcbasic/vdclib.a"  ; macros and code parts
+  !source "src/lib/vdcbasic/vdclib.a"  ; macros and code parts
 
 ;build params
 release_vdl = 0
