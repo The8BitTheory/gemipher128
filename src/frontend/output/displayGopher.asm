@@ -1,16 +1,10 @@
-!zone textdisplay
+!zone outputGopher
 
 ; zp_linkTablePosition will always point to the beginning of the current line
 ; this way we should be able to work with a single byte for offset (just y)
-displayTextmode
-    lda zp_pageType
-    cmp #$30
-    bne +
-    lda #4    
-    jmp ++
-+   lda #3
-++  sta .vramLineOffsetIncr
-
+displayGopher
+    lda #3
+    sta .vramLineOffsetIncr
 
     ldy #LAST_LINE
     sty zp_lastLine
@@ -27,23 +21,13 @@ displayTextmode
     lda #zp_linkTablePosition
     sta c_fetch_zp
 
-    lda zp_pageType
-    cmp #$31 ; gopher
-    bne +
-
 ; line start for gopher files
     lda #79
     sta zp_lineLength
     lda #81
     sta zp_vram_screenram
-    jmp ++
 
-; line start for text files
-+   lda #80
-    sta zp_lineLength
-    sta zp_vram_screenram
-
-++  lda #0
+    lda #0
     sta zp_vram_screenram+1
 
 ; setup the position in vramLineOffset
@@ -74,7 +58,7 @@ displayTextmode
 
 ; clear screen sets register bit to block fill and vram address (18/19 to $0000)
 ; this also waits for the next vblank period
-++  jsr .clearScreen
+++  jsr clearScreen
 
 ;setup block copy
 ; set register bit for BLOCK COPY:
@@ -126,38 +110,13 @@ displayTextmode
 +   ldx .currentScreenLine
     cpx #VISIBLE_LINES+1
     beq .allLinesDisplayed
-
-    clc
-    lda zp_linenumber_start
-    adc zp_tempY
-    sta zp_tempCalc
-    lda zp_linenumber_start+1
-    adc #0
-    sta zp_tempCalc+1
-
-    lda zp_linecount+1
-    cmp zp_tempCalc+1
-    bcc .allLinesDisplayed
-    lda zp_linecount
-    cmp zp_tempCalc
-    bne -
+    jmp -
 
 .allLinesDisplayed
-    lda zp_pageType
-    cmp #$31
-    bne +
     jsr .doGopherAttributeRam
-    jmp drawCursor
-
-; handle attribute-ram for plain-text here (ie clear screen with black text)
-+   jsr .doTextAttributeRam
 
 drawCursor
-    lda zp_scrollModeCrsr
-    beq +
-    jmp .drawPlainTextStatusline
-
-+   ldx zp_cursorLineScreen
+    ldx zp_cursorLineScreen
     clc
     lda #0
     sta zp_cursorPosScreen+1
@@ -303,7 +262,7 @@ drawCursor
 
     lda #'/'
     jsr toScreencode
-    jsr .printAcc
+    jsr printAcc
 
     lda zp_currentType
     jsr toScreencode
@@ -411,9 +370,6 @@ drawCursor
     and #%00001111
     jmp makeItHex
 
-.printAcc
-    ldx #31
-    jmp A_to_vdc_reg_X
 
 ; use jsr AY_to_vdc_regs_18_19 to set the vram location of the first character
 .printUntilZero
@@ -428,24 +384,6 @@ drawCursor
 
 +   rts
 
-.printHeaderLineUntilTab
-    ldy #0
--   lda (zp_memPtr),y
-    cmp #$d
-    beq +
-    pha
-    jsr writeToAddress
-    pla
-    jsr toScreencode
-    ldx #31
-    jsr A_to_vdc_reg_X
-
-    dec zp_tempCalc
-    beq +
-    iny
-    jmp -
-+   rts
-    nop
 
 .printStatusLineUntilTab
     ldy #0
@@ -491,70 +429,70 @@ drawCursor
     ; for gopher pages, print the cursor line
     lda zp_cursorLineContent+1
     jsr .hiNybToHex
-    jsr .printAcc
+    jsr printAcc
     lda zp_cursorLineContent+1
     jsr .loNybToHex
-    jsr .printAcc
+    jsr printAcc
     lda zp_cursorLineContent
     jsr .hiNybToHex
-    jsr .printAcc
+    jsr printAcc
     lda zp_cursorLineContent
     jsr .loNybToHex
-    jsr .printAcc
+    jsr printAcc
     jmp ++
 
 +   lda zp_linenumber_start+1
     jsr .hiNybToHex
-    jsr .printAcc
+    jsr printAcc
     lda zp_linenumber_start+1
     jsr .loNybToHex
-    jsr .printAcc
+    jsr printAcc
     lda zp_linenumber_start
     jsr .hiNybToHex
-    jsr .printAcc
+    jsr printAcc
     lda zp_linenumber_start
     jsr .loNybToHex
-    jsr .printAcc
+    jsr printAcc
 
 ++  lda #'/'
     jsr toScreencode
-    jsr .printAcc
+    jsr printAcc
 
     lda zp_lastVramContentLine+1
     jsr .hiNybToHex
-    jsr .printAcc
+    jsr printAcc
 
     lda zp_lastVramContentLine+1
     jsr .loNybToHex
-    jsr .printAcc
+    jsr printAcc
 
     lda zp_lastVramContentLine
     jsr .hiNybToHex
-    jsr .printAcc
+    jsr printAcc
 
     lda zp_lastVramContentLine
     jsr .loNybToHex
-    jsr .printAcc
+    jsr printAcc
 
     lda #'/'
     jsr toScreencode
-    jsr .printAcc
+    jsr printAcc
 
     lda zp_linecount+1
     jsr .hiNybToHex
-    jsr .printAcc
+    jsr printAcc
 
     lda zp_linecount+1
     jsr .loNybToHex
-    jsr .printAcc
+    jsr printAcc
 
     lda zp_linecount
     jsr .hiNybToHex
-    jsr .printAcc
+    jsr printAcc
 
     lda zp_linecount
     jsr .loNybToHex
-    jsr .printAcc
+    jsr printAcc
     
     ;rts
 
@@ -592,15 +530,6 @@ drawCursor
 
     rts
 
-makeItHex
-    clc
-    cmp #10
-    bpl +
-    adc #$30
-    rts
-
-+   adc #54
-    rts
 
 removeCursor
     ; zp_cursorPosScreen should be up-to-date at this point
@@ -622,15 +551,9 @@ removeCursor
     sbc zp_firstVramContentLine+1
     sta zp_tempCalc+1
 
-; linecount x 3 (gopher) or x4 (text) should be the offset in the lineoffset table
-    lda zp_pageType
-    cmp #$30
-    bne +
-    ldx #4      ; plain text
-    jmp ++
-+   ldx #3      ; gopher files
-    
-++  stx zp_tempX
+; linecount x 3 (gopher) should be the offset in the lineoffset table
+    ldx #3      ; gopher files
+    stx zp_tempX
     jsr multiply
 
     clc
@@ -651,16 +574,8 @@ removeCursor
     lda (zp_vramLineOffsets),y
     sta zp_visibleLength
 
-    lda zp_pageType
-    cmp #30 ; plain text
-    bne +
-    ; line-length stored in 2 bytes
-    iny
-    lda (zp_vramLineOffsets),y    
-    jmp ++
-+   lda #0  ; gopher
-    
-++  sta zp_visibleLength+1
+    lda #0  ; gopher has max 256 chars per line. HB is always zero
+    sta zp_visibleLength+1
 
 ; go to the right ram-content offset (increments of 10 or 3, depending on file type)
 ;    jsr .resetLinkTablePosition
@@ -762,9 +677,7 @@ removeCursor
 .displayGopherLine
     jsr .readVisibleLength
     
--   lda zp_visibleLength+1    ; check
-    bne .longerThanOneScreenLine
-    lda zp_visibleLength
+-   lda zp_visibleLength
     cmp zp_lineLength
     bcc .shorterThanOneScreenLine
 
@@ -774,9 +687,8 @@ removeCursor
     lda zp_visibleLength
     sbc zp_lineLength
     sta zp_visibleLength
-    bcs +
-    dec zp_visibleLength+1
-+   lda zp_lineLength
+    
+    lda zp_lineLength
     jmp ++
 
     ; line shorter than 79 characters
@@ -788,11 +700,9 @@ removeCursor
     jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
                             ; the destination location is updated by the vdc automatically
     
-    lda zp_visibleLength+1  ;check if we have to handle multi-line content
-    bne +
     lda zp_visibleLength
     beq .displayGopherDone    ; hb and lb are zero. nothing left to print
-+   ldx .currentScreenLine    ;contains the current line nr that's printed on screen
+    ldx .currentScreenLine    ;contains the current line nr that's printed on screen
     cpx #VISIBLE_LINES
     bne .drawNextGopherLine       ; not on the last line, keep going
     rts       ; we are on the last line. stop printing despite there being more text in the current content line
@@ -877,226 +787,11 @@ removeCursor
     lda (zp_vramLineOffsets),y
     sta zp_visibleLength
 
-    lda zp_pageType
-    cmp #$30 ; plain text   
-    bne +
-    ; line-length stored in 2 bytes
-    iny
-    lda (zp_vramLineOffsets),y    ; plain text
-    jmp ++
-+   lda #0  ; gopher
-    
-++  sta zp_visibleLength+1
+    lda #0  ; gopher
+    sta zp_visibleLength+1
 
     rts
 
-.clearScreen
-;   wait until we are in text window (in case we're in a sync state right now)
--   lda vdc_state
-    and #$20
-    bne -
-
-    ; wait until we are out of text window
--   lda vdc_state
-    and #$20
-    beq -
-
-    ; clear BLOCK COPY register bit to get BLOCK WRITE:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    and #$7f
-    jsr A_to_vdc_reg_X
-
-; fill lines 1 - 23 with space character
-; screen-ram
-    lda #$20
-    ldy #$50
-    ldx #$00
-    jsr A_to_vram_XXYY
-
-    ;set count
-    lda #$30    ;lowbyte
-    ldy #$07    ;highbyte
-    jsr vdc_do_YYAA_cycles
-
-; not clearing lines 1-23 (content area) because every line writes to the attribute ram anyways
-
-; set line 24 of attribute ram to inverse
-    ldy #$80
-    ldx #$0f
-    lda #%11000011   ;charset 1, reverse on
-    jsr A_to_vram_XXYY
-
-    ;set count (79 chars)
-    lda #$4f    ;lowbyte
-    ldy #$00    ;highbyte
-    jsr vdc_do_YYAA_cycles
-    
-; fill line 24 with spaces
-    ldy #$80
-    ldx #$07
-    lda #$20
-    jsr A_to_vram_XXYY
-    
-    ; set count (79 characters)
-    lda #$4f
-    ldy #$00
-    jmp vdc_do_YYAA_cycles
-
-
-.clearInvisibleContentArea
-    ; clear BLOCK COPY register bit to get BLOCK WRITE:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    and #$7f
-    jsr A_to_vdc_reg_X
-
-    lda #0
-    ldy #$00
-    ldx #$10
-    jsr A_to_vram_XXYY
-
-    ;set count
-    lda #$ff    ;lowbyte
-    ldy #$01    ;highbyte
-    jmp vdc_do_YYAA_cycles
-
-toScreencode
-    cmp #64 ;A  
-    bmi .screencodeDone       ; < A (so, must be a digit. don't change)
-
-    cmp #96 ;a  ; < a (so, must be an uppercase letter. subtract 64
-    bpl +
-    sec
-    sbc #64
-    jmp .screencodeDone
-
-+   cmp #127 ; <z (so, must be a lowercase letter)
-    bpl .screencodeDone
-    sec
-    sbc #32
-
-.screencodeDone
-    rts
-
-writeCurrentGopherToHeadline
-    ; clear BLOCK COPY register bit to get BLOCK WRITE:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    and #$7f
-    jsr A_to_vdc_reg_X
-
-; set line 0 of attribute ram to inverse
-    ldy #$00
-    ldx #$08
-    lda #%11000011  ;charset 1, reverse on, dark gray
-    jsr A_to_vram_XXYY
-
-; set count (79 characters)
-    lda #$4f
-    ldy #$00
-    jsr vdc_do_YYAA_cycles
-
-    jsr fillLine0WithSpaces
-
-    ldx #64
-    stx zp_tempX
-    ldy #02
-    lda #00
-    sta addressPos  ; this is used for cursorposition when entering a user-defined address
-    jsr AY_to_vdc_regs_18_19
-
-    lda #<tcpOpenHostPort
-    sta zp_memPtr  ;we're mis-using this here, as we're not doing indfet
-    lda #>tcpOpenHostPort
-    sta zp_memPtr+1
-
-    lda tcpOpenSizeL
-    sta zp_tempCalc
-    lda tcpOpenSizeH
-    sta zp_tempCalc+1
-
-    jsr .printHeaderLineUntilTab
-
-    lda #'/'
-    pha
-    jsr writeToAddress
-    pla
-    jsr toScreencode
-    jsr .printAcc
-
-    lda zp_pageType
-    pha
-    jsr writeToAddress
-    pla
-    jsr toScreencode
-    jsr .printAcc
-
-    lda #<tcpWriteSelector
-    sta zp_memPtr
-    lda #>tcpWriteSelector+1
-    sta zp_memPtr+1
-
-    lda tcpWriteSizeL
-    sta zp_tempCalc
-    lda tcpWriteSizeH
-    sta zp_tempCalc+1
-
-    jmp .printHeaderLineUntilTab
-    nop
-
-fillLine0WithSpaces
-    ldy #$00
-    ldx #$00
-    lda #$20
-    jsr A_to_vram_XXYY
-    
-    ; set count (79 characters)
-    lda #$4f
-    ldy #$00
-    jsr vdc_do_YYAA_cycles
-
-; print rounded corners top left and right
-    lda #96
-    ldy #$00
-    ldx #$00
-    jsr A_to_vram_XXYY
-
-    lda #97
-    ldy #$4f
-    ldx #$00
-    jmp A_to_vram_XXYY
-
-
-multiply
-    lda #%00001110
-    sta $ff00
-
-
-    lda #$00
-    tay
-    beq .enterLoop
-
-.doAdd:
-    clc
-    adc zp_tempCalc
-    tax
-
-    tya
-    adc zp_tempCalc+1
-    tay
-    txa
-
-.loop:
-    asl zp_tempCalc
-    rol zp_tempCalc+1
-.enterLoop:  ; accumulating multiply entry point (enter with .A=lo, .Y=hi)
-    lsr zp_tempX
-    bcs .doAdd
-    bne .loop
-
-    rts
- 
 
 .textLineNr       !text "LineNr: ",0
 

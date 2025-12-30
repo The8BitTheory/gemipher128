@@ -85,8 +85,12 @@ requestNewContent
 
 ; display page on top
 .updateDisplay
-    
+    lda zp_pageType
+    cmp #$30
+    bne +
     jsr displayTextmode
+    jmp getUserInput
++   jsr displayGopher
 
 ; get user input to see what to do next
 ; useful special function keys might be
@@ -722,11 +726,12 @@ k_indsta
 !src "src/backend/parsers/parsePlainText.asm"
 !src "src/backend/parsers/commonParse.asm"
 !src "src/copy/copyCommon.asm"
-!src "src/display.asm"
+!src "src/frontend/output/uihelper.asm"
+!src "src/frontend/output/displayText.asm"
+!src "src/frontend/output/displayGopher.asm"
 !src "src/frontend/input/address.asm"
 !src "src/frontend/pages/information.asm"
 ;!src "src/pages/sound.asm"
-
 
 txtReu      !text "REU: ",0
 txtGeoRam   !text "GeoRAM: ",0

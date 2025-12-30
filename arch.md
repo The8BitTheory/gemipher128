@@ -3,7 +3,11 @@
 Three major pillars of dataflow: input, processing, output
 Maybe we should do a Frontend/Backend split.
 Frontend is dealing with user-input (keyboard and mouse) and displaying (vdc, vera, vic-iv, kawari).
-Backend is dealing with I/O related to network and disk.
+It owns the input/processing/output loop.
+
+Backend is dealing with I/O related to network and disk, and is doing the memory management heavy-lifting.
+That includes deciding where to store content (RAM, GeoRAM, REU, disk/swap, maybe also VRAM; but not for display),
+history management, settings (once available), etc.
 
 
 ## Input
