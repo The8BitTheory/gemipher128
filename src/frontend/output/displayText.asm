@@ -127,20 +127,7 @@ displayTextmode
     cpx #VISIBLE_LINES+1
     beq .allLinesDisplayed
 
-    clc
-    lda zp_linenumber_start
-    adc zp_tempY
-    sta zp_tempCalc
-    lda zp_linenumber_start+1
-    adc #0
-    sta zp_tempCalc+1
-
-    lda zp_linecount+1
-    cmp zp_tempCalc+1
-    bcc .allLinesDisplayed
-    lda zp_linecount
-    cmp zp_tempCalc
-    bne -
+    jmp -
 
 .allLinesDisplayed
     jsr .doTextAttributeRam
