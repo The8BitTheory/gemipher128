@@ -3,14 +3,8 @@
 ; zp_linkTablePosition will always point to the beginning of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayTextmode
-    lda zp_pageType
-    cmp #$30
-    bne +
     lda #4    
-    jmp ++
-+   lda #3
-++  sta .vramLineOffsetIncr
-
+    sta .vramLineOffsetIncr
 
     ldy #LAST_LINE
     sty zp_lastLine
@@ -27,23 +21,12 @@ displayTextmode
     lda #zp_linkTablePosition
     sta c_fetch_zp
 
-    lda zp_pageType
-    cmp #$31 ; gopher
-    bne +
-
-; line start for gopher files
-    lda #79
-    sta zp_lineLength
-    lda #81
-    sta zp_vram_screenram
-    jmp ++
-
 ; line start for text files
-+   lda #80
+    lda #80
     sta zp_lineLength
     sta zp_vram_screenram
 
-++  lda #0
+    lda #0
     sta zp_vram_screenram+1
 
 ; setup the position in vramLineOffset
@@ -96,7 +79,6 @@ displayTextmode
     sty zp_tempY    ; we use zp_tempY to count the current contentline.
     ldy #FIRST_LINE
     sty .currentScreenLine      ; initialize currentScreenLine to topmost visible line
-    jsr .writeScreenToContentLine
 
 ;-----------------------------------------
 ; here, printing the line is triggered 
@@ -109,21 +91,16 @@ displayTextmode
 ; the block-copy source increases automatically with each copy operation
 
 ; renderloop for all visible content lines on screen
--   jsr .displayGopherLine
+-   jsr .displayTextLine
 
     jsr .incVramLineOffsetPosition  ; where we read line information for block copy
     jsr .incOutputLineNumber        ; where we write lines to
     inc zp_tempY    ; content line increasing
     dec zp_tempX    ; content lines left to print
     inc .currentScreenLine
-    jsr .writeScreenToContentLine
-
-    lda zp_scrollModeCrsr
-    bne +
-    jsr .calculateCursorOffset
 
 ; is the screen full?
-+   ldx .currentScreenLine
+    ldx .currentScreenLine
     cpx #VISIBLE_LINES+1
     beq .allLinesDisplayed
 
@@ -151,44 +128,6 @@ displayTextmode
     lda #$2f    ;lowbyte
     ldy #$07    ;highbyte
     jmp vdc_do_YYAA_cycles
-
-
-.doGopherAttributeRam
-; write to attribute ram
-;  we don't write attribute ram with content lines, as we'd lose the auto-increment feature of the vdc chip
-;  also, writing content lines might start over if longer lines are involved.
-;  by writing attributes here, we are much more efficient
-
-+   ldx #0
-    stx zp_tempX    ; we use zp_tempY to count the current displayline
-   
-    jsr .resetLinkTablePosition
-
-    ; clear BLOCK COPY register bit to get BLOCK WRITE:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    and #$7f
-    jsr A_to_vdc_reg_X
-
--   jsr .readLineType
-    cmp #$69 ; info line
-    bne +
-    jsr .makeLineBlack
-    jmp .incAddresses
-
-+   jsr .makeLineGreen
-
-
-.incAddresses
-    jsr .incLinkTableReadPosition
-
-    inc zp_tempX
-    ldx zp_tempX
-    cpx zp_lastLine
-    bne -   ; yes, this jumps back to .readLineType in the previous routine
-
-    rts
-
 
 .writeHexValue
     pha
@@ -284,25 +223,7 @@ displayTextmode
 
     jsr .printUntilZero
 
-    lda zp_pageType
-    cmp #$31
-    bne +
-    ; for gopher pages, print the cursor line
-    lda zp_cursorLineContent+1
-    jsr .hiNybToHex
-    jsr printAcc
-    lda zp_cursorLineContent+1
-    jsr .loNybToHex
-    jsr printAcc
-    lda zp_cursorLineContent
-    jsr .hiNybToHex
-    jsr printAcc
-    lda zp_cursorLineContent
-    jsr .loNybToHex
-    jsr printAcc
-    jmp ++
-
-+   lda zp_linenumber_start+1
+    lda zp_linenumber_start+1
     jsr .hiNybToHex
     jsr printAcc
     lda zp_linenumber_start+1
@@ -315,7 +236,7 @@ displayTextmode
     jsr .loNybToHex
     jsr printAcc
 
-++  lda #'/'
+    lda #'/'
     jsr toScreencode
     jsr printAcc
 
@@ -403,14 +324,8 @@ displayTextmode
     sta zp_tempCalc+1
 
 ; linecount x 3 (gopher) or x4 (text) should be the offset in the lineoffset table
-    lda zp_pageType
-    cmp #$30
-    bne +
     ldx #4      ; plain text
-    jmp ++
-+   ldx #3      ; gopher files
-    
-++  stx zp_tempX
+    stx zp_tempX
     jsr multiply
 
     clc
@@ -430,17 +345,9 @@ displayTextmode
     iny
     lda (zp_vramLineOffsets),y
     sta zp_visibleLength
-
-    lda zp_pageType
-    cmp #30 ; plain text
-    bne +
-    ; line-length stored in 2 bytes
     iny
     lda (zp_vramLineOffsets),y    
-    jmp ++
-+   lda #0  ; gopher
-    
-++  sta zp_visibleLength+1
+    sta zp_visibleLength+1
 
 ; go to the right ram-content offset (increments of 10 or 3, depending on file type)
 ;    jsr .resetLinkTablePosition
@@ -487,10 +394,6 @@ displayTextmode
     nop
 
 .incOutputLineNumber
-;    dec zp_tempX
-;    bne +
-;    rts
-;+
     clc
     lda zp_vram_screenram
     adc #80
@@ -506,40 +409,9 @@ displayTextmode
     jmp AY_to_vdc_regs_18_19
 
 
-; this is first calculated for the second line. the first line will always be 80 (see comment at the bottom of this file)
-.calculateCursorOffset
-    clc
-    lda zp_tempY
-    adc zp_tempY
-    tax
 
-    sec    
-    lda zp_vram_screenram
-    sbc #1
-    sta .cursorOffsets,x
-    inx
-    lda zp_vram_screenram+1
-    sta .cursorOffsets,x
 
-    rts
-
-.writeScreenToContentLine
-    clc
-    lda .currentScreenLine
-    adc .currentScreenLine
-    tax
-
-    clc
-    lda zp_linenumber_start
-    adc zp_tempY
-    sta .screenToContentLine,x
-    lda zp_linenumber_start+1
-    adc #0
-    sta .screenToContentLine+1,x
-
-    rts
-
-.displayGopherLine
+.displayTextLine
     jsr .readVisibleLength
     
 -   lda zp_visibleLength+1    ; check
@@ -571,21 +443,20 @@ displayTextmode
     lda zp_visibleLength+1  ;check if we have to handle multi-line content
     bne +
     lda zp_visibleLength
-    beq .displayGopherDone    ; hb and lb are zero. nothing left to print
+    beq .displayLineDone    ; hb and lb are zero. nothing left to print
 +   ldx .currentScreenLine    ;contains the current line nr that's printed on screen
     cpx #VISIBLE_LINES
-    bne .drawNextGopherLine       ; not on the last line, keep going
+    bne .drawNextLine       ; not on the last line, keep going
     rts       ; we are on the last line. stop printing despite there being more text in the current content line
     nop
 
-.drawNextGopherLine
+.drawNextLine
     jsr .incOutputLineNumber
-    jsr .writeScreenToContentLine
     inc .currentScreenLine
 
     jmp -
 
-.displayGopherDone
+.displayLineDone
     rts
 
 .readLineType
@@ -610,76 +481,17 @@ displayTextmode
     jsr .fetchFromContentBankOffsetY
     rts
 
-.setAttributeRamToScreenLine
-    clc
-    lda zp_tempX
-    adc zp_tempX
-    tax
-
-    lda .cursorOffsets,x
-    sta zp_memPtr
-    lda .cursorOffsets+1,x
-    sta zp_memPtr+1
-
-    clc
-    lda #1
-    adc zp_memPtr
-    sta zp_vram_screenram
-    tay
-    lda zp_memPtr+1
-    adc #$08
-    sta zp_vram_screenram+1
-    
-    jmp AY_to_vdc_regs_18_19
-
-.makeLineGreen
-    jsr .setAttributeRamToScreenLine
-    lda #%10000010
-    ldx #31
-    jsr A_to_vdc_reg_X
-
-    ldy #0
-    lda #78
-    jmp vdc_do_YYAA_cycles
-
-.makeLineBlack
-    jsr .setAttributeRamToScreenLine
-    lda #%10000000
-    ldx #31
-    jsr A_to_vdc_reg_X
-
-    ldy #0
-    lda #78
-    jmp vdc_do_YYAA_cycles
-
 .readVisibleLength
     ldy #2
     lda (zp_vramLineOffsets),y
     sta zp_visibleLength
-
-    lda zp_pageType
-    cmp #$30 ; plain text   
-    bne +
-    ; line-length stored in 2 bytes
     iny
-    lda (zp_vramLineOffsets),y    ; plain text
-    jmp ++
-+   lda #0  ; gopher
-    
-++  sta zp_visibleLength+1
+    lda (zp_vramLineOffsets),y
+    sta zp_visibleLength+1
 
     rts
  
 
 .textLineNr       !text "LineNr: ",0
-
-; cursorOffsets holds the logical linenumber for each line on screen
-; this is required to react to multi-line text correctly
-; a gopher link line over two lines has line type and selector coming from the same offset in linktable
-; 25 lines, two bytes each. 23 sould be sufficient, but we can always reduce that
-.cursorOffsets  !word 80    ; first offset is always 80 (as long as we're starting in second screenline)
-                !fill 50
-
-.screenToContentLine    !fill 52    ; contains offset to contentline per screenline. needed to handle multi-line content
 .currentScreenLine      !byte 0     ; what line are we rendering currently
 .vramLineOffsetIncr !byte 0     ; 3 or 4 bytes, depending max line length 1 or 2 bytes

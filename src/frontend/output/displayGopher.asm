@@ -423,9 +423,6 @@ drawCursor
 
     jsr .printUntilZero
 
-    lda zp_pageType
-    cmp #$31
-    bne +
     ; for gopher pages, print the cursor line
     lda zp_cursorLineContent+1
     jsr .hiNybToHex
@@ -439,22 +436,8 @@ drawCursor
     lda zp_cursorLineContent
     jsr .loNybToHex
     jsr printAcc
-    jmp ++
 
-+   lda zp_linenumber_start+1
-    jsr .hiNybToHex
-    jsr printAcc
-    lda zp_linenumber_start+1
-    jsr .loNybToHex
-    jsr printAcc
-    lda zp_linenumber_start
-    jsr .hiNybToHex
-    jsr printAcc
-    lda zp_linenumber_start
-    jsr .loNybToHex
-    jsr printAcc
-
-++  lda #'/'
+    lda #'/'
     jsr toScreencode
     jsr printAcc
 
