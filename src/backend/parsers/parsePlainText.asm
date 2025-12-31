@@ -1,11 +1,15 @@
-; parsing plain text files should be easy.
-; just copy to vram and respect line breaks
-; the fun part is the memory management
-; I want text files to be displayed like gopher pages, just consisting of Info lines
-; text files don't contain back-links by themselves
-; so this is when we need to start thinking about a back button
-; and much more about handling a history stack
-; pushing the back button should display the last visible page with the cursor at the position where we left
+; displaying plain text will be handled differently from gopher dirs.
+; the downloaded content should be prepared as lines of 80 characters each.
+; if a line is shorter, it will be filled with spaces.
+; it is copied to vram backbuffer that way.
+; viewing plain text should just be a matter of copying the amount of visible lines
+; to the frontbuffer.
+; we'll still need the linkpointer table for the textfile in it's original downloaded format,
+; but I think we won't need to keep vram pointers in the same way as for Gopher dirs.
+; the linedefinition from the textfile will not be taken into the linkpointer table.
+; lines longer than 80 characters will have multiple entries in the linkpointer table.
+
+; this routine only deals with ram (not vram, etc)
 
 !zone plainText
 parsePlainText
@@ -16,6 +20,7 @@ parsePlainText
     sta zp_visibleLength+1
     sta zp_linecount
     sta zp_linecount+1
+    sta .lineLength
 
     
 ; content is stored in the $1:0400 region, pointers to each line in the $1:f700 region
@@ -31,10 +36,12 @@ parsePlainText
     beq -
     cmp #$0a    ; other line break
     beq .finishLine
-
     inc zp_visibleLength
-    bne -
-    inc zp_visibleLength+1
+    inc .lineLength
+    lda .lineLength
+    cmp #80
+    beq .finishLine
+
     jmp -
 
 .finishLine
@@ -49,6 +56,7 @@ parsePlainText
     lda #0
     sta zp_visibleLength
     sta zp_visibleLength+1
+    sta .lineLength
 
     lda leftToParse+1
     bne .parseLine
@@ -132,3 +140,4 @@ parsePlainText
 +   rts
 
 .temp4          !word 0,0
+.lineLength     !byte 0     ; used to keep track of 80 chars max per line

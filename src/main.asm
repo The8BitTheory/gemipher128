@@ -46,8 +46,7 @@ requestNewContent
     jsr parsePlainText
     lda #4
     sta zp_linkTableIncr
-    ;jsr copyTextToVram
-    jsr copyToVram
+    jsr copyTextToVram
     lda #1
     sta zp_scrollModeCrsr
     jmp .doneProcessing
@@ -57,8 +56,7 @@ requestNewContent
     jsr parseGopher
     lda #9
     sta zp_linkTableIncr
-    ;jsr copyVisibleContentToVram
-    jsr copyToVram
+    jsr copyGopherToVram
     lda #0
     sta zp_scrollModeCrsr
 .doneProcessing
@@ -66,7 +64,7 @@ requestNewContent
     lda zp_navModeHistory
     beq +
     jsr pushToHistoryStack  ; only push to stack when not navigating in history
-+   jsr writeCurrentGopherToHeadline
++   ;jsr writeCurrentGopherToHeadline
 
 .resetDisplay
     lda #0
@@ -88,7 +86,8 @@ requestNewContent
     lda zp_pageType
     cmp #$30
     bne +
-    jsr displayTextmode
+    jsr displayTextmode ; disable this b/c display text is already done by copying
+    ; jsr to either scroll up or down one line
     jmp getUserInput
 +   jsr displayGopher
 
@@ -325,14 +324,7 @@ getUserInput
 
     jmp getUserInput
 
-;.drawCursorOneBelow
-
 .tryLineScrollDown
-;    clc
-;    lda #VISIBLE_LINES
-;    adc zp_linenumber_start
-;    cmp zp_linecount    ; is the last visible line also the last content line?
-
     ; is the last visible line also the last line in vram?
     ; zp_tempCalc contains the last visible line
     clc
@@ -369,6 +361,9 @@ getUserInput
 +   inc zp_linenumber_start ; no. increase linenumber and update display. ie scroll down
     bne +
     inc zp_linenumber_start+1
++   lda zp_scrollModeCrsr
+    beq +
+    jsr scrollScreenDownOneLine
 +   jmp .updateDisplay
 
 .loadNextDataIntoVram
@@ -400,7 +395,7 @@ getUserInput
 +   lda #4
     sta zp_linkTableIncr
     jsr .calculateLinkTableOffset
-    jsr continueCopyToVram
+    jsr continueCopyTextToVram
     lda #1
     sta zp_scrollModeCrsr
     jmp .doneLoadNext
@@ -410,7 +405,7 @@ getUserInput
     lda #9
     sta zp_linkTableIncr    
     jsr .calculateLinkTableOffset
-    jsr continueCopyToVram
+    jsr continueCopyGopherToVram
     lda #0
     sta zp_scrollModeCrsr
 
@@ -495,6 +490,9 @@ getUserInput
     sta zp_cursorLineContent
     bcs +
     dec zp_cursorLineContent+1
++   lda zp_scrollModeCrsr
+    beq +
+    jsr scrollScreenUpOneLine
 +   jmp .updateDisplay
 
 .loadPrevDataIntoVram
@@ -527,7 +525,7 @@ getUserInput
     lda #4
     sta zp_linkTableIncr
     jsr .calculateLinkTableOffset
-    jsr continueCopyToVram
+    jsr continueCopyTextToVram
 
     lda #1
     sta zp_scrollModeCrsr
@@ -538,7 +536,7 @@ getUserInput
     lda #9
     sta zp_linkTableIncr
     jsr .calculateLinkTableOffset
-    jsr continueCopyToVram
+    jsr continueCopyTextToVram
 
     lda #0
     sta zp_scrollModeCrsr
@@ -725,7 +723,8 @@ k_indsta
 !src "src/backend/parsers/parseGopher.asm"
 !src "src/backend/parsers/parsePlainText.asm"
 !src "src/backend/parsers/commonParse.asm"
-!src "src/copy/copyCommon.asm"
+!src "src/frontend/output/copyTextToVram.asm"
+!src "src/frontend/output/copyGopherToVram.asm"
 !src "src/frontend/output/uihelper.asm"
 !src "src/frontend/output/displayText.asm"
 !src "src/frontend/output/displayGopher.asm"

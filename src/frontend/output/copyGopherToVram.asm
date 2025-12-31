@@ -2,7 +2,6 @@
 ; in contrast to the content area in bank 1, this
 ; - is in screencode, not in ascii format
 ; - only contains visible text. no type, no selector, no host, no port. these stay in bank 1
-; - text is also stored gapless/condensed here
 ; - all visible lines are copied via block copy to the visible screen area
 
 ; vram memory map
@@ -11,30 +10,18 @@
 ; $1000-$2fff invisible content area (we're copying to this area) - 8 kB available in a 16 kB VRAM setup
 ; $3000-$3fff character set (uppercase/lowercase)
 
-; TODO: plain text should be written in screen-layout to $1000 in vram, not gapless like gopher dirs.
-;       the reason is that linenumbers don't matter, as no selector information is related to single lines.
-;       also, display of lines larger than 256 chars makes trouble. less is fine for gopher, so we can keep that.
-;       and for plain text, we just copy line by line into vram as it would look on screen
-;       and from there, copy it 1:1 into the visible area, line by line.
-;       so, for text files we don't need vramoffsets, just the information where data ends in relation to RAM, so
-;        we know where to copy next or previous data from.
 
-!zone ramToVram
+!zone gopherRamToVram
 
-copyToVram
+copyGopherToVram
     lda #0
     sta zp_firstVramContentLine
     sta zp_firstVramContentLine+1
     sta zp_lastVramContentLine
     sta zp_lastVramContentLine+1
 
-    lda zp_pageType
-    cmp #$30
-    bne +
-    lda #4    
-    jmp ++
-+   lda #3
-++  sta .vramLineOffsetIncr
+    lda #3
+    sta .vramLineOffsetIncr
 
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
@@ -42,7 +29,7 @@ copyToVram
     
     jsr initLinkTableAddress
 
-continueCopyToVram     ; when we left off before due to vram full
+continueCopyGopherToVram     ; when we left off before due to vram full
 
     ; lines left to copy needs to be set accordingly
     sec
@@ -85,7 +72,7 @@ continueCopyToVram     ; when we left off before due to vram full
     jsr .copyGLineToVram
     bcs +
 
-    jsr .incTLineNumber
+    jsr incLineNumber
 
     dec .linesLeftToCopy
     bne -
@@ -108,74 +95,34 @@ continueCopyToVram     ; when we left off before due to vram full
     lda (zp_linkTablePosition),y
     sta zp_currentLinkTablePtr+1    ;replace with zp_memptr?
     iny
-
     lda (zp_linkTablePosition),y
     sta zp_visibleLength
-
-    lda zp_pageType
-    cmp #$30
-    bne +
-    iny
-    lda (zp_linkTablePosition),Y
-    sta zp_visibleLength+1
-    jmp ++
-
-+   lda #0
+    lda #0
     sta zp_visibleLength+1
 
-++  lda zp_visibleLength
+    lda zp_visibleLength
     ldy #2
     sta (zp_vramLineOffsets),y
-    lda zp_pageType
-    cmp #$30
-    bne +
     iny
     lda zp_visibleLength+1
     sta (zp_vramLineOffsets),y
 
-+   jsr .incVramLineOffsetPosition
+    jsr .incVramLineOffsetPosition
 
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp
     
-; -------------------------------
-; specific to plain text content
-; -------------------------------
 
 ; copy RAM to VRAM
     ldy #0
 
--   lda zp_pageType
-    cmp #$31
-    bne +
-    jmp .readGopher
-+   jmp .readPlainText
-
-.readPlainText
-    ldx zp_contentBank
-    jsr c_fetch     ; read content byte from RAM
-
-    cmp #$0d
-    beq .rtvDone
-    cmp #$0a
-    beq .rtvDone
-    iny
-    beq .rtvDone    ; copy 255 chars max (as a guardrail)
-
-    jmp .afterRead
-
-.readGopher
-    ldx zp_contentBank
+-   ldx zp_contentBank
     iny
     jsr c_fetch
 
     cmp #9
     beq .rtvDone
-; -----------------
-; specific part end
-; ------------------
 
-.afterRead
     jsr toScreencode
 
 ; write content byte to VRAM
@@ -215,15 +162,6 @@ continueCopyToVram     ; when we left off before due to vram full
     sta (zp_vramLineOffsets),y
     rts
 
-writeVramLineOffset
-    ldy #0
-    lda zp_vram_content_addr
-    sta (zp_vramLineOffsets),y
-    iny
-    lda zp_vram_content_addr+1
-    sta (zp_vramLineOffsets),y
-
-+   rts
 
 .incVramLineOffsetPosition
     clc
@@ -232,6 +170,16 @@ writeVramLineOffset
     sta zp_vramLineOffsets
     bcc +
     inc zp_vramLineOffsets+1
++   rts
+
+writeVramLineOffset
+    ldy #0
+    lda zp_vram_content_addr
+    sta (zp_vramLineOffsets),y
+    iny
+    lda zp_vram_content_addr+1
+    sta (zp_vramLineOffsets),y
+
 +   rts
 
 clearVramLineOffsetTable
@@ -256,7 +204,7 @@ clearVramLineOffsetTable
 
     rts
 
-.incTLineNumber
+incLineNumber
     clc
     lda zp_linkTablePosition
     adc zp_linkTableIncr
@@ -268,6 +216,7 @@ clearVramLineOffsetTable
     bne +
     inc zp_lastVramContentLine+1
 +   rts
+
 
 .vramLeft       !word 0
 .linesLeftToCopy    !word 0     ; related to copying from ram to vram. if this is > 0, we have more data to show

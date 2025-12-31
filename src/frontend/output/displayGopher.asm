@@ -59,6 +59,7 @@ displayGopher
 ; clear screen sets register bit to block fill and vram address (18/19 to $0000)
 ; this also waits for the next vblank period
 ++  jsr clearScreen
+    jsr writeCurrentGopherToHeadline
 
 ;setup block copy
 ; set register bit for BLOCK COPY:
@@ -291,7 +292,7 @@ drawCursor
     
 
 .doTextAttributeRam
-    ; clear BLOCK COPY register bit to get BLOCK WRITE:
+    ; clear BLOCK COPY register bit to get BLOCK FILL:
     ldx #24
     jsr vdc_reg_X_to_A
     and #$7f

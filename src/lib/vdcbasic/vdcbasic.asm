@@ -876,8 +876,9 @@ vmp
 
     ;$877b writes string length to A, which is stored to $6 by JSRFAR
     lda $6
-    beq .vmp_done
-    sta vmp_length
+    bne +
+    jmp .vmp_done
++   sta vmp_length
 
     lda #$7f
     sta vmp_bank

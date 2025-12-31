@@ -2,9 +2,16 @@
 
 ; zp_linkTablePosition will always point to the beginning of the current line
 ; this way we should be able to work with a single byte for offset (just y)
+
+; this routine only deals with vram (not ram, etc)
 displayTextmode
-    lda #4    
-    sta .vramLineOffsetIncr
+    ;jsr clearScreen
+    jsr writeCurrentGopherToHeadline
+    jsr setStatusLineAttributeRam
+    jmp .allLinesDisplayed
+
+    lda #4
+    sta zp_linkTableIncr
 
     ldy #LAST_LINE
     sty zp_lastLine
@@ -14,12 +21,6 @@ displayTextmode
     lda mmuBankConfig,X
     sta zp_contentBank
     
-; pointer to beginning of link table
-    jsr initLinkTableAddress
-
-; read length of current line from link-table
-    lda #zp_linkTablePosition
-    sta c_fetch_zp
 
 ; line start for text files
     lda #80
@@ -61,10 +62,7 @@ displayTextmode
 
 ;setup block copy
 ; set register bit for BLOCK COPY:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    ora #128
-    jsr A_to_vdc_reg_X
+    jsr setBlockCopy
 
 ; target address
     jsr .writeVramAddress
@@ -91,9 +89,12 @@ displayTextmode
 ; the block-copy source increases automatically with each copy operation
 
 ; renderloop for all visible content lines on screen
--   jsr .displayTextLine
+-   lda #80
+    ldy #0  ; high-byte in Y is zero anyways, because we print 79 chars max
+    jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
+                            ; the destination location is updated by the vdc automatically
 
-    jsr .incVramLineOffsetPosition  ; where we read line information for block copy
+    jsr .incVramBackbufferPosition  ; where we read line information for block copy
     jsr .incOutputLineNumber        ; where we write lines to
     inc zp_tempY    ; content line increasing
     dec zp_tempX    ; content lines left to print
@@ -111,11 +112,7 @@ displayTextmode
     jmp .drawPlainTextStatusline
 
 .doTextAttributeRam
-    ; clear BLOCK COPY register bit to get BLOCK WRITE:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    and #$7f
-    jsr A_to_vdc_reg_X
+    jsr setBlockFill
 
 ; set lines 1 - 23 to charset1, text black data
 ; screen-ram
@@ -154,7 +151,7 @@ displayTextmode
 
 
 ; use jsr AY_to_vdc_regs_18_19 to set the vram location of the first character
-.printUntilZero
+.printUntilNull
     ldy #0
 -   lda (zp_memPtr),y
     beq +
@@ -165,50 +162,6 @@ displayTextmode
     jmp -
 
 +   rts
-
-.printHeaderLineUntilTab
-    ldy #0
--   lda (zp_memPtr),y
-    cmp #$d
-    beq +
-    pha
-    jsr writeToAddress
-    pla
-    jsr toScreencode
-    ldx #31
-    jsr A_to_vdc_reg_X
-
-    dec zp_tempCalc
-    beq +
-    iny
-    jmp -
-+   rts
-    nop
-
-.printStatusLineUntilTab
-    ldy #0
--   ldx zp_contentBank
-    jsr c_fetch
-    cmp #9
-    beq +
-    cmp #$d
-    beq +
-    jsr toScreencode
-    ldx #31
-    jsr A_to_vdc_reg_X
-
-    dec zp_tempX
-    beq +
-    iny
-    jmp -
-+   rts
-    nop
-
-.fetchFromContentBankOffsetY
-    ldx zp_contentBank
-    jsr c_fetch
-    iny
-    rts
 
 .drawPlainTextStatusline
     ; draw logical line, total nr of lines, start and end vram offset (from $1000)
@@ -221,7 +174,7 @@ displayTextmode
     lda #>.textLineNr
     sta zp_memPtr+1
 
-    jsr .printUntilZero
+    jsr .printUntilNull
 
     lda zp_linenumber_start+1
     jsr .hiNybToHex
@@ -323,72 +276,26 @@ displayTextmode
     sbc zp_firstVramContentLine+1
     sta zp_tempCalc+1
 
-; linecount x 3 (gopher) or x4 (text) should be the offset in the lineoffset table
-    ldx #4      ; plain text
+; linecount x 80 should be the offset to the first visible line in vram backbuffer
+    ldx #80      ; plain text
     stx zp_tempX
-    jsr multiply
+    jsr multiply    ; multiplies zp_tempX with zp_tempCalc. result: A=LB, Y=HB
 
     clc
-    adc #<VRAM_LINE_TABLE
-    sta zp_vramLineOffsets
-    tya
-    adc #>VRAM_LINE_TABLE
-    sta zp_vramLineOffsets+1
-
-    clc
-    ldy #0
-    lda (zp_vramLineOffsets),y
+    adc #<VRAM_CONTENT
     sta zp_vram_content_addr
-    iny
-    lda (zp_vramLineOffsets),y
-    sta zp_vram_content_addr+1
-    iny
-    lda (zp_vramLineOffsets),y
-    sta zp_visibleLength
-    iny
-    lda (zp_vramLineOffsets),y    
-    sta zp_visibleLength+1
-
-; go to the right ram-content offset (increments of 10 or 3, depending on file type)
-;    jsr .resetLinkTablePosition
-;    rts
-;    nop
-
-; this sets the zp_linkTablePosition value to the first byte of the topmost line on screen
-.resetLinkTablePosition
-    lda zp_linenumber_start
-    sta zp_tempCalc
-    lda zp_linenumber_start+1
-    sta zp_tempCalc+1
-    lda zp_linkTableIncr
-    sta zp_tempX
-    jsr multiply
-
-    clc
-    adc #<LINKTABLE_ADDRESS
-    sta zp_linkTablePosition
-
     tya
-    adc #>LINKTABLE_ADDRESS
-    sta zp_linkTablePosition+1
-
+    adc #>VRAM_CONTENT
+    sta zp_vram_content_addr+1
     rts
 
-.incVramLineOffsetPosition
+.incVramBackbufferPosition
     clc
-    lda zp_vramLineOffsets
-    adc .vramLineOffsetIncr
-    sta zp_vramLineOffsets
-    bcc .incLinkTableReadPosition
-    inc zp_vramLineOffsets+1
-
-.incLinkTableReadPosition
-    clc
-    lda zp_linkTablePosition
-    adc zp_linkTableIncr
-    sta zp_linkTablePosition
+    lda zp_vram_content_addr
+    adc #80
+    sta zp_vram_content_addr
     bcc +
-    inc zp_linkTablePosition+1
+    inc zp_vram_content_addr+1
     
 +   rts
     nop
@@ -409,89 +316,79 @@ displayTextmode
     jmp AY_to_vdc_regs_18_19
 
 
-
-
-.displayTextLine
-    jsr .readVisibleLength
+; scrolling up means text goes down
+scrollScreenUpOneLine
+    ; block copy from screenline 1-22 to 2-23 (22>23, 21>22, ...)
+    ;jsr setBlockCopy
+    jsr moveLinesDown
+    jsr key
     
--   lda zp_visibleLength+1    ; check
-    bne .longerThanOneScreenLine
-    lda zp_visibleLength
-    cmp zp_lineLength
-    bcc .shorterThanOneScreenLine
+    ; then copy the content of the first screenline from ram to vram
+    ; while this routine should only deal with VRAM, we are doing RAM pointers here.
+    ; might be a code smell, we'll see.
+    ; vram line 1. zp_linenumber start should be this
+    lda zp_linenumber_start
+    sta zp_tempCalc
+    lda #0
+    sta zp_tempCalc+1
 
-    ; line longer than 79 characters
-.longerThanOneScreenLine
-    sec
-    lda zp_visibleLength
-    sbc zp_lineLength
-    sta zp_visibleLength
-    bcs +
-    dec zp_visibleLength+1
-+   lda zp_lineLength
-    jmp ++
+    ldx #4
+    stx zp_tempX
+    jsr multiply    ; result A=lo, Y=hi
+    clc
+    adc #<LINKTABLE_ADDRESS
+    sta zp_linkTablePosition
 
-    ; line shorter than 79 characters
-.shorterThanOneScreenLine
-    ldy #0
-    sty zp_visibleLength
+    tya
+    adc #>LINKTABLE_ADDRESS
+    sta zp_linkTablePosition+1
+
+    ;AY hold VRAM target (HB/LB order)
+    ldy vdc_lineoffsets
+    lda vdc_lineoffsets+1
     
-++  ldy #0  ; high-byte in Y is zero anyways, because we print 79 chars max
-    jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
-                            ; the destination location is updated by the vdc automatically
-    
-    lda zp_visibleLength+1  ;check if we have to handle multi-line content
-    bne +
-    lda zp_visibleLength
-    beq .displayLineDone    ; hb and lb are zero. nothing left to print
-+   ldx .currentScreenLine    ;contains the current line nr that's printed on screen
-    cpx #VISIBLE_LINES
-    bne .drawNextLine       ; not on the last line, keep going
-    rts       ; we are on the last line. stop printing despite there being more text in the current content line
-    nop
+    jmp copyLineToVram
 
-.drawNextLine
-    jsr .incOutputLineNumber
-    inc .currentScreenLine
+; scrolling down means text goes up
+scrollScreenDownOneLine
+    ; block copy from screenline 1-22 to 2-23 (1>2, 2>3, ...)
+    jsr moveLinesUp
+    jsr key
 
-    jmp -
+    ; then copy the content of the last screenline from ram to vram
+    ; while this routine should only deal with VRAM, we are doing RAM pointers here.
+    ; might be a code smell, we'll see.
+    ; vram line 23. zp_linenumber+VISIBLE_LINES start should be this
+    clc
+    lda zp_linenumber_start
+    adc #VISIBLE_LINES
+    sta zp_tempCalc
+    lda zp_linenumber_start+1
+    adc #0
+    sta zp_tempCalc+1
 
-.displayLineDone
-    rts
+    ldx #4
+    stx zp_tempX
+    jsr multiply    ; result A=lo, Y=hi
+    clc
+    adc #<LINKTABLE_ADDRESS
+    sta zp_linkTablePosition
 
-.readLineType
-    lda #zp_linkTablePosition
-    sta c_fetch_zp
+    tya
+    adc #>LINKTABLE_ADDRESS
+    sta zp_linkTablePosition+1
 
-    ; we need the offset of the line type in the linktable first
-    ldy #0
-    lda (zp_linkTablePosition),y
-    sta zp_memPtr
-    iny
-    lda (zp_linkTablePosition),y
-    sta zp_memPtr+1
-    iny
 
-    lda #zp_memPtr
-    sta c_fetch_zp
+    ; then copy the content of the last screenline from ram to vram
+    ; vram line 23
+    ldy vdc_lineoffsets+44
+    lda vdc_lineoffsets+45
 
-; load line type from the offset we just calculated
-; the actual data is stored in bank 1
-    ldy #0
-    jsr .fetchFromContentBankOffsetY
-    rts
+    ;AY hold VRAM target (HB/LB order)
+    jmp copyLineToVram
 
-.readVisibleLength
-    ldy #2
-    lda (zp_vramLineOffsets),y
-    sta zp_visibleLength
-    iny
-    lda (zp_vramLineOffsets),y
-    sta zp_visibleLength+1
 
-    rts
- 
-
-.textLineNr       !text "LineNr: ",0
+.textLineNr             !text "LineNr: ",0
 .currentScreenLine      !byte 0     ; what line are we rendering currently
-.vramLineOffsetIncr !byte 0     ; 3 or 4 bytes, depending max line length 1 or 2 bytes
+.vramLineOffsetIncr     !byte 0     ; 3 or 4 bytes, depending max line length 1 or 2 bytes
+

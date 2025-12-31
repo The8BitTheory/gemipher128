@@ -3,11 +3,7 @@
 !zone uiHelper
 
 writeCurrentGopherToHeadline
-    ; clear BLOCK COPY register bit to get BLOCK WRITE:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    and #$7f
-    jsr A_to_vdc_reg_X
+    jsr setBlockFill
 
 ; set line 0 of attribute ram to inverse
     ldy #$00
@@ -22,8 +18,8 @@ writeCurrentGopherToHeadline
 
     jsr fillLine0WithSpaces
 
-    ldx #64
-    stx zp_tempX
+    ldy #76
+    sty zp_tempY
     ldy #02
     lda #00
     sta addressPos  ; this is used for cursorposition when entering a user-defined address
@@ -47,6 +43,7 @@ writeCurrentGopherToHeadline
     pla
     jsr toScreencode
     jsr printAcc
+    dec zp_tempY
 
     lda zp_pageType
     pha
@@ -54,6 +51,7 @@ writeCurrentGopherToHeadline
     pla
     jsr toScreencode
     jsr printAcc
+    dec zp_tempY
 
     lda #<tcpWriteSelector
     sta zp_memPtr
@@ -84,14 +82,14 @@ printAcc
     ldx #31
     jsr A_to_vdc_reg_X
 
+    dec zp_tempY    ; makes sure we're not printing beyond 76 characters
+    beq +
     dec zp_tempCalc
     beq +
     iny
     jmp -
 +   rts
     nop
-
-
 
 fillLine0WithSpaces
     ldy #$00
@@ -114,7 +112,6 @@ fillLine0WithSpaces
     ldy #$4f
     ldx #$00
     jmp A_to_vram_XXYY
-
 
 makeItHex
     clc
@@ -155,11 +152,7 @@ clearScreen
     and #$20
     beq -
 
-    ; clear BLOCK COPY register bit to get BLOCK WRITE:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    and #$7f
-    jsr A_to_vdc_reg_X
+    jsr setBlockFill
 
 ; fill lines 1 - 23 with space character
 ; screen-ram
@@ -175,6 +168,7 @@ clearScreen
 
 ; not clearing lines 1-23 (content area) because every line writes to the attribute ram anyways
 
+setStatusLineAttributeRam
 ; set line 24 of attribute ram to inverse
     ldy #$80
     ldx #$0f
