@@ -76,6 +76,10 @@ requestNewContent
     lda #FIRST_LINE
     sta zp_cursorLineScreen
 
+    lda zp_scrollModeCrsr
+    beq .updateDisplay
+    jsr copyTextToVram
+
 ; this shows that we can start on a later line with correct display
 ;    lda #3
 ;    sta zp_linenumber_start
@@ -206,7 +210,11 @@ getUserInput
 ++  cmp #19 ;home
     bne ++
 
-    lda zp_vramBlock
+    lda zp_scrollModeCrsr
+    beq +
+    jmp .resetDisplay
+
++   lda zp_vramBlock
     bne +
     jmp .resetDisplay
 
@@ -299,7 +307,7 @@ getUserInput
     beq +
     jmp .tryLineScrollDown
 
-+   lda zp_cursorLineScreen;jsr .calcCursorLineScreen
++   lda zp_cursorLineScreen
 
     ldy zp_linecount+1
     bne +       ; we have more content lines than what fits the screen. no need to check for lower cursor pos
@@ -335,7 +343,18 @@ getUserInput
     adc #0
     sta zp_tempCalc+1
 
+    lda zp_scrollModeCrsr
+    beq +
+    ; this is scrolling down for text files. no check for last-vram-line here
     lda zp_tempCalc+1
+    cmp zp_linecount+1
+    bcc .doLineScrollDown
+    lda zp_tempCalc
+    cmp zp_linecount
+    bcc .doLineScrollDown
+    jmp getUserInput
+
++   lda zp_tempCalc+1
     cmp zp_lastVramContentLine+1
     bcc .doLineScrollDown
     lda zp_tempCalc
@@ -437,7 +456,7 @@ getUserInput
     beq +
     jmp .tryLineScrollUp
 
-+   lda zp_cursorLineScreen ;jsr .calcCursorLineScreen
++   lda zp_cursorLineScreen
     cmp #FIRST_LINE     ; is cursor on first line on screen?
     bne +               ; no
     ;yes. try to scroll up

@@ -104,15 +104,15 @@ moveLinesUp
 ; moves lines 1-22 to 2-23. for scrolling up
 ;  we have to copy lines from bottom to top (22>23, 21>22, ...)
 moveLinesDown
-    lda vdc_lineoffsets+44
+    lda vdc_lineoffsets+42
     sta arg1
-    lda vdc_lineoffsets+45
+    lda vdc_lineoffsets+43
     sta arg1+1
 
     ; arg2=target. line 1
-    lda vdc_lineoffsets+46
+    lda vdc_lineoffsets+44
     sta arg2
-    lda vdc_lineoffsets+47
+    lda vdc_lineoffsets+45
     sta arg2+1
 
     ; arg3=count

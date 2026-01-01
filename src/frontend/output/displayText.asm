@@ -5,7 +5,7 @@
 
 ; this routine only deals with vram (not ram, etc)
 displayTextmode
-    ;jsr clearScreen
+    jsr .doTextAttributeRam
     jsr writeCurrentGopherToHeadline
     jsr setStatusLineAttributeRam
     jmp .allLinesDisplayed
@@ -108,7 +108,7 @@ displayTextmode
     jmp -
 
 .allLinesDisplayed
-    jsr .doTextAttributeRam
+
     jmp .drawPlainTextStatusline
 
 .doTextAttributeRam
@@ -321,7 +321,6 @@ scrollScreenUpOneLine
     ; block copy from screenline 1-22 to 2-23 (22>23, 21>22, ...)
     ;jsr setBlockCopy
     jsr moveLinesDown
-    jsr key
     
     ; then copy the content of the first screenline from ram to vram
     ; while this routine should only deal with VRAM, we are doing RAM pointers here.
@@ -353,7 +352,6 @@ scrollScreenUpOneLine
 scrollScreenDownOneLine
     ; block copy from screenline 1-22 to 2-23 (1>2, 2>3, ...)
     jsr moveLinesUp
-    jsr key
 
     ; then copy the content of the last screenline from ram to vram
     ; while this routine should only deal with VRAM, we are doing RAM pointers here.
@@ -361,7 +359,7 @@ scrollScreenDownOneLine
     ; vram line 23. zp_linenumber+VISIBLE_LINES start should be this
     clc
     lda zp_linenumber_start
-    adc #VISIBLE_LINES
+    adc #VISIBLE_LINES-1
     sta zp_tempCalc
     lda zp_linenumber_start+1
     adc #0
