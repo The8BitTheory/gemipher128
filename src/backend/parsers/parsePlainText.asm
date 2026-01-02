@@ -32,10 +32,12 @@ parsePlainText
 
 -   jsr readNextByte
     bcs .finishLine
+    
     cmp #$0d    ;line break?
     beq -
     cmp #$0a    ; other line break
     beq .finishLine
+
     inc zp_visibleLength
     inc .lineLength
     lda .lineLength

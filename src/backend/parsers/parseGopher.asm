@@ -38,26 +38,47 @@ parseGopher
 ; 2=host
 ; 3=port
 ; 4=end
+
+; for convenience, here the structure of a linktable entry again (10 bytes per entry)
+; - 1 byte for line type (gopher dir, text, audio, image, etc.)
+; - 2 bytes for offset to linestart+1 (start at text, not at type). relative to $1:0400
+; - 1 byte for length of visible content (78 max)
+; - 2 bytes for offset to selector
+; - 2 bytes for offset to host
+; - 2 bytes for offset to port
+
 .decideOnParseSeq
     lda .parseSeq
     bne +
     sta zp_visibleLength
-    jsr .storePointerInLinkTable
-    jmp .handleType
+    sta .nrSegments
+    ;jsr .storePointerInLinkTable    ; 
+    jmp .handleType                 ; stores type first (storeValueInLinkTable) - byte. offset 0
+                                    ; stores pointer to start of visible text next - word. offset 1 and 2
+                                    ; length is stored as value inside that routine. byte. offset 3
 
 +   cmp #1
     bne +
-    jsr .storePointerInLinkTable
+    lda zp_contentAddress
+    sta .segSelector
+    lda zp_contentAddress+1
+    sta .segSelector+1
     jmp .handleSelector
 
 +   cmp #2
     bne +
-    jsr .storePointerInLinkTable
+    lda zp_contentAddress
+    sta .segHost
+    lda zp_contentAddress+1
+    sta .segHost+1
     jmp .handleHost
 
 +   cmp #3
     bne +
-    jsr .storePointerInLinkTable
+    lda zp_contentAddress
+    sta .segPort
+    lda zp_contentAddress+1
+    sta .segPort+1
     jmp .handlePort
 
 +   rts
@@ -128,26 +149,65 @@ parseGopher
     
     
 .parsingDone
-
     rts
     nop
 
+
+; visible text is split into 78 char segments each (max 78, can be shorter)
+; each segment must have a 10 byte entry.
+; challenge: we only get host:port/selector after text is fully parsed.
+;            so when we can't write the entries for these segments immediately.
+
+; 
+; - 1 byte for line type. we have this immediately, same value for all segments
+; - 2 bytes for offset to linestart+1 (start at text, not at type). we have this immediately, written per segment
+; - 1 byte for length of visible content (78 max), available immediately, written per segment
+; - 2 bytes for offset to selector, available after parsing visible text. same value for all segments
+; - 2 bytes for offset to host, available after parsing visible text. same value for all segments
+; - 2 bytes for offset to port, available after parsing visible text. same value for all segments
+
+; keep list of linestart offsets and lengths
+; once end of line is reached, write 10 byte entries
+
+
 .handleVisible
+    ; accumulator must hold type at this point
+    sta .segType
+
+    jsr .storePointerInOffsetList
+
     lda #0
     sta .startFound
 
 -   jsr readNextByte
     bcs .parseComplete  ; reached end of content
+
     cmp #9  ; tab. end ascii output
     bne +
+
+; end of visible part reached
+    lda .lineLength
+    jsr .storeLengthInList
+
     inc .parseSeq
     lda #0
     sta .parseMode
-    lda zp_visibleLength
-    jsr .storeValueInLinkTable
+    
     jmp .decideOnParseSeq
 
-+   inc zp_visibleLength
++   inc .lineLength
+    lda .lineLength
+    cmp #78
+    beq .wrapLine
+    jmp -
+
+.wrapLine
+    jsr .storeLengthInList
+    lda #0
+    sta .lineLength
+    
+    inc .nrSegments
+    jsr .storePointerInOffsetList
     jmp -
 
 .handleTab
@@ -177,18 +237,20 @@ parseGopher
 
 .handlePort
     jsr readNextByte
-    bcs .parseComplete
-    beq .parseComplete
+    bcs .parseComplete  ; reached last byte of content
+    beq .parseComplete  ; found zero-byte
     cmp #13
     bne .handlePort
     jsr readNextByte
-    bcs .parseComplete
+    bcs .parseComplete  ; reached last byte of content
     cmp #10
     bne .handlePort
     
     ; we found a CR LF sequence. end the line
     lda #0
     sta .parseSeq
+
+    jsr .writeSegmentsToLinkPointer
 
     inc zp_linecount
     bne +
@@ -199,7 +261,44 @@ parseGopher
 .parseComplete
     lda #4
     sta .parseSeq    ;.parseSeq 4 should end parsing
+    jsr .writeSegmentsToLinkPointer
     jmp .decideOnParseSeq
+
+.writeSegmentsToLinkPointer
+    lda .segType
+    jsr .storeValueInLinkTable
+
+    lda .nrSegments
+    asl
+    tax
+    lda .offsetList,x
+    jsr writeToLinkTable
+    lda .offsetList+1,x
+    jsr writeToLinkTable
+
+    ldx .nrSegments
+    lda .lengthList,x
+    jsr .storeValueInLinkTable
+
+    lda .segSelector
+    jsr writeToLinkTable
+    lda .segSelector+1
+    jsr writeToLinkTable
+
+    lda .segHost
+    jsr writeToLinkTable
+    lda .segHost+1
+    jsr writeToLinkTable
+
+    lda .segPort
+    jsr writeToLinkTable
+    lda .segPort+1
+    jsr writeToLinkTable
+
+    dec .nrSegments
+    bpl .writeSegmentsToLinkPointer    
+
+    rts
 
 .storeValueInLinkTable
     ldy #0
@@ -212,9 +311,23 @@ parseGopher
     jsr writeToLinkTable
     lda zp_contentAddress+1
     jsr writeToLinkTable
+    rts
 
-+   rts
+.storePointerInOffsetList
+    asl .nrSegments
+    ldx .nrSegments
+    lda zp_contentAddress
+    sta .offsetList,x
+    lda zp_contentAddress+1
+    sta .offsetList+1,x
+    lsr .nrSegments
+    rts
 
+.storeLengthInList
+    ldx .nrSegments
+    lda .lineLength
+    sta .lengthList,x
+    rts
 
 .stashToLinkTable
     ldx zp_contentBank
@@ -226,6 +339,17 @@ parseGopher
 
 +   rts
 
-.parseMode       !byte 0 ; $69 for i, $31 for 1, etc
-.parseSeq        !byte 0 ; 0=type specific parsing, 1=selector, 2=hostname, 3=port
-.startFound      !byte 0    ; positive=start found.
+.parseMode      !byte 0 ; $69 for i, $31 for 1, etc
+.parseSeq       !byte 0 ; 0=type specific parsing, 1=selector, 2=hostname, 3=port
+.startFound     !byte 0    ; positive=start found.
+.lineLength     !byte 0    ; used to keep track of 80 chars max per line
+
+; keeps track of how many segments need to be written
+.nrSegments     !byte 0     ; 4 segments max (78 chars max each)
+.offsetList     !fill 8     ; 4 offsets max, 2 bytes each
+.lengthList     !fill 4     ; 4 lenghts max, 1 byte each
+
+.segType        !byte 0     ; type to write for each segment
+.segHost        !word 0     
+.segPort        !word 0     
+.segSelector    !word 0     

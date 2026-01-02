@@ -502,8 +502,6 @@ removeCursor
     lda (zp_vramLineOffsets),y
     sta zp_visibleLength
 
-    lda #0  ; gopher has max 256 chars per line. HB is always zero
-    sta zp_visibleLength+1
 
 ; go to the right ram-content offset (increments of 10 or 3, depending on file type)
 ;    jsr .resetLinkTablePosition
@@ -710,9 +708,6 @@ removeCursor
     lda (zp_vramLineOffsets),y
     sta zp_visibleLength
 
-    lda #0  ; gopher
-    sta zp_visibleLength+1
-
     rts
 
 ; this does what's needed to get currentTypePtr filled correctly
@@ -764,5 +759,5 @@ removeCursor
                                     ; table offset 0 is the line below the header-line
 
 .currentScreenLine      !byte 0     ; what screenline are we rendering currently
-.vramLineOffsetIncr !byte 0     ; 3 or 4 bytes, depending max line length 1 or 2 bytes
+.vramLineOffsetIncr     !byte 3     ; 3 bytes
 ;.currentContentLine     !byte 0     ; what contentline are we handling currently (for writing attribute-ram per line)

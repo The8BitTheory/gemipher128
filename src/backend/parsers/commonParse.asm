@@ -26,51 +26,28 @@ clearLinkTable
 
     ldy #0
 -   lda #0
-    ;ldx zp_contentBank
-    ;jsr c_stash
     sta (zp_linkTablePosition),y
     
     inc zp_linkTablePosition+1
     sta (zp_linkTablePosition),y
-    ;lda #0
-    ;ldx zp_contentBank
-    ;jsr c_stash
     
     inc zp_linkTablePosition+1
     sta (zp_linkTablePosition),y
-    ;lda #0
-    ;ldx zp_contentBank
-    ;jsr c_stash
     
     inc zp_linkTablePosition+1
     sta (zp_linkTablePosition),y
-    ;lda #0
-    ;ldx zp_contentBank
-    ;jsr c_stash
     
     inc zp_linkTablePosition+1
     sta (zp_linkTablePosition),y
-    ;lda #0
-    ;ldx zp_contentBank
-    ;jsr c_stash
     
     inc zp_linkTablePosition+1
     sta (zp_linkTablePosition),y
-    ;lda #0
-    ;ldx zp_contentBank
-    ;jsr c_stash
     
     inc zp_linkTablePosition+1
     sta (zp_linkTablePosition),y
-    ;lda #0
-    ;ldx zp_contentBank
-    ;jsr c_stash
     
     inc zp_linkTablePosition+1
     sta (zp_linkTablePosition),y
-    ;lda #0
-    ;ldx zp_contentBank
-    ;jsr c_stash
     
     jsr initLinkTableAddress
     iny
@@ -99,9 +76,7 @@ vramBlockIndexIntoX
     rts
 
 writeToLinkTable
-;    ldx zp_contentBank
     ; y must be set accordingly at this point
-;    jsr c_stash
     sta (zp_linkTablePosition),y
     inc zp_linkTablePosition
     bne +

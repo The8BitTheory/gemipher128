@@ -388,5 +388,5 @@ scrollScreenDownOneLine
 
 .textLineNr             !text "LineNr: ",0
 .currentScreenLine      !byte 0     ; what line are we rendering currently
-.vramLineOffsetIncr     !byte 0     ; 3 or 4 bytes, depending max line length 1 or 2 bytes
+
 

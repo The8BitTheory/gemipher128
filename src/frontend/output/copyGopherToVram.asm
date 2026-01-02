@@ -84,6 +84,10 @@ continueCopyGopherToVram     ; when we left off before due to vram full
 .copyGLineToVram
     ldy #0
     sty .lineLength
+
+    lda (zp_linkTablePosition),y
+    sta zp_currentTypePtr
+    iny
     
     lda (zp_linkTablePosition),y
     sta zp_currentLinkTablePtr  ;replace with zp_memptr?
@@ -92,10 +96,9 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     lda (zp_linkTablePosition),y
     sta zp_currentLinkTablePtr+1    ;replace with zp_memptr?
     iny
+
     lda (zp_linkTablePosition),y
     sta zp_visibleLength
-    lda #0
-    sta zp_visibleLength+1
 
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp
@@ -105,7 +108,6 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     ldy #0
 
 -   ldx zp_contentBank
-    iny
     jsr c_fetch
     jsr checkAsciiUtf8
 
@@ -142,9 +144,6 @@ continueCopyGopherToVram     ; when we left off before due to vram full
 .rtvDone
     lda .lineLength
     ldy #2
-    sta (zp_vramLineOffsets),y
-    iny
-    lda #0
     sta (zp_vramLineOffsets),y
 
     clc
@@ -213,7 +212,7 @@ incLineNumber
 +   rts
 
 
-.vramLeft       !word 0
+.vramLeft           !word 0
 .linesLeftToCopy    !word 0     ; related to copying from ram to vram. if this is > 0, we have more data to show
-.vramLineOffsetIncr !byte 0     ; 3 or 4 bytes, depending max line length 1 or 2 bytes
+.vramLineOffsetIncr !byte 3     ; 3 bytes
 .lineLength         !byte 0     ; keep track of changes due to utf-8
