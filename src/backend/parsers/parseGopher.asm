@@ -172,6 +172,9 @@ parseGopher
 
 .handleVisible
     ; accumulator must hold type at this point
+    pha
+    jsr .resetSegmentData
+    pla
     sta .segType
 
     jsr .storePointerInOffsetList
@@ -186,7 +189,7 @@ parseGopher
     bne +
 
 ; end of visible part reached
-    lda .lineLength
+    lda .lineLengthG
     jsr .storeLengthInList
 
     inc .parseSeq
@@ -195,8 +198,8 @@ parseGopher
     
     jmp .decideOnParseSeq
 
-+   inc .lineLength
-    lda .lineLength
++   inc .lineLengthG
+    lda .lineLengthG
     cmp #78
     beq .wrapLine
     jmp -
@@ -204,7 +207,7 @@ parseGopher
 .wrapLine
     jsr .storeLengthInList
     lda #0
-    sta .lineLength
+    sta .lineLengthG
     
     inc .nrSegments
     jsr .storePointerInOffsetList
@@ -325,7 +328,7 @@ parseGopher
 
 .storeLengthInList
     ldx .nrSegments
-    lda .lineLength
+    lda .lineLengthG
     sta .lengthList,x
     rts
 
@@ -339,10 +342,20 @@ parseGopher
 
 +   rts
 
+.resetSegmentData
+    lda #0
+    ldy #.segmentDataLength
+    
+-   sta .lineLengthG,y
+    dey
+    bpl -
+
+    rts
+
 .parseMode      !byte 0 ; $69 for i, $31 for 1, etc
 .parseSeq       !byte 0 ; 0=type specific parsing, 1=selector, 2=hostname, 3=port
 .startFound     !byte 0    ; positive=start found.
-.lineLength     !byte 0    ; used to keep track of 80 chars max per line
+.lineLengthG    !byte 0    ; used to keep track of 80 chars max per line
 
 ; keeps track of how many segments need to be written
 .nrSegments     !byte 0     ; 4 segments max (78 chars max each)
@@ -353,3 +366,4 @@ parseGopher
 .segHost        !word 0     
 .segPort        !word 0     
 .segSelector    !word 0     
+.segmentDataLength = *-.lineLengthG

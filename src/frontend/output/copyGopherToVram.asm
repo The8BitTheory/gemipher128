@@ -86,7 +86,7 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     sty .lineLength
 
     lda (zp_linkTablePosition),y
-    sta zp_currentTypePtr
+    sta zp_currentType
     iny
     
     lda (zp_linkTablePosition),y
@@ -106,10 +106,14 @@ continueCopyGopherToVram     ; when we left off before due to vram full
 
 ; copy RAM to VRAM
     ldy #0
+    sty zp_tempY
 
 -   ldx zp_contentBank
+    ldy zp_tempY
     jsr c_fetch
     jsr checkAsciiUtf8
+
+    inc zp_tempY
 
     cmp #9
     beq .rtvDone

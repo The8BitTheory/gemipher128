@@ -758,8 +758,8 @@ txtGeoRam   !text "GeoRAM: ",0
 ; memory map
 ; bank 0 - $1c01 programcode
 ; bank 0 - after programmcode: linktable. each line of gopher content is represented here with a 10 byte long entry.
-; - 2 bytes for offset to linestart+1 (start at text, not at type). relative to $1:0400
 ; - 1 byte for line type (gopher dir, text, audio, image, etc.)
+; - 2 bytes for offset to linestart+1 (start at text, not at type). relative to $1:0400
 ; - 1 byte for length of visible content (78 max)
 ; - 2 bytes for offset to selector
 ; - 2 bytes for offset to host

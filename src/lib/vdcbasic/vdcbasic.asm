@@ -791,6 +791,8 @@ vcc ; copy charset from RAM to VRAM
         ; check whether done with this char
         dec arg3 + 1
         bne --
+        lda #0
+        +vdc_sta
       ; all characters done?
       dec arg3
       bne ---

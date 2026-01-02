@@ -31,7 +31,7 @@ displayGopher
     sta zp_vram_screenram+1
 
 ; setup the position in vramLineOffset
-    jsr .gotoLineNumber
+    jsr .gotoGLineNumber
 
     ; vram read address is taken from link-table
     ; when not starting display at the first line, we're adding up visible-lengths until we're there
@@ -180,18 +180,7 @@ drawCursor
     
     lda (zp_linkTablePosition),y
     sta zp_currentPortPtr+1
-    iny
 
-    lda #zp_currentTypePtr
-    sta c_fetch_zp
-    ldy #0
-    ldx zp_contentBank
-    jsr c_fetch
-    sta zp_currentType
-
-;    lda #$07
-;    ldy #$80
-;    jsr AY_to_vdc_regs_18_19
     
     ; this is the counter to print spaces for the rest of the line
     ldy #38
@@ -468,7 +457,7 @@ removeCursor
     ldy zp_cursorPosScreen
     jmp A_to_vram_XXYY
 
-.gotoLineNumber
+.gotoGLineNumber
 ; go to the right vram offset
     
     sec
@@ -501,12 +490,6 @@ removeCursor
     iny
     lda (zp_vramLineOffsets),y
     sta zp_visibleLength
-
-
-; go to the right ram-content offset (increments of 10 or 3, depending on file type)
-;    jsr .resetLinkTablePosition
-;    rts
-;    nop
 
 ; this sets the zp_linkTablePosition value to the first byte of the topmost line on screen
 .resetLinkTablePosition
@@ -651,11 +634,6 @@ removeCursor
 
     jsr .loadLineType
 
-    lda #zp_currentTypePtr
-    sta c_fetch_zp
-    ldy #0
-    ldx zp_contentBank
-    jsr c_fetch
     rts
 
 
@@ -737,12 +715,12 @@ removeCursor
     ; load line type
     ldy #0
     lda (zp_linkTablePosition),y
-    sta zp_currentTypePtr
-    iny
+    sta zp_currentType
     
-    lda (zp_linkTablePosition),y
-    sta zp_currentTypePtr+1
-    iny
+    iny ; at offsetposition 1
+    iny ; at offsetposition 2
+    iny ; at length
+
     rts
 
 .textLineNr       !text "LineNr: ",0
