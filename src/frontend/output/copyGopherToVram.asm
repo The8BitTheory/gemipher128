@@ -161,15 +161,6 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     rts
 
 
-.cincVramLineOffsetPosition
-    clc
-    lda zp_vramLineOffsets
-    adc .vramLineOffsetIncr
-    sta zp_vramLineOffsets
-    bcc +
-    inc zp_vramLineOffsets+1
-+   rts
-
 writeVramLineOffset
     ldy #0
     lda zp_vram_content_addr

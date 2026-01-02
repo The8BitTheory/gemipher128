@@ -366,4 +366,4 @@ parseGopher
 .segHost        !word 0     
 .segPort        !word 0     
 .segSelector    !word 0     
-.segmentDataLength = *-.lineLengthG
+.segmentDataLength = *-.lineLengthG-1
