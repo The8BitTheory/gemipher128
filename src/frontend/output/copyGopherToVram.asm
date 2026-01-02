@@ -79,14 +79,11 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     dec .linesLeftToCopy+1
     bpl -
 
-    rts
++   rts
 
 .copyGLineToVram
     ldy #0
-
-    ; read start position of current line from link-table
-    lda #zp_linkTablePosition
-    sta c_fetch_zp
+    sty .lineLength
     
     lda (zp_linkTablePosition),y
     sta zp_currentLinkTablePtr  ;replace with zp_memptr?
@@ -100,15 +97,6 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     lda #0
     sta zp_visibleLength+1
 
-    lda zp_visibleLength
-    ldy #2
-    sta (zp_vramLineOffsets),y
-    iny
-    lda zp_visibleLength+1
-    sta (zp_vramLineOffsets),y
-
-    jsr .incVramLineOffsetPosition
-
     lda #zp_currentLinkTablePtr
     sta c_fetch_zp
     
@@ -119,6 +107,7 @@ continueCopyGopherToVram     ; when we left off before due to vram full
 -   ldx zp_contentBank
     iny
     jsr c_fetch
+    jsr checkAsciiUtf8
 
     cmp #9
     beq .rtvDone
@@ -127,6 +116,7 @@ continueCopyGopherToVram     ; when we left off before due to vram full
 
 ; write content byte to VRAM
     +vdc_sta        ; write byte to vram
+    inc .lineLength
     sec
     lda .vramLeft
     sbc #1
@@ -150,20 +140,25 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     bne -
 
 .rtvDone
-    clc
-    rts
-
-.writeVisibleLengthToVram
-    lda zp_visibleLength
+    lda .lineLength
     ldy #2
     sta (zp_vramLineOffsets),y
     iny
-    lda zp_visibleLength+1
+    lda #0
     sta (zp_vramLineOffsets),y
+
+    clc
+    lda zp_vramLineOffsets
+    adc .vramLineOffsetIncr
+    sta zp_vramLineOffsets
+    bcc +
+    inc zp_vramLineOffsets+1
+
++   clc
     rts
 
 
-.incVramLineOffsetPosition
+.cincVramLineOffsetPosition
     clc
     lda zp_vramLineOffsets
     adc .vramLineOffsetIncr
@@ -221,3 +216,4 @@ incLineNumber
 .vramLeft       !word 0
 .linesLeftToCopy    !word 0     ; related to copying from ram to vram. if this is > 0, we have more data to show
 .vramLineOffsetIncr !byte 0     ; 3 or 4 bytes, depending max line length 1 or 2 bytes
+.lineLength         !byte 0     ; keep track of changes due to utf-8

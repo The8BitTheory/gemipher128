@@ -25,19 +25,20 @@ initVdc
     jsr loadCharsetFromDisk
 
     ; arguments: ram-source, vram-target, nr of characters to copy
-    ; copy from 16384 ($4000) to $3000 in fram, copy 96 bytes
+    ; copy from 16384 ($4000) to $3000 in fram, copy 256 bytes
     lda #$00
     sta arg1
     sta arg2
-    sta arg3+1
     lda #$b0
     sta arg1+1
 
     lda #$30
     sta arg2+1
 
-    lda #98
+    lda #$00
     sta arg3
+    lda #$01
+    sta arg3+1
 
     jsr doSlow
     jsr vcc

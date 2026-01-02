@@ -114,6 +114,7 @@ readNextByte
     ldx zp_contentBank
     ldy #0
     jsr c_fetch         ; read from bank 1
+    
     sta zp_tempA
     pha
 

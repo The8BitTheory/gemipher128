@@ -114,6 +114,7 @@ displayGopher
     jmp -
 
 .allLinesDisplayed
+    ;jsr key
     jsr .doGopherAttributeRam
 
 drawCursor

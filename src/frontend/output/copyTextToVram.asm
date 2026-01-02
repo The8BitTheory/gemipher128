@@ -106,6 +106,7 @@ continueCopyTextToVram     ; when we left off before due to vram full
     ldy #0
 -   ldx zp_contentBank
     jsr c_fetch     ; read content byte from RAM
+    jsr checkAsciiUtf8
 
     cmp #$0d
     beq .rtvDone
@@ -116,8 +117,8 @@ continueCopyTextToVram     ; when we left off before due to vram full
     jsr toScreencode
 
 ; write content byte to VRAM
-    ;+vdc_sta        ; write byte to vram
-    sta vdc_data
+    +vdc_sta        ; write byte to vram
+    ;sta vdc_data
     sec
     lda .vramLeft
     sbc #1
@@ -141,8 +142,8 @@ continueCopyTextToVram     ; when we left off before due to vram full
     beq ++   ; if no chars left, leave
 
 -   lda #' '    ; space character
-    ;+vdc_sta
-    sta vdc_data
+    +vdc_sta
+    ;sta vdc_data
     sec
     lda .vramLeft
     sbc #1

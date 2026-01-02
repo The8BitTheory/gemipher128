@@ -247,11 +247,11 @@ getUserInput
     bne +
     jmp activateAddressEnterMode
 
-;+   cmp #'D' ; download
-;    bne +
-;    jsr saveContentToDisk
++   cmp #'D' ; download
+    bne +
+    jsr saveContentToDisk
 ;    ;jsr downloadWic2disk
-;    jmp getUserInput
+    jmp getUserInput
 
 +   cmp #'L' ; load from disk
     bne +
@@ -744,6 +744,7 @@ k_indsta
 !src "src/backend/parsers/commonParse.asm"
 !src "src/frontend/output/copyTextToVram.asm"
 !src "src/frontend/output/copyGopherToVram.asm"
+!src "src/frontend/output/copyCommon.asm"
 !src "src/frontend/output/uihelper.asm"
 !src "src/frontend/output/displayText.asm"
 !src "src/frontend/output/displayGopher.asm"

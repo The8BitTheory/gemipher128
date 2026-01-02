@@ -136,7 +136,7 @@ parseGopher
     lda #0
     sta .startFound
 
-    jsr readNextByte
+-   jsr readNextByte
     bcs .parseComplete
     cmp #9  ; tab. end ascii output
     bne +
@@ -148,7 +148,7 @@ parseGopher
     jmp .decideOnParseSeq
 
 +   inc zp_visibleLength
-    jmp .handleVisible
+    jmp -
 
 .handleTab
     inc .parseSeq
