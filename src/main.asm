@@ -757,16 +757,20 @@ txtGeoRam   !text "GeoRAM: ",0
 
 ; memory map
 ; bank 0 - $1c01 programcode
-; bank 0 - $c000 history stack (usually screen editor and monitor)
-
-; bank 1
-; $0400 content from gopher server. unmodified
-; $7f00 linktable. each line of gopher content is represented here with a 9 byte long entry.
-; - 2 bytes for offset to linestart. relative to $0400
+; bank 0 - after programmcode: linktable. each line of gopher content is represented here with a 9 byte long entry.
+; - 2 bytes for offset to linestart+1 (start at text, not at type). relative to $1:0400
+; - 1 byte for line type (gopher dir, text, audio, image, etc.)
 ; - 1 byte for length of visible content
 ; - 2 bytes for offset to selector
 ; - 2 bytes for offset to host
 ; - 2 bytes for offset to port
+; multiline content of a gopher line would link to text-start for each screen line
+;  selector, host, port would link to the same content position for each screen line (max 3 full lines and then some)
+
+; bank 0 - $c000 history stack (usually screen editor and monitor)
+
+; bank 1
+; $0400 content from gopher server. unmodified
 
 ; vdc-ram
 ; $0000 screen ram

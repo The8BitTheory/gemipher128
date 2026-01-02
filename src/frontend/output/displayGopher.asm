@@ -114,7 +114,6 @@ displayGopher
     jmp -
 
 .allLinesDisplayed
-    ;jsr key
     jsr .doGopherAttributeRam
 
 drawCursor
@@ -151,41 +150,11 @@ drawCursor
 
     ; prepare values we want to show (type, selector, host, port)
     ; first, get content line from current screenline
-    clc
     lda zp_cursorLineScreen
-    adc zp_cursorLineScreen
+    asl
     tax
 
-    lda .screenToContentLine,x
-    ;lda zp_cursorLineContent
-    sta zp_tempCalc
-    lda .screenToContentLine+1,x
-    ;lda zp_cursorLineContent+1
-    sta zp_tempCalc+1
-    lda zp_linkTableIncr
-    sta zp_tempX
-    jsr multiply
-
-    clc
-    adc #<LINKTABLE_ADDRESS
-    sta zp_linkTablePosition
-
-    tya
-    adc #>LINKTABLE_ADDRESS
-    sta zp_linkTablePosition+1
-
-    lda #zp_linkTablePosition
-    sta c_fetch_zp
-
-    ; load line type
-    ldy #0
-    lda (zp_linkTablePosition),y
-    sta zp_currentTypePtr
-    iny
-    
-    lda (zp_linkTablePosition),y
-    sta zp_currentTypePtr+1
-    iny
+    jsr .loadLineType
 
     iny ;skip currentLength
 
@@ -292,42 +261,18 @@ drawCursor
     rts
     
 
-.doTextAttributeRam
-    ; clear BLOCK COPY register bit to get BLOCK FILL:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    and #$7f
-    jsr A_to_vdc_reg_X
-
-; set lines 1 - 23 to charset1, text black data
-; screen-ram
-    lda #%10000000
-    ldy #$50
-    ldx #$08
-    jsr A_to_vram_XXYY
-
-    ;set count
-    lda #$2f    ;lowbyte
-    ldy #$07    ;highbyte
-    jmp vdc_do_YYAA_cycles
-
-
 .doGopherAttributeRam
 ; write to attribute ram
-;  we don't write attribute ram with content lines, as we'd lose the auto-increment feature of the vdc chip
-;  also, writing content lines might start over if longer lines are involved.
-;  by writing attributes here, we are much more efficient
+; this iterates over all 23 visible lines (1-23) and writes attribute ram for each of them.
+; so, lines 0 and 24 are not affected
 
-+   ldx #0
-    stx zp_tempX    ; we use zp_tempY to count the current displayline
+; we don't write attribute ram when writing content lines, as we'd lose the auto-increment feature of the vdc chip
+
+; for reading the linetype, we take linkTablePosition via the screenToContentLine LUT
+    ldx #1
+    stx .currentScreenLine
    
-    jsr .resetLinkTablePosition
-
-    ; clear BLOCK COPY register bit to get BLOCK WRITE:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    and #$7f
-    jsr A_to_vdc_reg_X
+    jsr setBlockFill
 
 -   jsr .readLineType
     cmp #$69 ; info line
@@ -339,10 +284,8 @@ drawCursor
 
 
 .incAddresses
-    jsr .incLinkTableReadPosition
-
-    inc zp_tempX
-    ldx zp_tempX
+    inc .currentScreenLine
+    ldx .currentScreenLine
     cpx zp_lastLine
     bne -   ; yes, this jumps back to .readLineType in the previous routine
 
@@ -643,10 +586,10 @@ removeCursor
 
     rts
 
+; this is called for lines 1-24 (not sure if 23 wouldn't be sufficient)
 .writeScreenToContentLine
-    clc
     lda .currentScreenLine
-    adc .currentScreenLine
+    asl
     tax
 
     clc
@@ -704,31 +647,26 @@ removeCursor
     rts
 
 .readLineType
-    lda #zp_linkTablePosition
+    lda .currentScreenLine
+    asl
+    tax
+
+    jsr .loadLineType
+
+    lda #zp_currentTypePtr
     sta c_fetch_zp
-
-    ; we need the offset of the line type in the linktable first
     ldy #0
-    lda (zp_linkTablePosition),y
-    sta zp_memPtr
-    iny
-    lda (zp_linkTablePosition),y
-    sta zp_memPtr+1
-    iny
-
-    lda #zp_memPtr
-    sta c_fetch_zp
-
-; load line type from the offset we just calculated
-; the actual data is stored in bank 1
-    ldy #0
-    jsr .fetchFromContentBankOffsetY
+    ldx zp_contentBank
+    jsr c_fetch
     rts
 
+
 .setAttributeRamToScreenLine
-    clc
-    lda zp_tempX
-    adc zp_tempX
+    ; the index for cursor offsets is starting with the second line on screen. so we subtract 1 from currentscreenline
+    sec
+    lda .currentScreenLine
+    sbc #1
+    asl
     tax
 
     lda .cursorOffsets,x
@@ -777,6 +715,40 @@ removeCursor
 
     rts
 
+; this does what's needed to get currentTypePtr filled correctly
+; we can continue reading other line attributes after this, if needed
+.loadLineType
+    lda .screenToContentLine,x
+    ;lda zp_cursorLineContent
+    sta zp_tempCalc
+    lda .screenToContentLine+1,x
+    ;lda zp_cursorLineContent+1
+    sta zp_tempCalc+1
+    lda zp_linkTableIncr
+    sta zp_tempX
+    jsr multiply
+
+    clc
+    adc #<LINKTABLE_ADDRESS
+    sta zp_linkTablePosition
+
+    tya
+    adc #>LINKTABLE_ADDRESS
+    sta zp_linkTablePosition+1
+
+    lda #zp_linkTablePosition
+    sta c_fetch_zp
+
+    ; load line type
+    ldy #0
+    lda (zp_linkTablePosition),y
+    sta zp_currentTypePtr
+    iny
+    
+    lda (zp_linkTablePosition),y
+    sta zp_currentTypePtr+1
+    iny
+    rts
 
 .textLineNr       !text "LineNr: ",0
 
@@ -788,5 +760,9 @@ removeCursor
                 !fill 50
 
 .screenToContentLine    !fill 52    ; contains offset to contentline per screenline. needed to handle multi-line content
-.currentScreenLine      !byte 0     ; what line are we rendering currently
+                                    ; contentline-offset can then be used to read linetype, etc.
+                                    ; table offset 0 is the line below the header-line
+
+.currentScreenLine      !byte 0     ; what screenline are we rendering currently
 .vramLineOffsetIncr !byte 0     ; 3 or 4 bytes, depending max line length 1 or 2 bytes
+;.currentContentLine     !byte 0     ; what contentline are we handling currently (for writing attribute-ram per line)

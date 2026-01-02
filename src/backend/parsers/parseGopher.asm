@@ -137,7 +137,7 @@ parseGopher
     sta .startFound
 
 -   jsr readNextByte
-    bcs .parseComplete
+    bcs .parseComplete  ; reached end of content
     cmp #9  ; tab. end ascii output
     bne +
     inc .parseSeq
