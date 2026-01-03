@@ -4,14 +4,13 @@
 
 checkAsciiUtf8
     ; check for 0xxxxxxx    -> ascii is most common. check with minimal speed impact.
-    ;bit .isAscii    ; if not set (set=negative, not set=positive), then ascii
+    lda zp_tempA
     bmi +   ;set. check for utf8 sequences
     jmp .exitShow     ; not set. return unchanged
 
     ; valid utf-8 sequence of any length?
     ; save acc, we'll have to continue working with AND, which will overwrite the acc value
-+   sta zp_tempA
-    and #%11100000
++   and #%11100000
     cmp #%11000000
     beq +
     jmp .check3ByteSeqs ; bit 5 set, must be 3 or 4 byte sequence
@@ -182,9 +181,9 @@ checkAsciiUtf8
 
 .readNextSeqByte
     ldx zp_contentBank
-    inc zp_tempY
     ldy zp_tempY
     jsr c_fetch
+    inc zp_tempY
     dec zp_visibleLength
     rts
 

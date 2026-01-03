@@ -25,8 +25,6 @@ copyTextToVram
     
     jsr initLinkTableAddress
 
-continueCopyTextToVram     ; when we left off before due to vram full
-
     ; lines left to copy needs to be set accordingly
     sec
     lda zp_linecount
@@ -102,23 +100,26 @@ continueCopyTextToVram     ; when we left off before due to vram full
 ; RAM-lines with variable line length (but: max. 80) become VRAM-lines with fixed line length of 80
     ldx #80
     stx zp_tempX    ; lines can be 80 chars max at this point, parsing made sure of this
-
     ldy #0
--   ldx zp_contentBank
+    sty zp_tempY    ; read index for the current screenline
+
+-   ldy zp_tempY
+    ldx zp_contentBank
     jsr c_fetch     ; read content byte from RAM
+    sta zp_tempA
+    inc zp_tempY
     jsr checkAsciiUtf8
 
     cmp #$0d
     beq .rtvDone
     cmp #$0a
     beq .rtvDone
-    iny
+    ;iny
     dec zp_tempX
     jsr toScreencode
 
 ; write content byte to VRAM
     +vdc_sta        ; write byte to vram
-    ;sta vdc_data
     sec
     lda .vramLeft
     sbc #1
@@ -143,7 +144,6 @@ continueCopyTextToVram     ; when we left off before due to vram full
 
 -   lda #' '    ; space character
     +vdc_sta
-    ;sta vdc_data
     sec
     lda .vramLeft
     sbc #1
@@ -168,7 +168,7 @@ continueCopyTextToVram     ; when we left off before due to vram full
 ++  clc
     rts
 
-copyLineToVram
+copyTLineToVram
     ; vram target
     jsr AY_to_vdc_regs_18_19
     ldx #31 ; VRAM register

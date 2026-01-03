@@ -3,132 +3,25 @@
 ; zp_linkTablePosition will always point to the beginning of the current line
 ; this way we should be able to work with a single byte for offset (just y)
 displayGopher
-    lda #3
-    sta .vramLineOffsetIncr
-
     ldy #LAST_LINE
     sty zp_lastLine
 
-; bank 1
-    ldx #CONTENT_BANK
-    lda mmuBankConfig,X
-    sta zp_contentBank
-    
-; pointer to beginning of link table
-    jsr initLinkTableAddress
-
-; read length of current line from link-table
-    lda #zp_linkTablePosition
-    sta c_fetch_zp
-
-; line start for gopher files
-    lda #79
-    sta zp_lineLength
-    lda #81
-    sta zp_vram_screenram
-
-    lda #0
-    sta zp_vram_screenram+1
-
-; setup the position in vramLineOffset
-    jsr .gotoGLineNumber
-
-    ; vram read address is taken from link-table
-    ; when not starting display at the first line, we're adding up visible-lengths until we're there
-    ; with each line displayed, the read address is just increased by the amount of the previous line.
-    ; the write address starts at zero and increments 80 bytes for each line
-
-    ; block copy source address is automatically increased, so we only need to set it once for 25 lines
-    ; each copy operation only requires setting target address (increments of 80, unless line-length is longer)
-    ;  and nr of characters to copy
-
-; if we have two bytes line-count, visible lines are for sure #VISIBLE_LINES
-    lda zp_linecount+1
-    beq +
-    lda #VISIBLE_LINES
-    sta zp_tempX    ; nr of visible lines on screen. is decremented as lines are printed
-    jmp ++
-
-; only one byte line-count, check if we have less lines than what fits the screen
-+   ldx #VISIBLE_LINES
-    cpx zp_linecount
-    bcc +
-    ldx zp_linecount
-+   stx zp_tempX    ; nr of visible lines on screen. is decremented as lines are printed
-
-; clear screen sets register bit to block fill and vram address (18/19 to $0000)
-; this also waits for the next vblank period
-++  jsr clearScreen
     jsr writeCurrentGopherToHeadline
+    jsr setStatusLineAttributeRam
 
-;setup block copy
-; set register bit for BLOCK COPY:
-    ldx #24
-    jsr vdc_reg_X_to_A
-    ora #128
-    jsr A_to_vdc_reg_X
-
-; target address
-    jsr .writeVramAddress
-
-; block copy source (HB/LB order)
-    ldy zp_vram_content_addr
-    lda zp_vram_content_addr+1
-    ldx #32
-    jsr AY_to_vdc_regs_Xp1
-
-    ldy #0
-    sty zp_tempY    ; we use zp_tempY to count the current contentline.
-    ldy #FIRST_LINE
-    sty .currentScreenLine      ; initialize currentScreenLine to topmost visible line
-    jsr .writeScreenToContentLine
-
-;-----------------------------------------
-; here, printing the line is triggered 
-;-----------------------------------------
-; displaying a screen works like this:
-; text is stored in $1000 onwards. 
-; visible screen is at $0000
-; block copy takes text from $1000 (or higher, for increasing lines) and copies to screen-ram
-; for each line, screen-ram is increased by 80
-; the block-copy source increases automatically with each copy operation
-
-; renderloop for all visible content lines on screen
--   jsr .displayGopherLine
-
-    jsr .incVramLineOffsetPosition  ; where we read line information for block copy
-    jsr .incOutputLineNumber        ; where we write lines to
-    inc zp_tempY    ; content line increasing
-    dec zp_tempX    ; content lines left to print
-    inc .currentScreenLine
-    jsr .writeScreenToContentLine
-
-    lda zp_scrollModeCrsr
-    bne +
-    jsr .calculateCursorOffset
-
-; is the screen full?
-+   ldx .currentScreenLine
-    cpx #VISIBLE_LINES+1
-    beq .allLinesDisplayed
-    jmp -
-
-.allLinesDisplayed
     jsr .doGopherAttributeRam
-
-drawCursor
-    ldx zp_cursorLineScreen
-    clc
-    lda #0
-    sta zp_cursorPosScreen+1
     
--   adc #80
+drawCursor
+    sec
+    lda zp_cursorLineScreen
+    sbc #1
+    asl
+    tax
+    
+    lda vdc_lineoffsets,x
     sta zp_cursorPosScreen
-    bcc +
-    inc zp_cursorPosScreen+1
-    clc
-+   dex
-    bne -
+    lda vdc_lineoffsets+1,x
+    sta zp_cursorPosScreen+1
 
     lda #62 ; >
     ldx zp_cursorPosScreen+1
@@ -150,10 +43,10 @@ drawCursor
 
     ; prepare values we want to show (type, selector, host, port)
     ; first, get content line from current screenline
-    lda zp_cursorLineScreen
-    asl
-    tax
-
+    lda zp_cursorLineContent    
+    sta zp_tempCalc
+    lda zp_cursorLineContent+1
+    sta zp_tempCalc+1
     jsr .loadLineType
 
     iny ;skip currentLength
@@ -257,13 +150,21 @@ drawCursor
 
 ; we don't write attribute ram when writing content lines, as we'd lose the auto-increment feature of the vdc chip
 
-; for reading the linetype, we take linkTablePosition via the screenToContentLine LUT
-    ldx #1
+    ldx #0
     stx .currentScreenLine
    
     jsr setBlockFill
 
--   jsr .readLineType
+-   clc
+    lda zp_linenumber_start
+    adc .currentScreenLine
+    sta zp_tempCalc
+    lda zp_linenumber_start+1
+    adc #0
+    sta zp_tempCalc+1
+
+    jsr .loadLineType
+
     cmp #$69 ; info line
     bne +
     jsr .makeLineBlack
@@ -273,12 +174,13 @@ drawCursor
 
 
 .incAddresses
-    inc .currentScreenLine
     ldx .currentScreenLine
-    cpx #VISIBLE_LINES
-    bne -   ; yes, this jumps back to .readLineType in the previous routine
+    cpx #VISIBLE_LINES-1
+    beq +   ; yes, this jumps back to .readLineType in the previous routine
+    inc .currentScreenLine
+    jmp -
 
-    rts
++   rts
 
 
 .writeHexValue
@@ -420,20 +322,6 @@ drawCursor
     ldy #$99
     jsr .writeHexValue
 
-    lda zp_vramLineOffsets+1
-    ldy #$9c
-    jsr .writeHexValue
-    lda zp_vramLineOffsets
-    ldy #$9e
-    jsr .writeHexValue
-
-    lda zp_vram_content_addr+1
-    ldy #$a1
-    jsr .writeHexValue
-    lda zp_vram_content_addr
-    ldy #$a3
-    jsr .writeHexValue
-
     lda zp_contentAddress+1
     ldy #$a6
     jsr .writeHexValue
@@ -567,22 +455,6 @@ removeCursor
 
     rts
 
-; this is called for lines 1-24 (not sure if 23 wouldn't be sufficient)
-.writeScreenToContentLine
-    lda .currentScreenLine
-    asl
-    tax
-
-    clc
-    lda zp_linenumber_start
-    adc zp_tempY
-    sta .screenToContentLine,x
-    lda zp_linenumber_start+1
-    adc #0
-    sta .screenToContentLine+1,x
-
-    rts
-
 .displayGopherLine
     ; read visible length into LB
     ldy #2
@@ -599,35 +471,18 @@ removeCursor
 .displayGopherDone
     rts
 
-.readLineType
-    lda .currentScreenLine
-    asl
-    tax
-
-    jsr .loadLineType
-
-    rts
-
-
 .setAttributeRamToScreenLine
     ; the index for cursor offsets is starting with the second line on screen. so we subtract 1 from currentscreenline
-    sec
     lda .currentScreenLine
-    sbc #1
     asl
     tax
-
-    lda .cursorOffsets,x
-    sta zp_memPtr
-    lda .cursorOffsets+1,x
-    sta zp_memPtr+1
 
     clc
     lda #1
-    adc zp_memPtr
+    adc vdc_lineoffsets,x
     sta zp_vram_screenram
     tay
-    lda zp_memPtr+1
+    lda vdc_lineoffsets+1,x
     adc #$08
     sta zp_vram_screenram+1
     
@@ -657,12 +512,6 @@ removeCursor
 ; this does what's needed to get currentTypePtr filled correctly
 ; we can continue reading other line attributes after this, if needed
 .loadLineType
-    lda .screenToContentLine,x
-    ;lda zp_cursorLineContent
-    sta zp_tempCalc
-    lda .screenToContentLine+1,x
-    ;lda zp_cursorLineContent+1
-    sta zp_tempCalc+1
     lda zp_linkTableIncr
     sta zp_tempX
     jsr multiply
@@ -689,6 +538,84 @@ removeCursor
 
     rts
 
+; scrolling up means text goes down
+scrollGopherScreenUpOneLine
+    ; block copy from screenline 1-22 to 2-23 (22>23, 21>22, ...)
+    jsr removeCursor
+    jsr moveLinesDown
+    
+    ; then copy the content of the first screenline from ram to vram
+    ; while this routine should only deal with VRAM, we are doing RAM pointers here.
+    ; might be a code smell, we'll see.
+    ; vram line 1. zp_linenumber start should be this
+    lda zp_linenumber_start
+    sta zp_tempCalc
+    lda #0
+    sta zp_tempCalc+1
+
+    ldx zp_linkTableIncr
+    stx zp_tempX
+    jsr multiply    ; result A=lo, Y=hi
+    clc
+    adc #<LINKTABLE_ADDRESS
+    sta zp_linkTablePosition
+
+    tya
+    adc #>LINKTABLE_ADDRESS
+    sta zp_linkTablePosition+1
+
+    ;AY hold VRAM target (HB/LB order)
+    clc
+    lda vdc_lineoffsets
+    adc #1
+    tay
+    lda vdc_lineoffsets+1
+    
+    jmp copyGLineToVram
+
+; scrolling down means text goes up
+scrollGopherScreenDownOneLine
+    ; block copy from screenline 1-22 to 2-23 (1>2, 2>3, ...)
+    jsr removeCursor
+    jsr moveLinesUp
+
+    ; then copy the content of the last screenline from ram to vram
+    ; while this routine should only deal with VRAM, we are doing RAM pointers here.
+    ; might be a code smell, we'll see.
+    ; vram line 23. zp_linenumber+VISIBLE_LINES start should be this
+    clc
+    lda zp_linenumber_start
+    adc #VISIBLE_LINES-1
+    sta zp_tempCalc
+    lda zp_linenumber_start+1
+    adc #0
+    sta zp_tempCalc+1
+
+    ldx zp_linkTableIncr
+    stx zp_tempX
+    jsr multiply    ; result A=lo, Y=hi
+    clc
+    adc #<LINKTABLE_ADDRESS
+    sta zp_linkTablePosition
+
+    tya
+    adc #>LINKTABLE_ADDRESS
+    sta zp_linkTablePosition+1
+
+
+    ; then copy the content of the last screenline from ram to vram
+    ; vram line 23
+    clc
+    lda vdc_lineoffsets+44
+    adc #1
+    tay
+    lda vdc_lineoffsets+45
+    
+
+    ;AY hold VRAM target (HB/LB order)
+    jmp copyGLineToVram
+
+
 .textLineNr       !text "LineNr: ",0
 
 ; cursorOffsets holds the logical linenumber for each line on screen
@@ -698,10 +625,6 @@ removeCursor
 .cursorOffsets  !word 80    ; first offset is always 80 (as long as we're starting in second screenline)
                 !fill 50
 
-.screenToContentLine    !fill 52    ; contains offset to contentline per screenline. needed to handle multi-line content
-                                    ; contentline-offset can then be used to read linetype, etc.
-                                    ; table offset 0 is the line below the header-line
-
 .currentScreenLine      !byte 0     ; what screenline are we rendering currently
 .vramLineOffsetIncr     !byte 3     ; 3 bytes
-;.currentContentLine     !byte 0     ; what contentline are we handling currently (for writing attribute-ram per line)
+

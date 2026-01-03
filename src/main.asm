@@ -77,8 +77,10 @@ requestNewContent
     sta zp_cursorLineScreen
 
     lda zp_scrollModeCrsr
-    beq .updateDisplay
+    beq +
     jsr copyTextToVram
+    jmp .updateDisplay
++   jsr copyGopherToVram
 
 ; this shows that we can start on a later line with correct display
 ;    lda #3
@@ -208,28 +210,10 @@ getUserInput
     jmp requestNewContent
 
 ++  cmp #19 ;home
-    bne ++
-
-    lda zp_scrollModeCrsr
-    beq +
-    jmp .resetDisplay
-
-+   lda zp_vramBlock
     bne +
     jmp .resetDisplay
 
-    ; setting these values to 1 allows us to leverage on most of regular scroll-up routines
-+   lda #0
-    sta zp_linenumber_start+1
-    sta zp_cursorLineContent+1
-
-    lda #1
-    sta zp_linenumber_start
-    sta zp_cursorLineContent
-    sta zp_vramBlock
-    jmp .loadPrevDataIntoVram
-
-++  cmp #'H' ;go home
++   cmp #'H' ;go home
     bne +
     jsr setInitialGopherHostSelector
     jmp requestNewContent
@@ -333,7 +317,6 @@ getUserInput
     jmp getUserInput
 
 .tryLineScrollDown
-    ; is the last visible line also the last line in vram?
     ; zp_tempCalc contains the last visible line
     clc
     lda #VISIBLE_LINES
@@ -343,9 +326,6 @@ getUserInput
     adc #0
     sta zp_tempCalc+1
 
-    lda zp_scrollModeCrsr
-    beq +
-    ; this is scrolling down for text files. no check for last-vram-line here
     lda zp_tempCalc+1
     cmp zp_linecount+1
     bcc .doLineScrollDown
@@ -353,23 +333,6 @@ getUserInput
     cmp zp_linecount
     bcc .doLineScrollDown
     jmp getUserInput
-
-+   lda zp_tempCalc+1
-    cmp zp_lastVramContentLine+1
-    bcc .doLineScrollDown
-    lda zp_tempCalc
-    cmp zp_lastVramContentLine
-    bcc .doLineScrollDown
-
-    ;yes, last line in vram. now check, if RAM holds more lines.
-    lda zp_lastVramContentLine+1
-    cmp zp_linecount+1
-    bcc .loadNextDataIntoVram
-    lda zp_lastVramContentLine
-    cmp zp_linecount
-    bcc .loadNextDataIntoVram
-
-    jmp getUserInput   ; no. don't do anything, get next input from user
 
 .doLineScrollDown
     lda zp_scrollModeCrsr
@@ -380,57 +343,13 @@ getUserInput
 +   inc zp_linenumber_start ; no. increase linenumber and update display. ie scroll down
     bne +
     inc zp_linenumber_start+1
-+   lda zp_scrollModeCrsr
-    beq +
-    jsr scrollScreenDownOneLine
-+   jmp .updateDisplay
-
-.loadNextDataIntoVram
-    ; we have reached the end of vram, but have more in RAM
-    ; lines left to copy stays as it is. (as it holds the remaining number of lines to copy)
-    ; start line of copy (current content line minus 23) (vram_content_addr) zp_linkTablePosition minus 23xincr (3 or 9)
-    ; offset of line to display (in vramLineOffsets) and length of each line (linkTablePosition) are read
-    ;  from different sources with different step increments (3/9 in linkTablePosition vs 2 in vramLineOffsets)
-    ;  linkTablePosition stays in place, as this is built when loading the file
-    ;  vramLineOffsets is to be re-built when copying the new data into vram
-    jsr vramBlockIndexIntoX
-    lda zp_firstVramContentLine
-    sta vram_block_offsets,x
-    lda zp_firstVramContentLine+1
-    sta vram_block_offsets+1,x
-    inc zp_vramBlock
-
-    lda zp_linenumber_start
-    sta zp_firstVramContentLine
-    sta zp_lastVramContentLine
-    lda zp_linenumber_start+1
-    sta zp_firstVramContentLine+1
-    sta zp_lastVramContentLine+1
-
-    lda zp_pageType
-    cmp #$30    ;text file
-    bne ++
-
-+   lda #4
-    sta zp_linkTableIncr
-    jsr .calculateLinkTableOffset
-    jsr continueCopyTextToVram
-    lda #1
-    sta zp_scrollModeCrsr
-    jmp .doneLoadNext
-
-++  cmp #$31    ;gopher file
-    bne .doneLoadNext
-    lda #10
-    sta zp_linkTableIncr    
-    jsr .calculateLinkTableOffset
-    jsr continueCopyGopherToVram
-    lda #0
-    sta zp_scrollModeCrsr
-
-.doneLoadNext
-    jmp .doLineScrollDown
-    nop
++   ldx zp_pageType
+    cpx #$30 ; text is handled dedicated, all other page types are considered gopher (as these show a cursor)
+    beq +   
+    jsr scrollGopherScreenDownOneLine
+    jmp .updateDisplay
++   jsr scrollTextScreenDownOneLine
+    jmp .updateDisplay
 
 .calculateLinkTableOffset
     lda zp_linenumber_start
@@ -486,13 +405,6 @@ getUserInput
     cmp zp_firstVramContentLine
     bne .doLineScrollUp ; more lines in vram. scroll up
 
-    ;yes, we're on top of vram.
-    ;   check if ram holds more previous lines (ie firstVramContentLine > 0)
-    lda zp_firstVramContentLine+1
-    bne .loadPrevDataIntoVram
-    lda zp_firstVramContentLine
-    bne .loadPrevDataIntoVram
-
     jmp getUserInput
 
 .doLineScrollUp
@@ -509,66 +421,13 @@ getUserInput
     sta zp_cursorLineContent
     bcs +
     dec zp_cursorLineContent+1
-+   lda zp_scrollModeCrsr
-    beq +
-    jsr scrollScreenUpOneLine
-+   jmp .updateDisplay
-
-.loadPrevDataIntoVram
-    ; we have reached the end of vram, but have more in RAM
-    ; lines left to copy stays as it is. (as it holds the remaining number of lines to copy)
-    ; start line of copy (current content line minus 23) (vram_content_addr) zp_linkTablePosition minus 23xincr (3 or 9)
-    ; offset of line to display (in vramLineOffsets) and length of each line (linkTablePosition) are read
-    ;  from different sources with different step increments (3/9 in linkTablePosition vs 2 in vramLineOffsets)
-    ;  linkTablePosition stays in place, as this is built when loading the file
-    ;  vramLineOffsets is to be re-built when copying the new data into vram
-+   lda zp_linenumber_start
-    sta zp_memPtr
-    lda zp_linenumber_start+1
-    sta zp_memPtr+1
-
-    dec zp_vramBlock
-    jsr vramBlockIndexIntoX
-    lda vram_block_offsets,x
-    sta zp_linenumber_start
-    sta zp_firstVramContentLine
-    lda vram_block_offsets+1,x
-    sta zp_linenumber_start+1
-    sta zp_firstVramContentLine+1
-
-    lda zp_pageType
-    cmp #$30    ;text file
-    bne ++
-
-+   ; stash current linenumber. we'll need it later, but for calc we need to change it temporarily
-    lda #4
-    sta zp_linkTableIncr
-    jsr .calculateLinkTableOffset
-    jsr continueCopyTextToVram
-
-    lda #1
-    sta zp_scrollModeCrsr
-    jmp .doneLoadPrev
-
-++  cmp #$31    ;gopher file
-    bne .doneLoadPrev
-    lda #10
-    sta zp_linkTableIncr
-    jsr .calculateLinkTableOffset
-    jsr continueCopyTextToVram
-
-    lda #0
-    sta zp_scrollModeCrsr
-
-.doneLoadPrev
-    lda zp_memPtr
-    sta zp_linenumber_start
-    lda zp_memPtr+1
-    sta zp_linenumber_start+1
-
-    jmp .doLineScrollUp
-    nop
-
++   ldx zp_pageType
+    cpx #$30 ; text is handled dedicated, all other page types are considered gopher (as these show a cursor)
+    beq +   
+    jsr scrollGopherScreenUpOneLine
+    jmp .updateDisplay
++   jsr scrollTextScreenUpOneLine
+    jmp .updateDisplay
 
 .calcCursorLineScreen
     clc

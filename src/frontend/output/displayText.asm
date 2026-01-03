@@ -5,6 +5,9 @@
 
 ; this routine only deals with vram (not ram, etc)
 displayTextmode
+    ldy #LAST_LINE
+    sty zp_lastLine
+
     jsr .doTextAttributeRam
     jsr writeCurrentGopherToHeadline
     jsr setStatusLineAttributeRam
@@ -13,8 +16,6 @@ displayTextmode
     lda #4
     sta zp_linkTableIncr
 
-    ldy #LAST_LINE
-    sty zp_lastLine
 
 ; bank 1
     ldx #CONTENT_BANK
@@ -317,9 +318,8 @@ displayTextmode
 
 
 ; scrolling up means text goes down
-scrollScreenUpOneLine
+scrollTextScreenUpOneLine
     ; block copy from screenline 1-22 to 2-23 (22>23, 21>22, ...)
-    ;jsr setBlockCopy
     jsr moveLinesDown
     
     ; then copy the content of the first screenline from ram to vram
@@ -331,7 +331,7 @@ scrollScreenUpOneLine
     lda #0
     sta zp_tempCalc+1
 
-    ldx #4
+    ldx zp_linkTableIncr
     stx zp_tempX
     jsr multiply    ; result A=lo, Y=hi
     clc
@@ -346,10 +346,10 @@ scrollScreenUpOneLine
     ldy vdc_lineoffsets
     lda vdc_lineoffsets+1
     
-    jmp copyLineToVram
+    jmp copyTLineToVram
 
 ; scrolling down means text goes up
-scrollScreenDownOneLine
+scrollTextScreenDownOneLine
     ; block copy from screenline 1-22 to 2-23 (1>2, 2>3, ...)
     jsr moveLinesUp
 
@@ -365,7 +365,7 @@ scrollScreenDownOneLine
     adc #0
     sta zp_tempCalc+1
 
-    ldx #4
+    ldx zp_linkTableIncr
     stx zp_tempX
     jsr multiply    ; result A=lo, Y=hi
     clc
@@ -376,14 +376,13 @@ scrollScreenDownOneLine
     adc #>LINKTABLE_ADDRESS
     sta zp_linkTablePosition+1
 
-
     ; then copy the content of the last screenline from ram to vram
     ; vram line 23
     ldy vdc_lineoffsets+44
     lda vdc_lineoffsets+45
 
     ;AY hold VRAM target (HB/LB order)
-    jmp copyLineToVram
+    jmp copyTLineToVram
 
 
 .textLineNr             !text "LineNr: ",0

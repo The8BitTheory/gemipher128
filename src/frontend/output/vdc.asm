@@ -63,8 +63,6 @@ setBlockCopy
 ; moves lines 2-23 to 1-22. for scrolling down
 ;  we can copy lines from top to bottom (2>1, 3>2, ...)
 moveLinesUp
-    ;jsr setBlockCopy
-
     ; arg1=source. line 2
     lda vdc_lineoffsets+2
     sta arg1

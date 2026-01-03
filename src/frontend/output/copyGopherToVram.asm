@@ -20,16 +20,11 @@ copyGopherToVram
     sta zp_lastVramContentLine
     sta zp_lastVramContentLine+1
 
-    lda #3
-    sta .vramLineOffsetIncr
-
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
     sta zp_contentBank
     
     jsr initLinkTableAddress
-
-continueCopyGopherToVram     ; when we left off before due to vram full
 
     ; lines left to copy needs to be set accordingly
     sec
@@ -40,19 +35,17 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     sbc zp_linenumber_start+1
     sta .linesLeftToCopy+1
 
-    ; vram-left is reset, because we fill it with subsequent data from the beginning
-    lda size_vram_content
-    ;lda #$30
+    ;lda size_vram_content
+    lda #$30
     sta .vramLeft
-    lda size_vram_content+1
-    ;lda #$07
+    ;lda size_vram_content+1
+    lda #$07
     sta .vramLeft+1
 
     ; write to vram from the start
-    lda #<VRAM_CONTENT
-    ;lda #0
+    lda #81
     sta zp_vram_content_addr
-    lda #>VRAM_CONTENT
+    lda #0
     sta zp_vram_content_addr+1
 
     ldy zp_vram_content_addr
@@ -68,11 +61,8 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     lda zp_firstVramContentLine+1
     sta zp_lastVramContentLine+1
 
-    jsr clearVramLineOffsetTable
-
 ; --- copy line ------------
--   jsr writeVramLineOffset
-    jsr .copyGLineToVram
+-   jsr .copyGLineToVram
     bcs +
 
     jsr incLineNumber
@@ -108,19 +98,23 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     
 
 ; copy RAM to VRAM
+    ldx #80
+    stx zp_tempX    ; lines can be 79 chars max at this point, parsing made sure of this
     ldy #0
-    sty zp_tempY
-
--   ldx zp_contentBank
-    ldy zp_tempY
+    sty zp_tempY    ; read index for the current screenline
+    
+-   ldy zp_tempY
+    ldx zp_contentBank
     jsr c_fetch
-    jsr checkAsciiUtf8
+    sta zp_tempA
     inc zp_tempY
+    jsr checkAsciiUtf8
     bcs -
 
     cmp #9
     beq .rtvDone
-
+    ;iny
+    dec zp_tempX
     jsr toScreencode
 
 ; write content byte to VRAM
@@ -149,52 +143,52 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     bne -
 
 .rtvDone
-    lda .lineLength
-    ldy #2
-    sta (zp_vramLineOffsets),y
+    ; came across a linebreak
+    ldx zp_tempX    ; y holds the nr chars left until line is full
+    beq ++   ; if no chars left, leave
+
+-   lda #' '    ; space character
+    +vdc_sta
+    ;sta vdc_data
+    sec
+    lda .vramLeft
+    sbc #1
+    sta .vramLeft
+    bcs +
+    dec .vramLeft+1
+    bpl + ; high byte positive, continue copy
+
+    sec
+    rts
+
++   dec zp_tempX    ; one character written
+    bne -           ; if none left, leave
 
     clc
-    lda zp_vramLineOffsets
-    adc .vramLineOffsetIncr
-    sta zp_vramLineOffsets
-    bcc +
-    inc zp_vramLineOffsets+1
-
-+   clc
-    rts
-
-
-writeVramLineOffset
-    ldy #0
     lda zp_vram_content_addr
-    sta (zp_vramLineOffsets),y
-    iny
-    lda zp_vram_content_addr+1
-    sta (zp_vramLineOffsets),y
+    adc zp_tempX
+    sta zp_vram_content_addr
+    bcc ++
+    inc zp_vram_content_addr+1
 
-+   rts
-
-clearVramLineOffsetTable
-    lda #<VRAM_LINE_TABLE
-    sta zp_vramLineOffsets
-    lda #>VRAM_LINE_TABLE
-    sta zp_vramLineOffsets+1
-
-    lda #0
-    ldx #0
-
--   sta VRAM_LINE_TABLE,x
-    sta VRAM_LINE_TABLE+$100,x
-    sta VRAM_LINE_TABLE+$200,x
-    sta VRAM_LINE_TABLE+$300,x
-    sta VRAM_LINE_TABLE+$400,x
-    sta VRAM_LINE_TABLE+$500,x
-    sta VRAM_LINE_TABLE+$600,x
-    sta VRAM_LINE_TABLE+$700,x
-    dex
-    bne -
-
+++  clc
     rts
+
+copyGLineToVram
+    ; vram target
+    jsr AY_to_vdc_regs_18_19
+    ldx #31 ; VRAM register
+    stx vdc_reg
+
+    lda #79
+    sta .vramLeft
+    lda #0
+    sta .vramLeft+1
+
+    ; now read from linkpointertable and write to vram
+    jmp .copyGLineToVram
+
+
 
 incLineNumber
     clc
@@ -209,22 +203,8 @@ incLineNumber
     inc zp_lastVramContentLine+1
 +   rts
 
-copyGLineToVram
-    ; vram target
-    jsr AY_to_vdc_regs_18_19
-    ldx #31 ; VRAM register
-    stx vdc_reg
-
-    lda #80
-    sta .vramLeft
-    lda #0
-    sta .vramLeft+1
-
-    ; now read from linkpointertable and write to vram
-    jmp .copyGLineToVram
 
 
 .vramLeft           !word 0
 .linesLeftToCopy    !word 0     ; related to copying from ram to vram. if this is > 0, we have more data to show
-.vramLineOffsetIncr !byte 3     ; 3 bytes
 .lineLength         !byte 0     ; keep track of changes due to utf-8
