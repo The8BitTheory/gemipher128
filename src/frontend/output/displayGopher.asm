@@ -240,11 +240,6 @@ drawCursor
 +   rts
     nop
 
-.fetchFromContentBankOffsetY
-    ldx zp_contentBank
-    jsr c_fetch
-    iny
-    rts
 
 .drawPlainTextStatusline
     ; draw logical line, total nr of lines, start and end vram offset (from $1000)
@@ -345,131 +340,6 @@ removeCursor
     ldy zp_cursorPosScreen
     jmp A_to_vram_XXYY
 
-.gotoGLineNumber
-; go to the right vram offset
-    
-    sec
-    lda zp_linenumber_start
-    sbc zp_firstVramContentLine
-    sta zp_tempCalc
-    lda zp_linenumber_start+1
-    sbc zp_firstVramContentLine+1
-    sta zp_tempCalc+1
-
-; linecount x 3 (gopher) should be the offset in the lineoffset table
-    ldx #3      ; gopher files
-    stx zp_tempX
-    jsr multiply
-
-    clc
-    adc #<VRAM_LINE_TABLE
-    sta zp_vramLineOffsets
-    tya
-    adc #>VRAM_LINE_TABLE
-    sta zp_vramLineOffsets+1
-
-    clc
-    ldy #0
-    lda (zp_vramLineOffsets),y
-    sta zp_vram_content_addr
-    iny
-    lda (zp_vramLineOffsets),y
-    sta zp_vram_content_addr+1
-    iny
-    lda (zp_vramLineOffsets),y
-    sta zp_visibleLength
-
-; this sets the zp_linkTablePosition value to the first byte of the topmost line on screen
-.resetLinkTablePosition
-    lda zp_linenumber_start
-    sta zp_tempCalc
-    lda zp_linenumber_start+1
-    sta zp_tempCalc+1
-    lda zp_linkTableIncr
-    sta zp_tempX
-    jsr multiply
-
-    clc
-    adc #<LINKTABLE_ADDRESS
-    sta zp_linkTablePosition
-
-    tya
-    adc #>LINKTABLE_ADDRESS
-    sta zp_linkTablePosition+1
-
-    rts
-
-.incVramLineOffsetPosition
-    clc
-    lda zp_vramLineOffsets
-    adc .vramLineOffsetIncr
-    sta zp_vramLineOffsets
-    bcc .incLinkTableReadPosition
-    inc zp_vramLineOffsets+1
-
-.incLinkTableReadPosition
-    clc
-    lda zp_linkTablePosition
-    adc zp_linkTableIncr
-    sta zp_linkTablePosition
-    bcc +
-    inc zp_linkTablePosition+1
-    
-+   rts
-    nop
-
-.incOutputLineNumber
-;    dec zp_tempX
-;    bne +
-;    rts
-;+
-    clc
-    lda zp_vram_screenram
-    adc #80
-    sta zp_vram_screenram
-    bcc .writeVramAddress
-    inc zp_vram_screenram+1
-
-; the vram target address. within the visible area of screen ram
-.writeVramAddress
-    ldy zp_vram_screenram
-    lda zp_vram_screenram+1
-    
-    jmp AY_to_vdc_regs_18_19
-
-
-; this is first calculated for the second line. the first line will always be 80 (see comment at the bottom of this file)
-.calculateCursorOffset
-    clc
-    lda zp_tempY
-    adc zp_tempY
-    tax
-
-    sec    
-    lda zp_vram_screenram
-    sbc #1
-    sta .cursorOffsets,x
-    inx
-    lda zp_vram_screenram+1
-    sta .cursorOffsets,x
-
-    rts
-
-.displayGopherLine
-    ; read visible length into LB
-    ldy #2
-    lda (zp_vramLineOffsets),y
-    
-    ; set HB to zero
-    ldy #0  ; high-byte in Y is zero anyways, because we print 79 chars max
-    jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
-                            ; the destination location is updated by the vdc automatically
-    
-    rts       ; we are on the last line. stop printing despite there being more text in the current content line
-    nop
-
-.displayGopherDone
-    rts
 
 .setAttributeRamToScreenLine
     ; the index for cursor offsets is starting with the second line on screen. so we subtract 1 from currentscreenline
@@ -617,14 +487,5 @@ scrollGopherScreenDownOneLine
 
 
 .textLineNr       !text "LineNr: ",0
-
-; cursorOffsets holds the logical linenumber for each line on screen
-; this is required to react to multi-line text correctly
-; a gopher link line over two lines has line type and selector coming from the same offset in linktable
-; 25 lines, two bytes each. 23 sould be sufficient, but we can always reduce that
-.cursorOffsets  !word 80    ; first offset is always 80 (as long as we're starting in second screenline)
-                !fill 50
-
 .currentScreenLine      !byte 0     ; what screenline are we rendering currently
-.vramLineOffsetIncr     !byte 3     ; 3 bytes
 

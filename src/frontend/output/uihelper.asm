@@ -55,7 +55,7 @@ writeCurrentGopherToHeadline
 
     lda #<tcpWriteSelector
     sta zp_memPtr
-    lda #>tcpWriteSelector+1
+    lda #>tcpWriteSelector
     sta zp_memPtr+1
 
     lda tcpWriteSizeL

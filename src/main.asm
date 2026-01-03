@@ -1,4 +1,4 @@
-!src "src/inc/c128.inc"
+!src "src/inc/c128.asm"
 
 *=$1c01
 !byte $0b,$1c,$b5,$07,$9e,$20,$37,$34,$32,$34,$00,$00,$00
@@ -12,7 +12,7 @@ keyStore            !fill 10    ;keeps values $1000-$1009
 
 fileOpError         !byte 0
 
-size_vram_content   !word 6143  ; available vram for content (after screen-ram, attribute-ram and charset)
+size_vram_content   !word 6143  ; available vram for content (after screen-ram (2k), attribute-ram (2k) and charset (4k))
 vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-vram copy of blocks
 
 *=$1d00
@@ -317,19 +317,10 @@ getUserInput
     jmp getUserInput
 
 .tryLineScrollDown
-    ; zp_tempCalc contains the last visible line
-    clc
-    lda #VISIBLE_LINES
-    adc zp_linenumber_start
-    sta zp_tempCalc
-    lda zp_linenumber_start+1
-    adc #0
-    sta zp_tempCalc+1
-
-    lda zp_tempCalc+1
+    lda zp_cursorLineContent+1
     cmp zp_linecount+1
     bcc .doLineScrollDown
-    lda zp_tempCalc
+    lda zp_cursorLineContent
     cmp zp_linecount
     bcc .doLineScrollDown
     jmp getUserInput
