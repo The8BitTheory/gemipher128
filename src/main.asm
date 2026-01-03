@@ -109,8 +109,6 @@ requestNewContent
 
 getUserInput
 -   jsr k_getin
-;-   lda 212
-;    cmp #88
     beq -
 
     cmp #17     ;cursor down
@@ -303,7 +301,7 @@ getUserInput
     bne .cursorDown   ; not on the last screen-line, draw one line below
 
     ; on the last visible line, check if we can scroll down
-    jmp .tryLineScrollDown
+    jmp .tryCursorScrollDown
 
 .cursorDown
 +   jsr removeCursor
@@ -317,6 +315,17 @@ getUserInput
     jmp getUserInput
 
 .tryLineScrollDown
+    lda zp_linenumber_start+1
+    cmp zp_linecount+1
+    bcc .doLineScrollDown
+    clc
+    lda zp_linenumber_start
+    adc #VISIBLE_LINES
+    cmp zp_linecount
+    bcc .doLineScrollDown
+    jmp getUserInput
+
+.tryCursorScrollDown
     lda zp_cursorLineContent+1
     cmp zp_linecount+1
     bcc .doLineScrollDown

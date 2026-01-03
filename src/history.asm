@@ -24,6 +24,19 @@
 
 !zone historyStack
 
+; if the stack is full (127 entries), move all entries down.
+;  The first one will be overwritten and the new entry will be nr 127
+.removeFirstAndReorg
+    ; make room in HISTORY_TABLE
+    ldx #2  ; read index
+    ldy #0  ; write index
+
+-   lda HISTORY_TABLE,x
+    sta HISTORY_TABLE,y
+    iny
+    inx
+    bpl -   ; as long as read-index is 0-127
+
 ; pushing to the history stack takes the data from tcpOpenHostPort and tcpWriteSelector from networkWic.asm
 ;  these are in bank 0 and already in the format we'll want to re-use them.
 pushToHistoryStack
@@ -34,12 +47,11 @@ pushToHistoryStack
 
     ; get the offset in HISTORY_TABLE for stack entry to write
 ;    inc zp_historyStackPos
-    clc
     lda zp_historyStackPos  ; we load position, not size, because we might be in the middle of the history
-    adc zp_historyStackPos
+    bmi .removeFirstAndReorg
+    asl
     tax
-    bpl +
-    jsr .removeFirstAndReorg
+    
 
 ; set historystackaddress to $b100 + offset from history_table
 +   lda HISTORY_TABLE,x
@@ -51,7 +63,7 @@ pushToHistoryStack
 .doWriting
 ; write type to history stack (HB is always zero for now)
     ldy #0
-    lda zp_currentType
+    lda zp_pageType
     sta (zp_historyStackAddress),y
     tya
     iny
@@ -89,7 +101,7 @@ pushToHistoryStack
 
     lda #<tcpWriteSelector
     sta zp_memPtr
-    lda #>tcpWriteSelector+1
+    lda #>tcpWriteSelector
     sta zp_memPtr+1
 
     lda tcpWriteSizeL
@@ -123,22 +135,6 @@ pushToHistoryStack
     sta HISTORY_TABLE,x
     rts
 
-; if the stack is full (127 entries), move all entries down.
-;  The first one will be overwritten and the new entry will be nr 127
-.removeFirstAndReorg
-    ; make room in HISTORY_TABLE
-    ldx #2  ; read index
-    ldy #0  ; write index
-
--   lda HISTORY_TABLE,x
-    sta HISTORY_TABLE,y
-    iny
-    inx
-    bpl -   ; as long as read-index is 0-127
-
-
-
-    rts
 
 .writeToHistoryStack
     ; use zp_tempX for the reading-y

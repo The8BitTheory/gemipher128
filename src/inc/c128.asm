@@ -79,7 +79,7 @@ zp_lineLength = $24     ; this holds 80 for plain text and 79 for gopher lines. 
 ; zp_currentLinkTablePtr
 ; zp_linkTablePosition
 ; zp_contentBank
-zp_currentType = $25
+zp_currentType = $25    ; type of currently selected or iterated line. for type of currently displayed page, use zp_pageType
 zp_currentSelectorPtr = $26 ; and $27
 zp_currentHostPtr = $28 ; and $29
 zp_currentPortPtr = $2a ; and $2b

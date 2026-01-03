@@ -453,12 +453,9 @@ scrollGopherScreenDownOneLine
     ; while this routine should only deal with VRAM, we are doing RAM pointers here.
     ; might be a code smell, we'll see.
     ; vram line 23. zp_linenumber+VISIBLE_LINES start should be this
-    clc
-    lda zp_linenumber_start
-    adc #VISIBLE_LINES-1
+    lda zp_cursorLineContent
     sta zp_tempCalc
-    lda zp_linenumber_start+1
-    adc #0
+    lda zp_cursorLineContent+1
     sta zp_tempCalc+1
 
     ldx zp_linkTableIncr

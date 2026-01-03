@@ -80,7 +80,12 @@ copyGopherToVram
 
     lda (zp_linkTablePosition),y
     sta zp_currentType
-    iny
+    bne +
+    ldx #80
+    stx zp_tempX
+    jmp .rtvDone
+
++   iny
     
     lda (zp_linkTablePosition),y
     sta zp_currentLinkTablePtr  ;replace with zp_memptr?
