@@ -65,11 +65,6 @@ saveContentToDisk
 ;  hash is converted to base-36 with 13 characters length (allows for ca 67 bits. 64 are used for 8-byte has)
 ;  44 bits are used for the filename hash
 ;  
-;   we start saving from $0400 in bank 1 (bank is set down below with SETBNK)
-    lda #$00
-    sta zp_memPtr
-    lda #$04
-    sta zp_memPtr+1
 
 ;   bsave requires last byte value to be 1 byte beyond the last byte to write
     clc
@@ -82,6 +77,13 @@ saveContentToDisk
 
     ;for now, use chars after the last slash of selector for filename
     jsr .selectorToFilename
+
+;   we start saving from $0400 in bank 1 (bank is set down below with SETBNK)
+    lda #$00
+    sta zp_memPtr
+    lda #$04
+    sta zp_memPtr+1
+
     jmp .doDiskIO
 
 

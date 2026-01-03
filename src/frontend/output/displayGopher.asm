@@ -275,7 +275,7 @@ drawCursor
 .incAddresses
     inc .currentScreenLine
     ldx .currentScreenLine
-    cpx zp_lastLine
+    cpx #VISIBLE_LINES
     bne -   ; yes, this jumps back to .readLineType in the previous routine
 
     rts
@@ -584,45 +584,17 @@ removeCursor
     rts
 
 .displayGopherLine
-    jsr .readVisibleLength
+    ; read visible length into LB
+    ldy #2
+    lda (zp_vramLineOffsets),y
     
--   lda zp_visibleLength
-    cmp zp_lineLength
-    bcc .shorterThanOneScreenLine
-
-    ; line longer than 79 characters
-.longerThanOneScreenLine
-    sec
-    lda zp_visibleLength
-    sbc zp_lineLength
-    sta zp_visibleLength
-    
-    lda zp_lineLength
-    jmp ++
-
-    ; line shorter than 79 characters
-.shorterThanOneScreenLine
-    ldy #0
-    sty zp_visibleLength
-    
-++  ldy #0  ; high-byte in Y is zero anyways, because we print 79 chars max
+    ; set HB to zero
+    ldy #0  ; high-byte in Y is zero anyways, because we print 79 chars max
     jsr vdc_do_YYAA_cycles  ; this writes the length to reg #30 to trigger the VDC block copy operation
                             ; the destination location is updated by the vdc automatically
     
-    lda zp_visibleLength
-    beq .displayGopherDone    ; hb and lb are zero. nothing left to print
-    ldx .currentScreenLine    ;contains the current line nr that's printed on screen
-    cpx #VISIBLE_LINES
-    bne .drawNextGopherLine       ; not on the last line, keep going
     rts       ; we are on the last line. stop printing despite there being more text in the current content line
     nop
-
-.drawNextGopherLine
-    jsr .incOutputLineNumber
-    jsr .writeScreenToContentLine
-    inc .currentScreenLine
-
-    jmp -
 
 .displayGopherDone
     rts
@@ -681,12 +653,6 @@ removeCursor
     lda #78
     jmp vdc_do_YYAA_cycles
 
-.readVisibleLength
-    ldy #2
-    lda (zp_vramLineOffsets),y
-    sta zp_visibleLength
-
-    rts
 
 ; this does what's needed to get currentTypePtr filled correctly
 ; we can continue reading other line attributes after this, if needed

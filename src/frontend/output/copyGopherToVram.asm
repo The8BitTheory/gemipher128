@@ -42,12 +42,15 @@ continueCopyGopherToVram     ; when we left off before due to vram full
 
     ; vram-left is reset, because we fill it with subsequent data from the beginning
     lda size_vram_content
+    ;lda #$30
     sta .vramLeft
     lda size_vram_content+1
+    ;lda #$07
     sta .vramLeft+1
 
     ; write to vram from the start
     lda #<VRAM_CONTENT
+    ;lda #0
     sta zp_vram_content_addr
     lda #>VRAM_CONTENT
     sta zp_vram_content_addr+1
@@ -112,8 +115,8 @@ continueCopyGopherToVram     ; when we left off before due to vram full
     ldy zp_tempY
     jsr c_fetch
     jsr checkAsciiUtf8
-
     inc zp_tempY
+    bcs -
 
     cmp #9
     beq .rtvDone
@@ -205,6 +208,20 @@ incLineNumber
     bne +
     inc zp_lastVramContentLine+1
 +   rts
+
+copyGLineToVram
+    ; vram target
+    jsr AY_to_vdc_regs_18_19
+    ldx #31 ; VRAM register
+    stx vdc_reg
+
+    lda #80
+    sta .vramLeft
+    lda #0
+    sta .vramLeft+1
+
+    ; now read from linkpointertable and write to vram
+    jmp .copyGLineToVram
 
 
 .vramLeft           !word 0
