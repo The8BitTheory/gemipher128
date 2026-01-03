@@ -39,7 +39,7 @@ drawCursor
     lda c_fetch_zp
     pha
 
-    jsr .drawPlainTextStatusline
+    jsr drawPlainTextStatusline
 
     ; prepare values we want to show (type, selector, host, port)
     ; first, get content line from current screenline
@@ -97,7 +97,7 @@ drawCursor
     jmp .passiveLine
 
 +   lda #$07
-    ldy #$ab
+    ldy #$93
     jsr AY_to_vdc_regs_18_19
 
     lda #zp_currentHostPtr
@@ -239,97 +239,6 @@ drawCursor
     jmp -
 +   rts
     nop
-
-
-.drawPlainTextStatusline
-    ; draw logical line, total nr of lines, start and end vram offset (from $1000)
-    lda #$07
-    ldy #$80
-    jsr AY_to_vdc_regs_18_19
-
-    lda #<.textLineNr
-    sta zp_memPtr
-    lda #>.textLineNr
-    sta zp_memPtr+1
-
-    jsr .printUntilZero
-
-    ; for gopher pages, print the cursor line
-    lda zp_cursorLineContent+1
-    jsr .hiNybToHex
-    jsr printAcc
-    lda zp_cursorLineContent+1
-    jsr .loNybToHex
-    jsr printAcc
-    lda zp_cursorLineContent
-    jsr .hiNybToHex
-    jsr printAcc
-    lda zp_cursorLineContent
-    jsr .loNybToHex
-    jsr printAcc
-
-    lda #'/'
-    jsr toScreencode
-    jsr printAcc
-
-    lda zp_lastVramContentLine+1
-    jsr .hiNybToHex
-    jsr printAcc
-
-    lda zp_lastVramContentLine+1
-    jsr .loNybToHex
-    jsr printAcc
-
-    lda zp_lastVramContentLine
-    jsr .hiNybToHex
-    jsr printAcc
-
-    lda zp_lastVramContentLine
-    jsr .loNybToHex
-    jsr printAcc
-
-    lda #'/'
-    jsr toScreencode
-    jsr printAcc
-
-    lda zp_linecount+1
-    jsr .hiNybToHex
-    jsr printAcc
-
-    lda zp_linecount+1
-    jsr .loNybToHex
-    jsr printAcc
-
-    lda zp_linecount
-    jsr .hiNybToHex
-    jsr printAcc
-
-    lda zp_linecount
-    jsr .loNybToHex
-    jsr printAcc
-    
-    ;rts
-
-    lda zp_linkTablePosition+1
-    ldy #$97
-    jsr .writeHexValue
-    lda zp_linkTablePosition
-    ldy #$99
-    jsr .writeHexValue
-
-    lda zp_contentAddress+1
-    ldy #$a6
-    jsr .writeHexValue
-    lda zp_contentAddress
-    ldy #$a8
-    jsr .writeHexValue
-
-    lda zp_vramBlock
-    ldy #$ab
-    jsr .writeHexValue
-
-    rts
-
 
 removeCursor
     ; zp_cursorPosScreen should be up-to-date at this point

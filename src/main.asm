@@ -229,11 +229,11 @@ getUserInput
     bne +
     jmp activateAddressEnterMode
 
-+   cmp #'D' ; download
-    bne +
-    jsr saveContentToDisk
+;+   cmp #'D' ; download
+;    bne +
+;    jsr saveContentToDisk
 ;    ;jsr downloadWic2disk
-    jmp getUserInput
+;    jmp getUserInput
 
 +   cmp #'L' ; load from disk
     bne +

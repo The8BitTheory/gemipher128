@@ -110,7 +110,7 @@ displayTextmode
 
 .allLinesDisplayed
 
-    jmp .drawPlainTextStatusline
+    jmp drawPlainTextStatusline
 
 .doTextAttributeRam
     jsr setBlockFill
@@ -164,8 +164,25 @@ displayTextmode
 
 +   rts
 
-.drawPlainTextStatusline
-    ; draw logical line, total nr of lines, start and end vram offset (from $1000)
+drawPlainTextStatusline
+    jsr setBlockFill
+
+    lda #$20
+    ldy #$07
+    ldx #$80
+    jsr A_to_vram_XXYY
+
+    ;set count
+    lda #$50    ;lowbyte
+    ldy #$00    ;highbyte
+    jsr vdc_do_YYAA_cycles
+
+    ; draw topmost linenr and total nr of lines
+;    lda #$0f
+;    ldy #$80
+;    jsr AY_to_vdc_regs_18_19
+
+    ; draw topmost linenr and total nr of lines
     lda #$07
     ldy #$80
     jsr AY_to_vdc_regs_18_19
@@ -194,26 +211,6 @@ displayTextmode
     jsr toScreencode
     jsr printAcc
 
-    lda zp_lastVramContentLine+1
-    jsr .hiNybToHex
-    jsr printAcc
-
-    lda zp_lastVramContentLine+1
-    jsr .loNybToHex
-    jsr printAcc
-
-    lda zp_lastVramContentLine
-    jsr .hiNybToHex
-    jsr printAcc
-
-    lda zp_lastVramContentLine
-    jsr .loNybToHex
-    jsr printAcc
-
-    lda #'/'
-    jsr toScreencode
-    jsr printAcc
-
     lda zp_linecount+1
     jsr .hiNybToHex
     jsr printAcc
@@ -230,40 +227,6 @@ displayTextmode
     jsr .loNybToHex
     jsr printAcc
     
-    ;rts
-
-    lda zp_linkTablePosition+1
-    ldy #$97
-    jsr .writeHexValue
-    lda zp_linkTablePosition
-    ldy #$99
-    jsr .writeHexValue
-
-    lda zp_vramLineOffsets+1
-    ldy #$9c
-    jsr .writeHexValue
-    lda zp_vramLineOffsets
-    ldy #$9e
-    jsr .writeHexValue
-
-    lda zp_vram_content_addr+1
-    ldy #$a1
-    jsr .writeHexValue
-    lda zp_vram_content_addr
-    ldy #$a3
-    jsr .writeHexValue
-
-    lda zp_contentAddress+1
-    ldy #$a6
-    jsr .writeHexValue
-    lda zp_contentAddress
-    ldy #$a8
-    jsr .writeHexValue
-
-    lda zp_vramBlock
-    ldy #$ab
-    jsr .writeHexValue
-
     rts
 
 .gotoLineNumber
