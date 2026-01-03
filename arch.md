@@ -1,7 +1,7 @@
 # Architecture of Gemipher 128
 
 Three major pillars of dataflow: input, processing, output
-Maybe we should do a Frontend/Backend split.
+I tried to do a Frontend/Backend split.
 Frontend is dealing with user-input (keyboard and mouse) and displaying (vdc, vera, vic-iv, kawari).
 It owns the input/processing/output loop.
 
@@ -26,9 +26,13 @@ Downloading a file from wic64 to disk needs to be able to handle files larger th
 so that should directly write to disk.
 
 Loading from WiC64 allows for specifying custom store routines. These can go into Bank 1, disk,
-even the VDC or REU and GeoRAM.
+even the VDC or REU (writing to RAM temporarily required) and GeoRAM.
 
 Loading from disk could go into Bank 1, REU or GeoRAM, or also the VDC chip.
+
+Whenever we load data, we must keep track of where the data is stored. That means: which memory type(s), which start address(es), and how much.
+Eg: one could load 6kb into VDC-VRAM and remaining 24kb into Bank 1.
+
 
 ### Userinput via Keyboard
 Keyboard input should just be readable from kernal routines.
@@ -38,11 +42,36 @@ Different addresses between systems, but similar behavior.
 ## Processing
 
 ### Parse data
-This builds a lookup table with pointers for type, text, length of text, host, port, and selector.
-For plain text files, the processing is different.
+This builds a lookup table with pointers for type, text pointer, length of text, host pointer, port pointer, and selector pointer.
+10 bytes are used for this currently.
+
+For plain text files, the table is different. We only need length of text and text pointer. 4 bytes are used currently. 3 should be sufficient b/c length only needs 1.
+
 Audio files will present a page that allows for playback via wic64-mex, for a start.
 
-### Petscii to Ascii
+When parsing data, lines longer than 80 characters will be split into more lines.
+This goes for Gopher dirs as well as plain text files.
+That's the easiest way to handle display of all types in a similar way.
+
+Depending on where data is stored, parsing might be easier or harder.
+Most memory types allow for direct reading and writing of bytes:
+* RAM banks allow direct read of Bytes.
+* VDC as well
+* GeoRAM too
+* Ultimate Filesystem as well (DOS_CMD_FILE_SEEK)
+
+REU does not allow for that. The question is, should we just DMA-copy single bytes into RAM to work with,
+or is creating a dedicated memory area the better choice?
+
+
+Another challenge in parsing is when data is spread across memory types, and the split is in the middle of a line.
+As we don't parse when downloading, we can't react immediately.
+Maybe it's ok to use a specific memory area to where we can copy leading and trailing end of a split line.
+Eg beginning of line in VDC (30 chars), end of line in Bank 1 (40 chars).
+
+
+
+### Petscii to Ascii and UTF-8
 C64 and Mega65 can very likely use similar conversion routines.
 The X16 might need none at all, or different ones.
 
@@ -55,10 +84,24 @@ for printing numbers (addresses, mainly)
 ## Output
 
 ### Display on screen
-This can be VDC, X16 Vera, Mega65 VIC-IV, maybe C64 Kawari.
-Very likely we're not going to use standard chrout routines in all cases (eg the VDC),
+This can be VDC, X16 Vera, Mega65 VIC-IV, C64 Kawari.
+Very likely we're not going to use standard chrout routines in some cases (eg the VDC),
 but instead use direct access to videochip registers.
 For Mega65 and X16 we might be better off using kernel routines, though.
+
+#### How is content brought to the screen
+The visible lines are copied from content storage to VRAM.
+For that, the linepointer table is used.
+Each line is maximum 80 characters long (or 78 for Gopher dirs, 80 for plain text files).
+If a line is not filled with text, the rest is filled with Spaces.
+
+When scrolling, the content on the screen is just moved up or down one line via block copy inside VRAM.
+The newly appearing line (top or bottom) is copied from content storage.
+
+After that, Attribute-RAM for the full screen is re-calculated (potential for improvement here).
+
+
+
 
 ### Write to disk
 We can save the currently viewed resource to disk (gopher or text files),
@@ -179,9 +222,11 @@ Once the start screen is displayed, the user can move the cursor or hit one of t
 The following types of data exist in Gemipher:
 - content: can be a gopher dir or plain text. has start- and end address, and a bank number
 - linetable: pointers to each line of a gopher dir and each of the parts. one entry is about 10 bytes in size.
-- vram-table: depending on videochip speed, we might want to have pre-warmed data in vram backbuffer (eg vdc)
 - history: host:port/selector, scrollposition, cursorposition.
            consists of an entry-list and a pointer-list, due to the variable length of host:port/selector
+
+In textmode, VRAM should always be usable as expanded memory to some extent. On a 16 kB VDC, we have 8 kB available (2 kb screen, 2kb attribute, 4kb charset)
+It might make sense to use this memory area as the first content storage area. As this allows to fill the screen fastest.
 
 ## Memory expansions
 Visible content is in the VRAM's frontbuffer.
@@ -208,6 +253,7 @@ RAM for single chunks is probably as limited as on the X16.
 But instead of copying directly from different 8kB banks, we'll need to 
 copy to RAM first (from GeoRAM, the REU or a swap-file) and then write to VRAM.
 At least, the VIC-II memory area can be used for this, so we can REU-DMA-RAM-DMA-VRAM in 16 kB chunks.
+
 
 # Memory
 The program is written in assembly language. Usually, no Basic routines will be used.

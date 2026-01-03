@@ -2,8 +2,6 @@
 initParser
     jsr initContentAddress
 
-    jsr initParseVram   ; this should be called when copying to vram, not here
-
     ; setup indirect reading from bank 1
     lda #zp_contentAddress
     sta c_fetch_zp
@@ -55,25 +53,6 @@ clearLinkTable
 
     jmp initLinkTableAddress
 
-initParseVram
-    ; first entry is always zero
-    lda #0
-    sta vram_block_offsets
-    sta vram_block_offsets+1
-    sta zp_vramBlock
-
-    ldx #13
--   sta vram_block_offsets,x
-    dex
-    bpl -
-
-    rts
-
-vramBlockIndexIntoX
-    lda zp_vramBlock
-    asl
-    tax
-    rts
 
 writeToLinkTable
     ; y must be set accordingly at this point

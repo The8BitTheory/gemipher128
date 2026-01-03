@@ -4,15 +4,15 @@
 
 
 ; $0.1c01 - $0.afff: programcode. only enable basic-rom when needed. close to 41kB
+; after programcode: link table -> 7.75 kB
 ; $0.b000 - $0.b0ff: history pointers
 ; $0.b100 - ?????: string entries for history (host:port/selector)
-; $0.e000 - $0.ff00: link table -> 7.75 kB
+
 
 ; $1.0400 - $1.dfff: data --> 56 kB
 
 
 ; configuration constants
-VRAM_LINE_TABLE = $a800 ; offsets to the lines in vram. written by copyx.asm, read by display.asm
 
 HISTORY_TABLE = $b000   ; room for 128 entries
 HISTORY_STACK = $b100   
@@ -22,11 +22,10 @@ HISTORY_STACK = $b100
 ; CONTENT describes one full gopher page
 CONTENT_BANK = 1
 CONTENT_ADDRESS = $0400
-
 CONTENT_END_ADDRESS = $F000 ;LINKTABLE_ADDRESS -$fff
 
 
-VRAM_CONTENT = $1000    ; the 'invisible' part of vram that stores all text ready for display
+VRAM_CONTENT = $1000    ; the 'invisible' part of vram that acts like another RAM expansion
 VISIBLE_LINES = 23
 TEXT_LINE_LENGTH = 80
 GOPHER_LINE_LENGTH = 79
