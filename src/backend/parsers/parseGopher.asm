@@ -268,10 +268,14 @@ parseGopher
     jmp .decideOnParseSeq
 
 .writeSegmentsToLinkPointer
-    lda .segType
+    lda #0
+    sta zp_tempA
+
+-   lda .segType
     jsr .storeValueInLinkTable
 
-    lda .nrSegments
+    ;lda .nrSegments
+    lda zp_tempA
     asl
     tax
     lda .offsetList,x
@@ -279,7 +283,7 @@ parseGopher
     lda .offsetList+1,x
     jsr writeToLinkTable
 
-    ldx .nrSegments
+    ldx zp_tempA
     lda .lengthList,x
     jsr .storeValueInLinkTable
 
@@ -298,10 +302,13 @@ parseGopher
     lda .segPort+1
     jsr writeToLinkTable
 
-    dec .nrSegments
-    bpl .writeSegmentsToLinkPointer    
+    lda .nrSegments
+    cmp zp_tempA
+    beq +
+    inc zp_tempA
+    jmp -    
 
-    rts
++   rts
 
 .storeValueInLinkTable
     ldy #0
