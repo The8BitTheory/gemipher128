@@ -237,11 +237,6 @@ getUserInput
 ;    ;jsr downloadWic2disk
 ;    jmp getUserInput
 
-;+   cmp #'L' ; load from disk
-;    bne +
-;    jsr loadContentFromDisk
-;    jmp getUserInput
-
 +   cmp #'F'; speed
     bne ++
     lda zp_fastmode
