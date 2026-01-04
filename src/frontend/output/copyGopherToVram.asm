@@ -14,12 +14,6 @@
 !zone gopherRamToVram
 
 copyGopherToVram
-    lda #0
-    sta zp_firstVramContentLine
-    sta zp_firstVramContentLine+1
-    sta zp_lastVramContentLine
-    sta zp_lastVramContentLine+1
-
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
     sta zp_contentBank
@@ -55,11 +49,6 @@ copyGopherToVram
     jsr AY_to_vdc_regs_18_19
     ldx #31 ; VRAM register
     stx vdc_reg
-
-    lda zp_firstVramContentLine
-    sta zp_lastVramContentLine
-    lda zp_firstVramContentLine+1
-    sta zp_lastVramContentLine+1
 
 ; --- copy line ------------
 -   jsr .copyGLineToVram
@@ -203,9 +192,6 @@ incLineNumber
     bcc +
     inc zp_linkTablePosition+1
 
-+   inc zp_lastVramContentLine
-    bne +
-    inc zp_lastVramContentLine+1
 +   rts
 
 

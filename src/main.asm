@@ -270,8 +270,6 @@ getUserInput
     sta zp_linenumber_start+1
     sta zp_cursorLineContent
     sta zp_cursorLineContent+1
-    sta zp_firstVramContentLine
-    sta zp_firstVramContentLine+1
     lda #FIRST_LINE
     sta zp_cursorLineScreen
     rts
@@ -404,12 +402,10 @@ getUserInput
     jmp drawCursor
 
 .tryLineScrollUp
-    ; is the first visible line also the first vram line?
+    ; is the first visible line also the first content line?
     lda zp_linenumber_start+1
-    cmp zp_firstVramContentLine+1
     bne .doLineScrollUp ; more lines in vram. scroll up
     lda zp_linenumber_start
-    cmp zp_firstVramContentLine
     bne .doLineScrollUp ; more lines in vram. scroll up
 
     jmp getUserInput

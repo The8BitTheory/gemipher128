@@ -13,6 +13,7 @@
 
 !zone plainText
 parsePlainText
+    +print txtParsing
     jsr initParser
 
     lda #0
@@ -21,6 +22,7 @@ parsePlainText
     sta zp_linecount
     sta zp_linecount+1
     sta .lineLength
+    sta charsSinceSpace
 
     
 ; content is stored in the $1:0400 region, pointers to each line in the $1:f700 region
@@ -29,14 +31,20 @@ parsePlainText
 
 .parseLine
     jsr .storePointerInTxtLinkTable
+    lda #0
+    sta charsSinceSpace
 
 -   jsr readNextByte
-    bcs .finishLine
+    bcs .finishLineWithBreak
+    cmp #' '            ; if this is a space character, we reset the counter
+    bne +
+    sty charsSinceSpace ; y should be zero because it was set in readNextByte
++   inc charsSinceSpace
     
     cmp #$0d    ;line break?
     beq -
     cmp #$0a    ; other line break
-    beq .finishLine
+    beq .finishLineWithBreak
 
     inc zp_visibleLength
     inc .lineLength
@@ -47,18 +55,46 @@ parsePlainText
     jmp -
 
 .finishLine
+    ; when a line is running over, let's check if we're wrapping the word correctly
+    ; if the following character is not a space character, it means we split a word
+    jsr readNextByteWithoutInc
+    cmp #' '    ; space
+    bne +
+    ; if space: wrap was luckily good. we can skip the space (would indent the next line otherwise)
+    jsr readNextByte
+    jmp .finishLineWithBreak
+
+    ; if no space: find previous space and wrap to new line from there
+    ; first, reduce line length so it only goes until last space
++   sec
+    lda .lineLength
+    sbc charsSinceSpace
+    sta .lineLength
+    ; next, reset out read pointer to after the last space
+
+    dec charsSinceSpace
+    sec
+    lda zp_contentAddress
+    sbc charsSinceSpace
+    sta zp_contentAddress
+    lda zp_contentAddress+1
+    sbc #0
+    sta zp_contentAddress+1
+
+.finishLineWithBreak
     inc zp_linecount
     bne +
     inc zp_linecount+1
     
-+   lda zp_visibleLength
++   lda .lineLength
     jsr .storeValueInTxtLinkTable
-    lda zp_visibleLength+1
+    lda #0;zp_visibleLength+1
     jsr .storeValueInTxtLinkTable
     lda #0
     sta zp_visibleLength
     sta zp_visibleLength+1
     sta .lineLength
+    sta charsSinceSpace
 
     lda leftToParse+1
     bne .parseLine

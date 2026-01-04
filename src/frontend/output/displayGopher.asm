@@ -329,7 +329,7 @@ scrollGopherScreenUpOneLine
     ; vram line 1. zp_linenumber start should be this
     lda zp_linenumber_start
     sta zp_tempCalc
-    lda #0
+    lda zp_linenumber_start+1
     sta zp_tempCalc+1
 
     ldx zp_linkTableIncr

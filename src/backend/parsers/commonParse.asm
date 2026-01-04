@@ -118,3 +118,4 @@ readNextByte
 
 leftToParse     !word 0
 charsSinceSpace !byte 0     ; how many characters have passed since the last space. supposed to help with word-wrap
+txtParsing      !text "Parsing... this can take a bit...",$0d,$0a,$0

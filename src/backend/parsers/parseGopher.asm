@@ -19,6 +19,7 @@
 !zone gopher
 
 parseGopher
+    +print txtParsing
     ; set zp_content to beginning of content so we can start parsing that now
     ; also sets linktableposition to the first byte
     jsr initParser
@@ -185,6 +186,7 @@ parseGopher
 
     lda #0
     sta .startFound
+    sta charsSinceSpace
 
 -   jsr readNextByte
     bcs .parseComplete  ; reached end of content

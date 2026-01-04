@@ -98,13 +98,13 @@ zp_navModeHistory = $39     ; 0=navigation via history stack (cursor keys)
                             ; (0 means no stack updates, only changing stack position, 1 means push new page to stack)
 zp_tempCalc     = $3a ; and $3b
 
-zp_lastVramContentLine = $3c ; and $3d. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
+;zp_lastVramContentLine = $3c ; and $3d. this is used to stop scrolling and load more in to vram. document might be larger than vram (esp with 16kb VRAM)
 zp_memPtr   = $3e ; and $3f. can be used for any temporary indirect read or write memory operation
 zp_pageType = $40 ; keeps type of current page persistently loaded. we run into conflicts with "type of current cursor positon" otherwise
 zp_tempA = $41 ; used to keep temporary value when pha/pla is not sufficient
 
-zp_vramLineOffsets = $42 ; and $43
-zp_firstVramContentLine = $44 ; and $45
+;zp_vramLineOffsets = $42 ; and $43
+;zp_firstVramContentLine = $44 ; and $45
 zp_vramBlock    = $46   ; which vram block we're currently working with. used by parse, copy, and display
 zp_reu_blocks = $47  ; and $48. 0=not detected, above=nr of 64kb blocks/banks
 zp_georam_blocks = $49 ; 0=no, above=nr of 64kb blocks/banks
