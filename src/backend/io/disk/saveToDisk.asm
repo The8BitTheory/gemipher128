@@ -4,7 +4,7 @@
 ; - writing the value in Acc to disk directly
 ; - no pre-defined diskWriteEndAddress. We write until either disk is full or download is done
 downloadDirectlyToDisk
-    jsr .selectorToFilename
+    jsr selectorToFilename
     jsr .prepareDiskWrite
     ; writing to disk is called by the wic64 store instruction
     jmp downloadWic2disk
@@ -13,7 +13,7 @@ finishDownload
     jmp .close
 
 
-.selectorToFilename
+selectorToFilename
 ;    lda #zp_currentSelectorPtr
 ;    sta c_fetch_zp
     lda #<address
@@ -47,14 +47,14 @@ finishDownload
 ;    cmp #$09
     beq +
     ldx zp_tempX
-    sta diskWriteFilename,x
+    sta diskFilename,x
     inc zp_tempY
     inc zp_tempX
 
     jmp -
 
 +   inx
-    stx diskWriteFilenameLength
+    stx diskFilenameLength
     rts
 
 saveContentToDisk
@@ -76,7 +76,7 @@ saveContentToDisk
     sta diskWriteEndAddress+1
 
     ;for now, use chars after the last slash of selector for filename
-    jsr .selectorToFilename
+    jsr selectorToFilename
 
 ;   we start saving from $0400 in bank 1 (bank is set down below with SETBNK)
     lda #$00
@@ -91,9 +91,9 @@ saveContentToDisk
         lda #1
         sta fileOpError
 
-        LDA diskWriteFilenameLength
-        LDX #<diskWriteFilename
-        LDY #>diskWriteFilename
+        LDA diskFilenameLength
+        LDX #<diskFilename
+        LDY #>diskFilename
         JSR $FFBD     ; call SETNAM
 
         LDA #$02      ; file number 2
@@ -198,8 +198,8 @@ saveContentToDisk
 .diskFilenameSlashPos   !byte 0
 
 diskWriteEndAddress     !word 0
-diskWriteFilename       !pet "saved.gp",0
-diskWriteFilenameLength !byte 8
+diskFilename       !fill 18
+diskFilenameLength !byte 0
 
 ; not used yet. would be used later for deciding, where to write the file to
 ;  besides disk, this will likely be Ultimate-II DMA write

@@ -29,7 +29,7 @@ main
     jmp .afterRequest
 
 requestNewContent
-    jsr requestContent
+    jsr requestContentViaWiC64
 
     ; set the cursor line to zero here, that's important for calculating the right screen area for display
 .afterRequest
@@ -235,10 +235,10 @@ getUserInput
 ;    ;jsr downloadWic2disk
 ;    jmp getUserInput
 
-+   cmp #'L' ; load from disk
-    bne +
-    jsr loadContentFromDisk
-    jmp getUserInput
+;+   cmp #'L' ; load from disk
+;    bne +
+;    jsr loadContentFromDisk
+;    jmp getUserInput
 
 +   cmp #'F'; speed
     bne ++

@@ -220,21 +220,21 @@ initRamLeft
     sta ramLeft+1
     rts
 
-requestContent
+requestContentViaWiC64
     jsr initRamLeft
 
     lda zp_perm_target
     cmp #1
     bne +
     jsr initReu
-    jmp .afterPerm
+    jmp .afterMemoryInit
 +   cmp #2
     bne +
     jsr initGeoRam
 ;    lda #0
 ;    sta zp_perm_target
 
-.afterPerm
+.afterMemoryInit
 +   lda #$93 ; clear screen
     jsr bsout
 
@@ -419,6 +419,20 @@ requestContent
     +wic64_set_store_instruction .storeInstructionDrop
 
 +   rts
+
+.storeInstructionREU
+    jsr .stashREU
+
+; let's try this:
+; instead of storing blocks in RAM and then transferring them to the REU
+; (which would require tracking of block size), we'll just immediately
+; write each byte to the REU. We'll need an address in RAM, but only one byte.
+; the REU is configured so that it auto-increments the REU-write address, but
+; keeps the RAM read address.
+; in theory, we should be able to write the byte to RAM and then just trigger the
+; DMA operation
+.stashREU
+    rts
 
 .writeDebug
     lda #$0d
@@ -816,3 +830,5 @@ bkm2Type            !byte $30
 .txtReadResponse !text "Reading response",0
 .txtSendPlaylist !text "Sending playlist to mex",0
 .txtPressKey    !text "press key to continue",0
+
+.deviceKey      !text "device"

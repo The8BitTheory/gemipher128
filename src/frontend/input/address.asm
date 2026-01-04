@@ -136,24 +136,23 @@ writeToAddress
 
 .evaluateInput
     jsr .leaveAddressEnterMode
-    jsr .clearHostPortSelector
-    jsr .parseAddress
+    jsr parseAddress
     bcs .invalidAddress
-    jsr .setRequestPointers
+    jsr setRequestPointersToAddress
+    jsr setFromHistory  ; this writes from .host .port .selector to tcpOpenXyz and tcpWriteXyz
     lda #1
     sta zp_navModeHistory
     jmp requestNewContent
-    ;jmp getUserInput
 
 .clearInput
-    jsr .clearAddressHostPortSelector
+    jsr clearAddressHostPortSelector
     jsr .resetCursorPosition
     jsr .setCursorPosition
     jsr fillLine0WithSpaces
 
     jmp .handleInput
 
-.clearAddressHostPortSelector
+clearAddressHostPortSelector
     lda #0
     sta addressPos
 
@@ -194,7 +193,9 @@ writeToAddress
     rts
 
 ; turns user input into tokens ready for request
-.parseAddress
+parseAddress
+    jsr .clearHostPortSelector
+
     lda addressPos
     bne +
     sec
@@ -209,7 +210,7 @@ writeToAddress
     cmp #'/'
     bne +   
     jmp .setDefaultPort ; we found a /, port was not entered. assume default port and continue parsing
-    ;jmp .concludePort
+    
 +   sta .host,x
     inx
     cpx addressPos
@@ -331,7 +332,7 @@ writeToAddress
 
     jmp .concludePort
 
-.setRequestPointers
+setRequestPointersToAddress
     lda .pageType
     sta zp_pageType
     sta zp_currentType
@@ -343,7 +344,7 @@ writeToAddress
     sta zp_currentHostPtr+1
 
     ; port must end with \r\n
-    lda #<.port; $ba ;186, contains current drive number
+    lda #<.port
     sta zp_currentPortPtr
     lda #>.port
     sta zp_currentPortPtr+1
@@ -353,7 +354,7 @@ writeToAddress
     sta zp_currentSelectorPtr
     lda #>.selector
     sta zp_currentSelectorPtr+1
-    jmp setFromHistory
+    rts
 
 
 ; reads value from vdc-register in Xreg into Acc
@@ -418,6 +419,55 @@ writeToAddress
     jsr writeCurrentGopherToHeadline
     jmp getUserInput
 
+; reads the value from .port and converts it into a numeric value
+; result is written to deviceNumber
+portToDeviceNr
+    ldx #0
+    stx deviceNumber
+    stx .nrBytes
+-   lda .port,x
+    beq +
+    cmp #$0d
+    beq +
+    inc .nrBytes
+    inx
+    cpx #3
+    beq .invalidPort    ; if 3 bytes long, the string is invalid
+    jmp -
+
+; calculate 
++   dec .nrBytes    ; convert into index. last index (or only) is single digit, next index (if existing) is 10s
+    ldx .nrBytes
+    lda .port,x     ; eg $38 for 8
+    sec
+    sbc #$30
+    bmi .invalidPort
+    sta .deviceNr
+    dex
+    bmi .portToDeviceNrDone
+    lda .port,x     ; eg $31 for 1
+    sec
+    sbc #$30
+    bmi .invalidPort
+    beq .portToDeviceNrDone
+    tay
+    lda #0
+-   clc
+    adc #10
+    dey
+    beq .portToDeviceNrDone
+    jmp -
+
+
+.portToDeviceNrDone
+    clc
+    adc .deviceNr
+    sta deviceNumber
+    rts
+
+.invalidPort
+    rts
+
 .posCursorX     !byte 0     ; screen coordinate
 .posCursorY     !byte 0     ; screen coordinate
 address        !fill 256   ; eg gopher.floodgap.com:70/0/selector
@@ -426,3 +476,6 @@ address        !fill 256   ; eg gopher.floodgap.com:70/0/selector
 .selector       !fill 256   ; eg /selector. end with $9
 .pageType       !byte 0     
 addressPos     !byte 0
+
+.nrBytes        !byte 0     ; used for converting port to device nr
+.deviceNr       !byte 0     ; temporary value. if successful, written to deviceNumber

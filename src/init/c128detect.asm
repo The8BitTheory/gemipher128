@@ -10,8 +10,13 @@
 !zone c128detect
 
 c128detect
+    jsr doSlow
     jsr .detectWiC64
 
+;    jsr detectREU
+    nop
+
+ ;   jsr doFast
     rts
 
 ; proper WiC64 usage requires:

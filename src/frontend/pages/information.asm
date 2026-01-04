@@ -282,7 +282,7 @@ txtTrail       !text $09," ",$09," ",$09," ",$0d,$0a,$0
 
 .txtTimeout0    !text "iThis page couldn't be loaded.",$09," ",$09," ",$09," ",$0d,$0a,$0
 .txtTimeout1    !text "iPlease check if the address is correct",$09," ",$09," ",$09," ",$0d,$0a,$0
-.txtTimeout2    !text "iIf it is, the host might be unavailable temporary",$09," ",$09," ",$09," ",$0d,$0a,$0
+.txtTimeout2    !text "iIf it is, the host might be unavailable temporarily",$09," ",$09," ",$09," ",$0d,$0a,$0
 .txtKeyOptions  !text "iYou can press the following keys to continue",$09," ",$09," ",$09," ",$0d,$0a,$0
 .txtTimeoutR    !text "iR - Reload page",$09," ",$09," ",$09," ",$0d,$0a,$0
 .txtOptionG    !text "iG - Go to a new address",$09," ",$09," ",$09," ",$0d,$0a,$0
