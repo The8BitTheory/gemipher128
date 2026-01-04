@@ -136,17 +136,18 @@ writeToAddress
 
 .evaluateInput
     jsr .leaveAddressEnterMode
-    jsr parseAddress
-    bcs .invalidAddress
-    jsr setRequestPointersToAddress
-    jsr setFromHistory  ; this writes from .host .port .selector to tcpOpenXyz and tcpWriteXyz
+    jsr parseAddress        ; extracts input from address into .host, .port, .pageType, and .selector
+    bcs .invalidAddress     
+    jsr setRequestPointersToAddress ; sets pointers zp_currentHost, Port and Selector to .host, .port and .selector
+    jsr setFromHistory  ; reads from pointers and writes to to tcpOpenXyz and tcpWriteXyz
     lda #1
     sta zp_navModeHistory
 
     ; if host is "device",$9 then load from disk
     jsr .isDeviceHost
     bne +
-    jsr setParamsForLoadingLocalStartPage
+    jsr portToDeviceNr
+    jsr selectorToFilename
     jsr loadPageFromDisk
     jmp afterRequest
 
@@ -469,24 +470,25 @@ portToDeviceNr
     bmi .invalidPort
     sta .deviceNr
     dex
-    bmi .portToDeviceNrDone
+    bmi .portToDeviceNrDone1Digit
     lda .port,x     ; eg $31 for 1
     sec
     sbc #$30
     bmi .invalidPort
-    beq .portToDeviceNrDone
+    beq .portToDeviceNrDone2Digits
     tay
     lda #0
 -   clc
     adc #10
     dey
-    beq .portToDeviceNrDone
+    beq .portToDeviceNrDone2Digits
     jmp -
 
 
-.portToDeviceNrDone
+.portToDeviceNrDone2Digits
     clc
     adc .deviceNr
+.portToDeviceNrDone1Digit
     sta deviceNumber
     rts
 
