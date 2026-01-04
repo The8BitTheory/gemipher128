@@ -63,12 +63,16 @@ writeToLinkTable
 
 +   rts
 
+readNextByteWithoutInc
+    ldx zp_contentBank
+    ldy #0
+    jmp c_fetch         ; read from bank 1
+    
 readNextByte
     ; read from bank 1
     ldx zp_contentBank
     ldy #0
     jsr c_fetch         ; read from bank 1
-    
     sta zp_tempA
     pha
 
@@ -103,10 +107,6 @@ readNextByte
     lda leftToParse
     bne +
 
-    nop
-    nop
-    nop
-
 .reachedEof
     sec ; set carry means we reached end of file
     pla
@@ -117,3 +117,4 @@ readNextByte
     rts
 
 leftToParse     !word 0
+charsSinceSpace !byte 0     ; how many characters have passed since the last space. supposed to help with word-wrap

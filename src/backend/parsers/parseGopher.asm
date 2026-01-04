@@ -189,6 +189,10 @@ parseGopher
 -   jsr readNextByte
     bcs .parseComplete  ; reached end of content
 
+    cmp #' '            ; if this is a space character, we reset the counter
+    bne +
+    sty charsSinceSpace ; y should be zero because it was set in readNextByte
++   inc charsSinceSpace
     cmp #9  ; tab. end ascii output
     bne +
 
@@ -209,10 +213,38 @@ parseGopher
     jmp -
 
 .wrapLine
-    jsr .storeLengthInList
+    ; when a line is running over, let's check if we're wrapping the word correctly
+    ; if the following character is not a space character, it means we split a word
+    jsr readNextByteWithoutInc
+    cmp #' '    ; space
+    bne +
+    ; if space: wrap was luckily good. we can skip the space (would indent the next line otherwise)
+    jsr readNextByte
+    jmp ++  
+
+    ; if no space: find previous space and wrap to new line from there
+    ; first, reduce line length so it only goes until last space
++   sec
+    lda .lineLengthG
+    sbc charsSinceSpace
+    sta .lineLengthG
+    ; next, reset out read pointer to after the last space
+
+    dec charsSinceSpace
+    sec
+    lda zp_contentAddress
+    sbc charsSinceSpace
+    sta zp_contentAddress
+    lda zp_contentAddress+1
+    sbc #0
+    sta zp_contentAddress+1
+    ; 
+
+++  jsr .storeLengthInList  ; lineLengthG holds the length
     lda #0
     sta .lineLengthG
-    
+    sta charsSinceSpace
+
     inc .nrSegments
     jsr .storePointerInOffsetList
     jmp -
@@ -220,8 +252,7 @@ parseGopher
 .parseComplete
     lda #5
     sta .parseSeq    ;.parseSeq 5 should end parsing
-    jsr .writeSegmentsToLinkPointer
-    jmp .decideOnParseSeq
+    jmp .generalEnd
 
 .handleTab
     inc .parseSeq
@@ -267,6 +298,7 @@ parseGopher
     lda #0
     sta .parseSeq
 
+.generalEnd
     jsr .writeSegmentsToLinkPointer
 
     inc zp_linecount

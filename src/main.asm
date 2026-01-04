@@ -315,12 +315,19 @@ getUserInput
     jmp getUserInput
 
 .tryLineScrollDown
-    lda zp_linenumber_start+1
-    cmp zp_linecount+1
-    bcc .doLineScrollDown
     clc
     lda zp_linenumber_start
     adc #VISIBLE_LINES
+    sta zp_tempCalc
+    lda zp_linenumber_start+1
+    adc #0
+    sta zp_tempCalc+1
+
+    lda zp_tempCalc+1
+    cmp zp_linecount+1
+    bcc .doLineScrollDown
+
+    lda zp_tempCalc
     cmp zp_linecount
     bcc .doLineScrollDown
     jmp getUserInput
