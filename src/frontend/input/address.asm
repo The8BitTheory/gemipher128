@@ -142,7 +142,32 @@ writeToAddress
     jsr setFromHistory  ; this writes from .host .port .selector to tcpOpenXyz and tcpWriteXyz
     lda #1
     sta zp_navModeHistory
-    jmp requestNewContent
+
+    ; if host is "device",$9 then load from disk
+    jsr .isDeviceHost
+    bne +
+    jsr setParamsForLoadingLocalStartPage
+    jsr loadPageFromDisk
+    jmp afterRequest
+
+    ; else load from wic64
++   jmp requestNewContent
+
+.isDeviceHost
+    ldx #0
+-   lda .deviceKey,x
+    beq +
+    cmp .host,x
+    bne .isNetworkHost
+    inx
+    jmp -
+
++   lda #0
+    rts
+
+.isNetworkHost
+    lda #$1
+    rts
 
 .clearInput
     jsr clearAddressHostPortSelector
@@ -479,3 +504,4 @@ addressPos     !byte 0
 
 .nrBytes        !byte 0     ; used for converting port to device nr
 .deviceNr       !byte 0     ; temporary value. if successful, written to deviceNumber
+.deviceKey      !text "device",$9,$0

@@ -25,14 +25,15 @@ main
 
 ; load from network
     ;jsr setInitialGopherHostSelector
-    jsr loadInitialPageFromDisk
-    jmp .afterRequest
+    jsr setParamsForLoadingLocalStartPage
+    jsr loadPageFromDisk
+    jmp afterRequest
 
 requestNewContent
     jsr requestContentViaWiC64
 
     ; set the cursor line to zero here, that's important for calculating the right screen area for display
-.afterRequest
+afterRequest
     jsr .setToFirstContentLine
 
 ; do the processing
@@ -176,29 +177,29 @@ getUserInput
     bne +
     jsr setNewGopherHostSelector
     jsr createUnsupportedPage
-    jmp .afterRequest
+    jmp afterRequest
 +   cmp #$35    ; dos binary
     bne +
     jsr setNewGopherHostSelector
     jsr createUnsupportedPage
-    jmp .afterRequest    
+    jmp afterRequest    
 +   cmp #$36    ; uuencoded text (probably a binary?)
     bne +
     jsr setNewGopherHostSelector
     jsr createUnsupportedPage
-    jmp .afterRequest
+    jmp afterRequest
 +   cmp #$39 ; 9 -> generic binary
     bne .checkIfSoundLine
     jsr setNewGopherHostSelector
     jsr createUnsupportedPage
-    jmp .afterRequest
+    jmp afterRequest
 
 .checkIfSoundLine
     cmp #'s'    ; sound file. show information page
     beq +
     jmp getUserInput
 +   jsr createSoundPage
-    jmp .afterRequest
+    jmp afterRequest
 
 .validLineSelected
     sta zp_pageType     ; this is important. all processing of the next page is based on this
@@ -218,8 +219,9 @@ getUserInput
 
 +   cmp #'S' ; go to startpage
     bne +
-    jsr loadInitialPageFromDisk
-    jmp .afterRequest
+    jsr setParamsForLoadingLocalStartPage
+    jsr loadPageFromDisk
+    jmp afterRequest
 
 +   cmp #'R' ;reload
     bne +

@@ -830,5 +830,3 @@ bkm2Type            !byte $30
 .txtReadResponse !text "Reading response",0
 .txtSendPlaylist !text "Sending playlist to mex",0
 .txtPressKey    !text "press key to continue",0
-
-.deviceKey      !text "device"

@@ -1,6 +1,6 @@
 !zone contentFromDisk
 
-loadInitialPageFromDisk
+loadPageFromDisk
     jsr setParamsForGopherPage
 
     lda #$93 ; clear screen
@@ -31,7 +31,7 @@ loadInitialPageFromDisk
     ;  LDA #nameContentLength
     ;  LDX #<nameContent
     ;  LDY #>nameContent
-    jsr .setParamsForLoadingLocalStartPage
+    
 
     jsr loadContentFromDisk
 
@@ -62,7 +62,7 @@ loadInitialPageFromDisk
     sta zp_navModeHistory
     rts
 
-.setParamsForLoadingLocalStartPage
+setParamsForLoadingLocalStartPage
     jsr clearAddressHostPortSelector
 
     ; write startpage to address bar
