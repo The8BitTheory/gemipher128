@@ -70,17 +70,18 @@ displayTextmode
 +   rts
 
 drawPlainTextStatusline
-    jsr setBlockFill
+    ; clear screen-ram of Statusline (ie print spaces)
+    ;jsr setBlockFill
 
-    lda #$20
-    ldy #$07
-    ldx #$80
-    jsr A_to_vram_XXYY
+    ;lda #$20
+    ;ldy #$07
+    ;ldx #$80
+    ;jsr A_to_vram_XXYY
 
     ;set count
-    lda #$50    ;lowbyte
-    ldy #$00    ;highbyte
-    jsr vdc_do_YYAA_cycles
+    ;lda #$4f    ;lowbyte
+    ;ldy #$00    ;highbyte
+    ;jsr vdc_do_YYAA_cycles
 
     ; draw topmost linenr and total nr of lines
 ;    lda #$0f

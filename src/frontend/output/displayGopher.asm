@@ -35,7 +35,7 @@ drawCursor
     ;ldy #$80
     ;jsr A_to_vram_XXYY
 
-.drawStatusLine
+;.drawStatusLine
     lda c_fetch_zp
     pha
 
@@ -76,7 +76,7 @@ drawCursor
 
     
     ; this is the counter to print spaces for the rest of the line
-    ldy #38
+    ldy #56
     sty zp_tempX
 
     lda zp_currentType

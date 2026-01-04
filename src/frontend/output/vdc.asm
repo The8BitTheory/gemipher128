@@ -21,6 +21,12 @@ initVdc
     ldx #9
     jsr A_to_vdc_reg_X
 
+    ; reg 28 bit 4 select ram-type. 0=16kb, 1=64kb
+    ldx #28
+    jsr vdc_reg_X_to_A
+    and #%11101111
+    jsr A_to_vdc_reg_X
+
 ; initialize charset
     jsr loadCharsetFromDisk
 
