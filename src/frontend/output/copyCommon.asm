@@ -131,7 +131,12 @@ checkAsciiUtf8
     sta .keeper
     jsr .readNextSeqByte
 
-    cmp #$99
+    cmp #$98
+    bne +
+    lda #$27    ; '
+    jmp .exitShow
+
++   cmp #$99
     bne +
     lda #$27    ; '
     jmp .exitShow
@@ -149,6 +154,11 @@ checkAsciiUtf8
 +   cmp #$93
     bne +
     lda #$2d    ; -
+    jmp .exitShow
+
++   cmp #$94
+    bne +
+    lda #$2d
     jmp .exitShow
 
 +   cmp #$9d
