@@ -225,7 +225,7 @@ writeToAddress
     ldy #0      ; y is the write index
     inx
 -   lda address,x
-    beq +
+    beq .concludePort
     cmp #'/'
     beq .concludePort
     sta .port,y
