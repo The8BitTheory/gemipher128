@@ -17,8 +17,6 @@ parsePlainText
     jsr initParser
 
     lda #0
-    sta zp_visibleLength
-    sta zp_visibleLength+1
     sta zp_linecount
     sta zp_linecount+1
     sta .lineLength
@@ -46,7 +44,6 @@ parsePlainText
     cmp #$0a    ; other line break
     beq .finishLineWithBreak
 
-    inc zp_visibleLength
     inc .lineLength
     lda .lineLength
     cmp #80
@@ -88,11 +85,9 @@ parsePlainText
     
 +   lda .lineLength
     jsr .storeValueInTxtLinkTable
-    lda #0;zp_visibleLength+1
+    lda #0
     jsr .storeValueInTxtLinkTable
     lda #0
-    sta zp_visibleLength
-    sta zp_visibleLength+1
     sta .lineLength
     sta charsSinceSpace
 
@@ -103,9 +98,9 @@ parsePlainText
 
 .doneParse
     jsr .storePointerInTxtLinkTable
-    lda zp_visibleLength
+    lda .lineLength
     jmp .storeValueInTxtLinkTable
-    lda zp_visibleLength+1
+    lda #0
     jmp .storeValueInTxtLinkTable
 
 

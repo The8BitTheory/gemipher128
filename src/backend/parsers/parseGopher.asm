@@ -51,7 +51,7 @@ parseGopher
 .decideOnParseSeq
     lda .parseSeq
     bne +
-    sta zp_visibleLength
+    ;sta zp_visibleLength
     sta .nrSegments
     ;jsr .storePointerInLinkTable    ; 
     jmp .handleType                 ; stores type first (storeValueInLinkTable) - byte. offset 0

@@ -28,8 +28,7 @@ copyTextToVram
     sbc zp_linenumber_start+1
     sta .linesLeftToCopy+1
 
-    ; vram-left is reset, because we fill it with subsequent data from the beginning
-    ; we only fill 2000 bytes of vram, directly on the frontbuffer
+    ; we will only copy 2000 bytes of content to vram, directly on the frontbuffer
     ;lda size_vram_content
     lda #$30
     sta .vramLeft
@@ -44,6 +43,8 @@ copyTextToVram
     ;lda #>VRAM_CONTENT
     lda #0
     sta zp_vram_content_addr+1
+
+    jsr clearScreen
 
     ldy zp_vram_content_addr
     lda zp_vram_content_addr+1

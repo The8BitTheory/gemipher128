@@ -42,6 +42,8 @@ copyGopherToVram
     lda #0
     sta zp_vram_content_addr+1
 
+    jsr clearScreen
+
     ldy zp_vram_content_addr
     lda zp_vram_content_addr+1
     

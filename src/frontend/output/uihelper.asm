@@ -163,13 +163,16 @@ clearScreen
     jsr A_to_vram_XXYY
 
     ;set count
-    lda #$30    ;lowbyte
+    lda #$2f    ;lowbyte
     ldy #$07    ;highbyte
-    jsr vdc_do_YYAA_cycles
+    jmp vdc_do_YYAA_cycles
 
-; not clearing lines 1-23 (content area) because every line writes to the attribute ram anyways
+; not clearing attribute-ram of lines 1-23 (content area)
+; because every line writes to the attribute ram anyways
 
 setStatusLineAttributeRam
+    jsr setBlockFill
+    
 ; set line 24 of attribute ram to inverse
     ldy #$80
     ldx #$0f
