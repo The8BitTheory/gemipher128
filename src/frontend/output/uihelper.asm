@@ -73,6 +73,7 @@ printAcc
 .printHeaderLineUntilTab
     ldy #0
 -   lda (zp_memPtr),y
+    beq +
     cmp #$d
     beq +
     pha

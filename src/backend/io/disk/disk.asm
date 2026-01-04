@@ -1,8 +1,6 @@
 !zone contentFromDisk
 
 loadPageFromDisk
-    jsr setParamsForGopherPage
-
     lda #$93 ; clear screen
     jsr bsout
 

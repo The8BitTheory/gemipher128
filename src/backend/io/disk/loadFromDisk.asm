@@ -31,7 +31,9 @@ loadContentFromDisk
         ldy #>.load_address
         lda #0  ; 0=load, else=verify)
         
+        ; we can't use BLOAD, as it can't go without two header bytes
         jsr $ffd5       ;BLOAD
+        
         
         bcs .error
         rts

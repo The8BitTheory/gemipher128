@@ -596,7 +596,7 @@ k_indsta
 !src "src/frontend/io/loadCharset.asm"
 !src "src/backend/io/disk/saveToDisk.asm"
 !src "src/backend/io/disk/disk.asm"
-!src "src/backend/io/disk/loadContent.asm"
+!src "src/backend/io/disk/loadFromDisk.asm"
 !src "src/backend/io/wic2disk.asm"
 !src "src/frontend/output/vdc.asm"
 !src "src/history.asm"

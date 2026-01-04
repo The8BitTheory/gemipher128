@@ -128,7 +128,7 @@ saveContentToDisk
 .doDiskIO
         jsr .prepareDiskWrite
         ;jsr .saveRaw
-        jsr $ffd8       ;BSAVE (f53e)
+        jsr $ffd8       ;BSAVE (does jmp f53e)
         
         bcs .error
 
