@@ -81,6 +81,10 @@ parseGopher
     sta .segPort+1
     jmp .handlePort
 
++   cmp #4
+    bne +
+    jmp .handlePlus
+
 +   rts
     nop
 
@@ -213,6 +217,12 @@ parseGopher
     jsr .storePointerInOffsetList
     jmp -
 
+.parseComplete
+    lda #5
+    sta .parseSeq    ;.parseSeq 5 should end parsing
+    jsr .writeSegmentsToLinkPointer
+    jmp .decideOnParseSeq
+
 .handleTab
     inc .parseSeq
     jmp .decideOnParseSeq
@@ -242,13 +252,17 @@ parseGopher
     jsr readNextByte
     bcs .parseComplete  ; reached last byte of content
     beq .parseComplete  ; found zero-byte
-    cmp #13
+    cmp #9              ; a tab after the port means, this is a gopher + server. we'll gracefully skip this for now
+    bne +
+    jmp .handleTab
++   cmp #13
     bne .handlePort
     jsr readNextByte
     bcs .parseComplete  ; reached last byte of content
     cmp #10
     bne .handlePort
     
+.endLine
     ; we found a CR LF sequence. end the line
     lda #0
     sta .parseSeq
@@ -261,11 +275,20 @@ parseGopher
 
 +   jmp .decideOnParseSeq
 
-.parseComplete
-    lda #4
-    sta .parseSeq    ;.parseSeq 4 should end parsing
-    jsr .writeSegmentsToLinkPointer
-    jmp .decideOnParseSeq
+.handlePlus
+    jsr readNextByte
+    bcs .parseComplete
+    beq .parseComplete
+
+    cmp #13
+    bne .handlePlus
+    jsr readNextByte
+    bcs .parseComplete  ; reached last byte of content
+    cmp #10
+    bne .handlePlus
+
+    ; we found a CR LF sequence. end the line
+    jmp .endLine
 
 .writeSegmentsToLinkPointer
     lda #0

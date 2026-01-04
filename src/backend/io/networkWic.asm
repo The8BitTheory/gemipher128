@@ -136,7 +136,9 @@ setFromHistory
 
 -   ldx zp_hostSelBank
     jsr c_fetch
-    cmp #$0d
+    cmp #$0d    ; checking for <cr> (gopher standard case to end port)
+    beq +
+    cmp #$09    ; checking for tab (gopher + case to end port)
     beq +
     ldx zp_tempX
     sta tcpOpenHostPort,x
