@@ -139,12 +139,14 @@ writeToAddress
 
 .evaluateInput
     jsr .leaveAddressEnterMode
+    lda #1
+    sta zp_navModeHistory
+
+loadFromAddress
     jsr parseAddress        ; extracts input from address into .host, .port, .pageType, and .selector
     bcs .invalidAddress     
     jsr setRequestPointersToAddress ; sets pointers zp_currentHost, Port and Selector to .host, .port and .selector
     jsr setFromHistory  ; reads from pointers and writes to to tcpOpenXyz and tcpWriteXyz
-    lda #1
-    sta zp_navModeHistory
 
     ; if host is "device",$9 then load from disk
     jsr .isDeviceHost

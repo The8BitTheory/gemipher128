@@ -453,8 +453,14 @@ getUserInput
 +   dec zp_historyStackPos
 .commonHistoryPageHandling
     jsr .setToFirstContentLine
-    jsr readFromStack
-    jmp .prepareRequest
+    ; readFromStack should write to address
+    jmp loadFromAddress
+    ; jsr parseAddress  ; 
+    ; bcs .invalidAddress     
+    ; jsr setRequestPointersToAddress ; sets pointers zp_currentHost, Port and Selector to .host, .port and .selector
+    ; jsr setFromHistory  ; reads from pointers and writes to to tcpOpenXyz and tcpWriteXyz
+    
+    
 
 ; set the relevant content pointers to their initial position
 ; this is done when writing downloaded data and when starting to parse
