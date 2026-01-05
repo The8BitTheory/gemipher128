@@ -453,12 +453,14 @@ getUserInput
 +   dec zp_historyStackPos
 .commonHistoryPageHandling
     jsr .setToFirstContentLine
-    ; readFromStack should write to address
+    jsr readFromStack ;sets pointers zp_currentHostPtr, zp_currentPortPtr, zp_currentSelectorPtr to history entry
+    jsr setFromHistory  ; reads from pointers and writes to to tcpOpenXyz and tcpWriteXyz
+;    jsr writeCurrentGopherToHeadline ; writes to the header line AND to address (which is what we need)
     jmp loadFromAddress
     ; jsr parseAddress  ; 
     ; bcs .invalidAddress     
     ; jsr setRequestPointersToAddress ; sets pointers zp_currentHost, Port and Selector to .host, .port and .selector
-    ; jsr setFromHistory  ; reads from pointers and writes to to tcpOpenXyz and tcpWriteXyz
+    ; 
     
     
 

@@ -142,12 +142,12 @@ writeToAddress
     lda #1
     sta zp_navModeHistory
 
-loadFromAddress
     jsr parseAddress        ; extracts input from address into .host, .port, .pageType, and .selector
     bcs .invalidAddress     
     jsr setRequestPointersToAddress ; sets pointers zp_currentHost, Port and Selector to .host, .port and .selector
     jsr setFromHistory  ; reads from pointers and writes to to tcpOpenXyz and tcpWriteXyz
 
+loadFromAddress
     ; if host is "device",$9 then load from disk
     jsr .isDeviceHost
     bne +
@@ -160,12 +160,12 @@ loadFromAddress
 +   jmp requestNewContent
 
 .isDeviceHost
-    ldx #0
--   lda .deviceKey,x
+    ldy #0
+-   lda .deviceKey,y
     beq +
-    cmp .host,x
+    cmp (zp_currentHostPtr),y
     bne .isNetworkHost
-    inx
+    iny
     jmp -
 
 +   lda #0
@@ -453,39 +453,39 @@ setRequestPointersToAddress
 ; reads the value from .port and converts it into a numeric value
 ; result is written to deviceNumber
 portToDeviceNr
-    ldx #0
-    stx deviceNumber
-    stx .nrBytes
--   lda .port,x
+    ldy #0
+    sty deviceNumber
+    sty .nrBytes
+-   lda (zp_currentPortPtr),y
     beq +
     cmp #$0d
     beq +
     inc .nrBytes
-    inx
-    cpx #3
+    iny
+    cpy #3
     beq .invalidPort    ; if 3 bytes long, the string is invalid
     jmp -
 
 ; calculate 
 +   dec .nrBytes    ; convert into index. last index (or only) is single digit, next index (if existing) is 10s
-    ldx .nrBytes
-    lda .port,x     ; eg $38 for 8
+    ldy .nrBytes
+    lda (zp_currentPortPtr),y     ; eg $38 for 8
     sec
     sbc #$30
     bmi .invalidPort
     sta .deviceNr
-    dex
+    dey
     bmi .portToDeviceNrDone1Digit
-    lda .port,x     ; eg $31 for 1
+    lda (zp_currentPortPtr),y     ; eg $31 for 1
     sec
     sbc #$30
     bmi .invalidPort
     beq .portToDeviceNrDone2Digits
-    tay
+    tax
     lda #0
 -   clc
     adc #10
-    dey
+    dex
     beq .portToDeviceNrDone2Digits
     jmp -
 

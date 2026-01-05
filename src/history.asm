@@ -179,6 +179,7 @@ writeCursorPosToStack
 
     rts
 
+; this sets zp_currentHostPtr, zp_currentPortPtr and zp_currentSelectorPtr to the history entry
 readFromStack
     clc
     lda zp_historyStackPos

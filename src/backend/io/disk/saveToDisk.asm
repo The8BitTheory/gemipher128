@@ -16,16 +16,19 @@ finishDownload
 selectorToFilename
 ;    lda #zp_currentSelectorPtr
 ;    sta c_fetch_zp
-    lda #<address
+    ;lda #<address
+    lda zp_currentSelectorPtr
     sta zp_memPtr
-    lda #>address
+    ;lda #>address
+    lda zp_currentSelectorPtr+1
     sta zp_memPtr+1
 
     ldy #0
 -   ;ldx zp_contentBank
     ;jsr c_fetch
     lda (zp_memPtr),y
-;    cmp #$09    ; tab ends the selector string
+    beq .writeDiskFilename
+    cmp #$09    ; tab ends the selector string
     beq .writeDiskFilename
     cmp #'/'
     bne +   ; no /, go to next line
@@ -44,7 +47,10 @@ selectorToFilename
     lda (zp_memPtr),y
     ;ldx zp_contentBank
     ;jsr c_fetch
-;    cmp #$09
+    beq +
+    cmp #$09
+    beq +
+    cmp #$0d
     beq +
     ldx zp_tempX
     sta diskFilename,x
