@@ -303,10 +303,6 @@ parseGopher
 .generalEnd
     jsr .writeSegmentsToLinkPointer
 
-    inc zp_linecount
-    bne +
-    inc zp_linecount+1
-
 +   jmp .decideOnParseSeq
 
 .handlePlus
@@ -359,11 +355,15 @@ parseGopher
     lda .segPort+1
     jsr writeToLinkTable
 
-    lda .nrSegments
+    inc zp_linecount
+    bne +
+    inc zp_linecount+1
+
++   lda .nrSegments
     cmp zp_tempA
     beq +
     inc zp_tempA
-    jmp -    
+    jmp -
 
 +   rts
 

@@ -135,10 +135,6 @@ writeToAddress
     rts
 
 .evaluateInput
-    ; append a null byte to the address
-    lda #$0
-    jsr writeToAddress
-
     jsr .leaveAddressEnterMode
     jsr parseAddress        ; extracts input from address into .host, .port, .pageType, and .selector
     bcs .invalidAddress     

@@ -76,6 +76,8 @@ printAcc
     beq +
     cmp #$d
     beq +
+    cmp #$09
+    beq +
     pha
     jsr writeToAddress
     pla
