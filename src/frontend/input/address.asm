@@ -58,6 +58,9 @@ activateAddressEnterMode
     ldy .posCursorX
     lda #' '    ; space has same screencode as ascii code
     jsr A_to_vram_XXYY
+    lda #0
+    jsr writeToAddress
+    dec addressPos
     jmp .handleInput
 
 .parseInput
