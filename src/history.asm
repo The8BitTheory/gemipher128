@@ -17,8 +17,8 @@
 ; when the stack is full, the oldest entry is removed
 
 ; 2 bytes page type (mostly only 1 byte is used)
-; 2 bytes content line (written when leaving)
-; 2 bytes screenline start (written when leaving)
+; 2 bytes scrollposition (written when leaving)
+; 1 bytes cursorline (written when leaving)
 ; x bytes "host:port" text, zero-byte terminated
 ; x bytes "selector" text, zero-byte terminated
 
@@ -69,10 +69,7 @@ pushToHistoryStack
     iny
     sta (zp_historyStackAddress),y
     iny
-; skip 4 entries (reserved for content line and screenline-start)
-    lda #0
-    sta (zp_historyStackAddress),y
-    iny
+; skip 3 entries (reserved for scrollposition and cursorline)
     lda #0
     sta (zp_historyStackAddress),y
     iny
@@ -168,6 +165,17 @@ pushToHistoryStack
     rts
 
 writeCursorPosToStack
+    ; writes scrollposition (zp_linenumber_start) and cursorposition on screen (zp_cursorLineScreen)
+    ldy #2
+    lda zp_linenumber_start
+    sta (zp_historyStackAddress),y
+    iny
+    lda zp_linenumber_start+1
+    sta (zp_historyStackAddress),y
+    iny
+
+    lda zp_cursorLineScreen
+    sta (zp_historyStackAddress),y
 
     rts
 
@@ -188,22 +196,43 @@ readFromStack
     sta zp_currentType
     sta zp_pageType
     iny
+    iny ; second type byte. for future use
 
-;bytes 2-5: scroll and cursor position when we left (not implemented yet)
+;bytes 2-4: scroll and cursor position when we left (not implemented yet)
+    lda (zp_historyStackAddress),y
+    sta zp_linenumber_start
     iny
+    lda (zp_historyStackAddress),y
+    sta zp_linenumber_start+1
     iny
+    lda (zp_historyStackAddress),y
+    sta zp_cursorLineScreen
     iny
-    iny
-    iny
-    
+
     clc
+    lda zp_linenumber_start
+    adc zp_cursorLineScreen
+    sta zp_cursorLineContent
+    lda zp_linenumber_start+1
+    adc #0
+    sta zp_cursorLineContent+1
+
+; reduce content line by 1, because screen line is one plus
+    sec
+    lda zp_cursorLineContent
+    sbc #1
+    sta zp_cursorLineContent
+    bcs +
+    dec zp_cursorLineContent+1
+   
++   clc
     tya
     adc zp_historyStackAddress
     sta zp_currentHostPtr
     lda zp_historyStackAddress+1
     sta zp_currentHostPtr+1
 
-; byte 6 until zero-byte is host:port
+; byte 5 until zero-byte is host:port
     ldx #0
 -   lda (zp_historyStackAddress),y
     cmp #9

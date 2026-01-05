@@ -20,6 +20,8 @@ copyGopherToVram
     
     jsr initLinkTableAddress
 
+    jsr calculateLinkTableOffset
+
     ; lines left to copy needs to be set accordingly
     sec
     lda zp_linecount

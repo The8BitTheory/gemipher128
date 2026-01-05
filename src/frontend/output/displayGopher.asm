@@ -41,12 +41,31 @@ drawCursor
 
     jsr drawPlainTextStatusline
 
+; printing the cursorline overwrites what's there from plaintextstatusline. don't know why
+;    lda #$07
+;    ldy #$88
+;    jsr AY_to_vdc_regs_18_19
+
+;    lda zp_cursorLineContent+1
+;    jsr .hiNybToHex
+;    jsr printAcc
+;    lda zp_cursorLineContent+1
+;    jsr .loNybToHex
+;    jsr printAcc
+;    lda zp_cursorLineContent
+;    jsr .hiNybToHex
+;    jsr printAcc
+;    lda zp_cursorLineContent
+;    jsr .loNybToHex
+;    jsr printAcc
+
     ; prepare values we want to show (type, selector, host, port)
     ; first, get content line from current screenline
     lda zp_cursorLineContent    
     sta zp_tempCalc
     lda zp_cursorLineContent+1
     sta zp_tempCalc+1
+    
     jsr .loadLineType
 
     iny ;skip currentLength

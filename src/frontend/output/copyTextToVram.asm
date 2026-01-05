@@ -18,6 +18,7 @@ copyTextToVram
     sta zp_contentBank
     
     jsr initLinkTableAddress
+    jsr calculateLinkTableOffset
 
     ; lines left to copy needs to be set accordingly
     sec

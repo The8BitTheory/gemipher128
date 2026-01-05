@@ -34,10 +34,12 @@ requestNewContent
 
     ; set the cursor line to zero here, that's important for calculating the right screen area for display
 afterRequest
+    lda zp_navModeHistory
+    beq +
     jsr .setToFirstContentLine
 
 ; do the processing
-    lda #$0d
++   lda #$0d
     jsr bsout
     jsr doFast
 
@@ -63,19 +65,12 @@ afterRequest
 .doneProcessing
 ; history stack only if "active" navigation, not going back and forth on stack
     lda zp_navModeHistory
-    beq +
+    beq .updateDisplay
     jsr pushToHistoryStack  ; only push to stack when not navigating in history
-+   ;jsr writeCurrentGopherToHeadline
+    jmp .updateDisplay
 
 .resetDisplay
-    lda #0
-    sta zp_linenumber_start
-    sta zp_linenumber_start+1
-    sta zp_cursorLineContent
-    sta zp_cursorLineContent+1
-
-    lda #FIRST_LINE
-    sta zp_cursorLineScreen
+    jsr .setToFirstContentLine
 
     lda zp_scrollModeCrsr
     beq +
@@ -83,10 +78,6 @@ afterRequest
     jmp .updateDisplay
 +   jsr copyGopherToVram
 
-; this shows that we can start on a later line with correct display
-;    lda #3
-;    sta zp_linenumber_start
-;    sta zp_cursorLineContent
 
 ; display page on top
 .updateDisplay
@@ -168,6 +159,7 @@ getUserInput
 
     lda #1
     sta zp_navModeHistory   ; not navigating in history
+    ;jsr .setToFirstContentLine
     lda zp_currentType
     cmp #$30    ; text file. show in gopher viewer (special plain text handling mode)
     beq .validLineSelected
@@ -202,8 +194,12 @@ getUserInput
     jmp afterRequest
 
 .validLineSelected
+    ; write scroll- and cursorposition to history
     sta zp_pageType     ; this is important. all processing of the next page is based on this
-    inc zp_historyStackPos
+    lda zp_navModeHistory
+    beq +
+    jsr writeCursorPosToStack
++   inc zp_historyStackPos
 .prepareRequest
     jsr setNewGopherHostSelector
     jmp requestNewContent
@@ -215,12 +211,16 @@ getUserInput
 +   cmp #'H' ;go home
     bne +
     jsr setInitialGopherHostSelector
+    jsr .setToFirstContentLine
+    lda #1
+    sta zp_navModeHistory
     jmp requestNewContent
 
 +   cmp #'S' ; go to startpage
     bne +
     jsr setParamsForLoadingLocalStartPage
     jsr loadPageFromDisk
+    jsr .setToFirstContentLine
     jmp afterRequest
 
 +   cmp #'R' ;reload
@@ -352,25 +352,6 @@ getUserInput
     jmp .updateDisplay
 +   jsr scrollTextScreenDownOneLine
     jmp .updateDisplay
-
-.calculateLinkTableOffset
-    lda zp_linenumber_start
-    sta zp_tempCalc
-    lda zp_linenumber_start+1
-    sta zp_tempCalc+1
-    lda zp_linkTableIncr
-    sta zp_tempX
-    jsr multiply
-
-    clc
-    adc #<LINKTABLE_ADDRESS
-    sta zp_linkTablePosition
-
-    tya
-    adc #>LINKTABLE_ADDRESS
-    sta zp_linkTablePosition+1
-
-    rts
 
 .tryCursorUp
     lda zp_scrollModeCrsr

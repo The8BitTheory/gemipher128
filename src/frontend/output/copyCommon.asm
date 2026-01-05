@@ -205,9 +205,29 @@ checkAsciiUtf8
     sec
     rts
 
+calculateLinkTableOffset
+    lda zp_linenumber_start
+    sta zp_tempCalc
+    lda zp_linenumber_start+1
+    sta zp_tempCalc+1
+    lda zp_linkTableIncr
+    sta zp_tempX
+    jsr multiply
+
+    clc
+    adc #<LINKTABLE_ADDRESS
+    sta zp_linkTablePosition
+
+    tya
+    adc #>LINKTABLE_ADDRESS
+    sta zp_linkTablePosition+1
+
+    rts
+
+
 .keeper     !byte 0
-.isAscii     !byte %10000000
-.isUtf2Byte  !byte %11000000
-.isUtf3Byte  !byte %11100000
-.isUtf4Byte  !byte %11110000
+.isAscii    !byte %10000000
+.isUtf2Byte !byte %11000000
+.isUtf3Byte !byte %11100000
+.isUtf4Byte !byte %11110000
 
