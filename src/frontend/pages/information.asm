@@ -13,6 +13,21 @@
 
 ; The address you entered is not 
 
+
+!macro writeTermCharPtrToBank1 .textpointer, .terminatorByte {
+    ldy #0
+    sty zp_tempY
+-   ldy zp_tempY
+    lda (.textpointer),y
+    cmp .terminatorByte
+    beq +
+    jsr storeInfopageInBank1
+    inc zp_tempY
+    jmp -
+
++   
+}
+
 !macro writeToBank1 .nullTerminatedGopherLine {
     ldx #0
     stx zp_tempX
@@ -183,35 +198,7 @@ createUnsupportedPage
     ; write the filename, which is the part after the last / of the selector
 
     ; first, find the last /
-    ;  set indfet pointer
-    lda #zp_currentSelectorPtr
-    sta c_fetch_zp
-
-    ldy #0
--   ldx zp_contentBank
-    jsr c_fetch
-    cmp #$09    ; tab ends the selector string
-    beq .writeFilename
-    cmp #'/'
-    bne +   ; no /, go to next line
-    sty .slashPos   ; store current position as slashPos
-+   iny
-    jmp -
-
-.writeFilename
-    lda #$69
-    jsr storeInfopageInBank1
-
-    ldy .slashPos
-    sty zp_tempY
--   ldy zp_tempY
-    ldx zp_contentBank
-    jsr c_fetch
-    cmp #$09
-    beq .writeRemainingLines
-    jsr storeInfopageInBank1
-    inc zp_tempY
-    jmp -
+    jsr .writeFilenameFromSelector
 
 .writeRemainingLines
     +writeLnToBank1 txtTrail
@@ -227,6 +214,40 @@ createUnsupportedPage
 
     rts
 
+.writeFilenameFromSelector
+    ;  set indfet pointer
+    lda #zp_currentSelectorPtr
+    sta c_fetch_zp
+
+    ldy #0
+-   ldx zp_contentBank
+    jsr c_fetch
+    cmp #$09    ; tab ends the selector string
+    beq .writeFilename
+    cmp #'/'
+    bne +   ; no /, go to next line
+    sty .slashPos   ; store current position as slashPos
++   iny
+    beq .writeFilename
+    jmp -
+
+.writeFilename
+    lda #$69
+    jsr storeInfopageInBank1
+
+    ldy .slashPos
+    sty zp_tempY
+-   ldy zp_tempY
+    ldx zp_contentBank
+    jsr c_fetch
+    cmp #$09
+    beq +
+    jsr storeInfopageInBank1
+    inc zp_tempY
+    jmp -
+
++   rts
+
 createTimeoutPage
     jsr .initInfoPage
     +writeLnToBank1 .txtEmptyLine
@@ -236,6 +257,43 @@ createTimeoutPage
     +writeLnToBank1 .txtTimeout1
     +writeLnToBank1 .txtTimeout2
      
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtKeyOptions
+    +writeLnToBank1 .txtTimeoutR
+    +writeLnToBank1 .txtOptionCrsr
+    +writeLnToBank1 .txtOptionG
+    +writeLnToBank1 .txtOptionH
+    +writeLnToBank1 .txtOptionS
+    +writeLnToBank1 .txtOptionX
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 .txtDot
+
+    rts
+
+createFileNotFoundPage
+    jsr .initInfoPage
+    +writeLnToBank1 .txtEmptyLine
+    +writeToBank1 .txtTheFile
+
+;    jsr .writeFilenameFromSelector
+    ldx #0
+    stx zp_tempX
+-   ldx zp_tempX
+    lda diskFilename,x
+    jsr storeInfopageInBank1
+    inc zp_tempX
+    ldx zp_tempX
+    cpx diskFilenameLength
+    beq +
+    jmp -
+
++   
+;    +writeLengthToBank1 diskFilename, diskFilenameLength
+    +writeToBank1 .txtCouldntLoad
+    +writeTermCharPtrToBank1 zp_currentPortPtr, .cr
+    +writeLnToBank1 txtTrail
+
     +writeLnToBank1 .txtEmptyLine
     +writeLnToBank1 .txtKeyOptions
     +writeLnToBank1 .txtTimeoutR
@@ -294,3 +352,7 @@ txtTrail       !text $09," ",$09," ",$09," ",$0d,$0a,$0
 .txtStatus      !text "Statuscode: ",0
 .txtConnectionstatus    !text "Connectionstatus (0=ok, 1=error/invalid session, 2=no browser connected): ",0
 
+.txtTheFile     !text "iThe file ",0
+.txtCouldntLoad !text " couldn't be loaded from device #",0
+
+.cr !byte $0d

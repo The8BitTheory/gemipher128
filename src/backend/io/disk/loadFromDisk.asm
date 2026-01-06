@@ -57,10 +57,10 @@ loadContentFromDisk
 
         ; for further information, the drive error channel has to be read
         jsr readStatusChannel
-        jsr printDiskStatus
+        ;jsr printDiskStatus
         
         Jsr .close    ; even if OPEN failed, the file has to be closed
-        jmp createTimeoutPage
+        jmp createFileNotFoundPage
 
 .readerror
         ;... error handling for read errors ...
@@ -68,13 +68,10 @@ loadContentFromDisk
 
         ; for further information, the drive error channel has to be read
         jsr readStatusChannel
-        jsr printDiskStatus
+        ;jsr printDiskStatus
 
         Jsr .close
-        jmp createTimeoutPage
-
-
-
+        jmp createFileNotFoundPage
 
 .byteCount      !byte 0
 .maxBytes = 24
