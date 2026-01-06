@@ -14,14 +14,23 @@ readStatusChannel
     ldx #0
 -   jsr $ffcf ;input
     sta diskStatus,x
-    ;jsr $ffd2 ;output
-    inx
+    cpx #2
+    bcs +
+    sta .statusCode,x
++   inx
     bit $90 ;status testen
     bvc -
 
     jsr $ffcc ;clrch
     lda #1
     jsr $ffc3 ;close
+
+    lda #<.statusCode
+    sta zp_memPtr
+    lda #>.statusCode
+    sta zp_memPtr+1
+    jsr twoCharsToDeviceNr
+
     rts
 
 printDiskStatus
@@ -38,3 +47,5 @@ printDiskStatus
 
 
 diskStatus  !fill 64
+.statusCode !word 0     ; store the two bytes of the status code (until the first $2c)
+

@@ -33,10 +33,6 @@ loadPageFromDisk
 
     jsr loadContentFromDisk
 
-    lda $ae
-    sta zp_contentAddress
-    lda $af
-    sta zp_contentAddress+1
 
     sec
     lda zp_contentAddress

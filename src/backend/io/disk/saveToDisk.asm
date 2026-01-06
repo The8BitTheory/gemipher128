@@ -113,15 +113,15 @@ saveContentToDisk
         ldx #0  ; bank of filename $c7
         jsr $ff68 ; call SETBNK
 
-        lda $0332
-        sta .vectorSave
-        lda $0333
-        sta .vectorSave+1
+;        lda $0332
+;        sta .vectorSave
+;        lda $0333
+;        sta .vectorSave+1
 
-        lda #<.saveRaw
-        sta $0332
-        lda #>.saveRaw
-        sta $0333
+;        lda #<.saveRaw
+;        sta $0332
+;        lda #>.saveRaw
+;        sta $0333
 
         ; x/y = end address+1 of write operation (lb/hb)
         ; a = zp location holding the start address of the write operation
@@ -144,10 +144,10 @@ saveContentToDisk
 
         JSR $FFCC     ; call CLRCHN
 
-        lda .vectorSave
-        sta $0332
-        lda .vectorSave+1
-        sta $0333
+;        lda .vectorSave
+;        sta $0332
+;        lda .vectorSave+1
+;        sta $0333
 
         RTS
 

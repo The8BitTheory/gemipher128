@@ -583,7 +583,7 @@ k_indsta
 !src "src/lib/wic64/wic64.asm"
 !src "src/backend/io/disk/commonDisk.asm"
 !src "src/frontend/diskProblems.asm"
-!src "src/frontend/io/loadCharset.asm"
+!src "src/backend/io/disk/loadCharset.asm"
 !src "src/backend/io/disk/saveToDisk.asm"
 !src "src/backend/io/disk/disk.asm"
 !src "src/backend/io/disk/loadFromDisk.asm"

@@ -154,6 +154,7 @@ loadFromAddress
     jsr portToDeviceNr
     jsr selectorToFilename
     jsr loadPageFromDisk
+    
     jmp afterRequest
 
     ; else load from wic64
@@ -466,17 +467,26 @@ portToDeviceNr
     beq .invalidPort    ; if 3 bytes long, the string is invalid
     jmp -
 
++   lda zp_currentPortPtr
+    sta zp_memPtr
+    lda zp_currentPortPtr+1
+    sta zp_memPtr+1
+    jmp +
+
 ; calculate 
+twoCharsToDeviceNr
+    lda #2
+    sta .nrBytes
 +   dec .nrBytes    ; convert into index. last index (or only) is single digit, next index (if existing) is 10s
     ldy .nrBytes
-    lda (zp_currentPortPtr),y     ; eg $38 for 8
+    lda (zp_memPtr),y     ; eg $38 for 8
     sec
     sbc #$30
     bmi .invalidPort
     sta .deviceNr
     dey
     bmi .portToDeviceNrDone1Digit
-    lda (zp_currentPortPtr),y     ; eg $31 for 1
+    lda (zp_memPtr),y     ; eg $31 for 1
     sec
     sbc #$30
     bmi .invalidPort

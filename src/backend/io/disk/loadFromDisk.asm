@@ -34,6 +34,13 @@ loadContentFromDisk
         jsr $ffd5       ;BLOAD
         bcs .error
 
+        ; write to content address here
+        ; the error page writes the correct contentAddress itself
+        lda $ae
+        sta zp_contentAddress
+        lda $af
+        sta zp_contentAddress+1
+
 .close
         LDA #$02      ; filenumber 2
         JSR $FFC3     ; call CLOSE
@@ -52,8 +59,9 @@ loadContentFromDisk
         jsr readStatusChannel
         jsr printDiskStatus
         
-        
-        JMP .close    ; even if OPEN failed, the file has to be closed
+        Jsr .close    ; even if OPEN failed, the file has to be closed
+        jmp createTimeoutPage
+
 .readerror
         ;... error handling for read errors ...
         sta fileOpError
@@ -62,7 +70,8 @@ loadContentFromDisk
         jsr readStatusChannel
         jsr printDiskStatus
 
-        JMP .close
+        Jsr .close
+        jmp createTimeoutPage
 
 
 
