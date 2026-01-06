@@ -18,7 +18,11 @@ vram_block_offsets  !fill 14    ; stores linkTablePosition values for fast ram-v
 *=$1d00
 main
     jsr initc128
-    jsr c128detect
+    beq +
+    ;a problem we can't solve occured in init. let's exit (usually no disk inserted or error when loading charset)
+    rts
+
++   jsr c128detect
     jsr disableBasicRom
 
     jsr initHistoryStack
@@ -577,6 +581,7 @@ k_indsta
 !src "src/backend/io/networkCommon.asm"
 
 !src "src/lib/wic64/wic64.asm"
+!src "src/frontend/diskProblems.asm"
 !src "src/frontend/io/loadCharset.asm"
 !src "src/backend/io/disk/saveToDisk.asm"
 !src "src/backend/io/disk/disk.asm"

@@ -5,9 +5,8 @@
 .load_address = $0400  ; make sure file size doesn't run over 4kb.
 
 loadContentFromDisk
-        lda #1
-        sta fileOpError
         lda #0
+        sta fileOpError
         sta .byteCount
 
         LDA diskFilenameLength
@@ -33,10 +32,7 @@ loadContentFromDisk
         
         ; we can't use BLOAD, as it can't go without two header bytes
         jsr $ffd5       ;BLOAD
-        
-        
         bcs .error
-        rts
 
 .close
         LDA #$02      ; filenumber 2
@@ -44,6 +40,7 @@ loadContentFromDisk
 
         JSR $FFCC     ; call CLRCHN
         RTS
+
 .error
         ; Accumulator contains BASIC error code
 
@@ -51,14 +48,12 @@ loadContentFromDisk
         ; A = $05 (DEVICE NOT PRESENT)
 
         ;... error handling for open errors ...
-        lda #0
         sta fileOpError
         JMP .close    ; even if OPEN failed, the file has to be closed
 .readerror
         ; for further information, the drive error channel has to be read
 
         ;... error handling for read errors ...
-        lda #0
         sta fileOpError
         JMP .close
 

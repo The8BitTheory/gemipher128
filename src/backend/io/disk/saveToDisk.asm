@@ -94,7 +94,7 @@ saveContentToDisk
 
 
 .prepareDiskWrite
-        lda #1
+        lda #0
         sta fileOpError
 
         LDA diskFilenameLength
@@ -158,7 +158,6 @@ saveContentToDisk
         ; A = $05 (DEVICE NOT PRESENT)
 
         ;... error handling for open errors ...
-        lda #0
         sta fileOpError
         JMP .close    ; even if OPEN failed, the file has to be closed
 
@@ -166,7 +165,6 @@ saveContentToDisk
         ; for further information, the drive error channel has to be read
 
         ;... error handling for read errors ...
-        lda #0
         sta fileOpError
         JMP .close
 
@@ -204,8 +202,8 @@ saveContentToDisk
 .diskFilenameSlashPos   !byte 0
 
 diskWriteEndAddress     !word 0
-diskFilename       !fill 18
-diskFilenameLength !byte 0
+diskFilename            !fill 18
+diskFilenameLength      !byte 0
 
 ; not used yet. would be used later for deciding, where to write the file to
 ;  besides disk, this will likely be Ultimate-II DMA write

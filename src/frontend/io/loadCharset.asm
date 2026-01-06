@@ -13,10 +13,10 @@ loadCharsetFromDisk
 .loadRoutine
         JSR $FFBD     ; call SETNAM
 
-        lda #1
-        sta fileOpError
+
         lda #0
         sta .byteCount
+        sta fileOpError
 
         LDA #$02      ; file number 2
         LDX $BA       ; last used device number
@@ -36,13 +36,14 @@ loadCharsetFromDisk
         jsr $ffd5       ;BLOAD
         
         bcs .error
-        rts
+        
 
 .close
         LDA #$02      ; filenumber 2
         JSR $FFC3     ; call CLOSE
 
         JSR $FFCC     ; call CLRCHN
+        lda fileOpError
         RTS
 .error
         ; Akkumulator contains BASIC error code
@@ -51,18 +52,14 @@ loadCharsetFromDisk
         ; A = $05 (DEVICE NOT PRESENT)
 
         ;... error handling for open errors ...
-        lda #0
         sta fileOpError
         JMP .close    ; even if OPEN failed, the file has to be closed
 .readerror
         ; for further information, the drive error channel has to be read
 
         ;... error handling for read errors ...
-        lda #0
         sta fileOpError
         JMP .close
-
-
 
 
 .byteCount      !byte 0

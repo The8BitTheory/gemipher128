@@ -28,11 +28,15 @@ initVdc
     jsr A_to_vdc_reg_X
 
 ; initialize charset
-    jsr loadCharsetFromDisk
+-   jsr loadCharsetFromDisk
+    beq +
+    jsr handleDiskProblem
+    beq -
+    rts
 
     ; arguments: ram-source, vram-target, nr of characters to copy
     ; copy from 16384 ($4000) to $3000 in fram, copy 256 bytes
-    lda #$00
++   lda #$00
     sta arg1
     sta arg2
     lda #$b0
