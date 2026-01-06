@@ -22,7 +22,7 @@ main
     ;a problem we can't solve occured in init. let's exit (usually no disk inserted or error when loading charset)
     rts
 
-+   jsr c128detect
+ +  jsr c128detect
     jsr disableBasicRom
 
     jsr initHistoryStack
@@ -235,11 +235,11 @@ getUserInput
     bne +
     jmp activateAddressEnterMode
 
-;+   cmp #'D' ; download
-;    bne +
-;    jsr saveContentToDisk
-;    ;jsr downloadWic2disk
-;    jmp getUserInput
++   cmp #'D' ; download
+    bne +
+    jsr saveContentToDisk
+    ;jsr downloadWic2disk
+    jmp getUserInput
 
 +   cmp #'F'; speed
     bne ++
@@ -581,6 +581,7 @@ k_indsta
 !src "src/backend/io/networkCommon.asm"
 
 !src "src/lib/wic64/wic64.asm"
+!src "src/backend/io/disk/commonDisk.asm"
 !src "src/frontend/diskProblems.asm"
 !src "src/frontend/io/loadCharset.asm"
 !src "src/backend/io/disk/saveToDisk.asm"

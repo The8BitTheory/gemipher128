@@ -24,9 +24,9 @@ selectorToFilename
     sta zp_memPtr+1
 
     ldy #0
--   ;ldx zp_contentBank
-    ;jsr c_fetch
-    lda (zp_memPtr),y
+    sty .diskFilenameSlashPos
+
+-   lda (zp_memPtr),y
     beq .writeDiskFilename
     cmp #$09    ; tab ends the selector string
     beq .writeDiskFilename
@@ -45,8 +45,6 @@ selectorToFilename
     sty zp_tempY
 -   ldy zp_tempY
     lda (zp_memPtr),y
-    ;ldx zp_contentBank
-    ;jsr c_fetch
     beq +
     cmp #$09
     beq +
@@ -153,19 +151,24 @@ saveContentToDisk
 
 .error
         ; Accumulator contains BASIC error code
+        sta fileOpError
 
         ; most likely errors:
         ; A = $05 (DEVICE NOT PRESENT)
 
-        ;... error handling for open errors ...
-        sta fileOpError
+        ; for further information, the drive error channel has to be read
+        jsr readStatusChannel
+        jsr printDiskStatus
         JMP .close    ; even if OPEN failed, the file has to be closed
 
 .writeerror
-        ; for further information, the drive error channel has to be read
-
-        ;... error handling for read errors ...
+        ;... error handling for write errors ...
         sta fileOpError
+
+        ; for further information, the drive error channel has to be read
+        jsr readStatusChannel
+        jsr printDiskStatus
+
         JMP .close
 
 ; save to disk without writing the address to the first two bytes

@@ -47,18 +47,23 @@ loadCharsetFromDisk
         RTS
 .error
         ; Akkumulator contains BASIC error code
-
+        sta fileOpError
         ; most likely errors:
         ; A = $05 (DEVICE NOT PRESENT)
 
         ;... error handling for open errors ...
-        sta fileOpError
+        jsr readStatusChannel
+        jsr printDiskStatus
+        
         JMP .close    ; even if OPEN failed, the file has to be closed
 .readerror
-        ; for further information, the drive error channel has to be read
-
-        ;... error handling for read errors ...
         sta fileOpError
+
+        ; for further information, the drive error channel has to be read
+        jsr readStatusChannel
+        jsr printDiskStatus
+        ;... error handling for read errors ...
+        
         JMP .close
 
 
