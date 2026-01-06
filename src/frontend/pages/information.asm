@@ -14,11 +14,27 @@
 ; The address you entered is not 
 
 
-!macro writeTermCharPtrToBank1 .textpointer, .terminatorByte {
+!macro writeLengthToBank1 .textPointer, .textLengthPointer {
+    ldx #0
+    stx zp_tempX
+-   ldx zp_tempX
+    lda .textPointer,x
+    jsr storeInfopageInBank1
+    inc zp_tempX
+    ldx zp_tempX
+    cpx .textLengthPointer
+    beq +
+    jmp -
+
++   
+
+}
+
+!macro writeTermCharPtrToBank1 .textPointer, .terminatorByte {
     ldy #0
     sty zp_tempY
 -   ldy zp_tempY
-    lda (.textpointer),y
+    lda (.textPointer),y
     cmp .terminatorByte
     beq +
     jsr storeInfopageInBank1
@@ -63,6 +79,9 @@
     jsr initContentAddress
     lda #zp_contentAddress
     sta c_stash_zp
+
+    lda #$31
+    sta zp_pageType
     rts
 
 createSoundPage
@@ -277,19 +296,7 @@ createFileNotFoundPage
     +writeToBank1 .txtTheFile
 
 ;    jsr .writeFilenameFromSelector
-    ldx #0
-    stx zp_tempX
--   ldx zp_tempX
-    lda diskFilename,x
-    jsr storeInfopageInBank1
-    inc zp_tempX
-    ldx zp_tempX
-    cpx diskFilenameLength
-    beq +
-    jmp -
-
-+   
-;    +writeLengthToBank1 diskFilename, diskFilenameLength
+    +writeLengthToBank1 diskFilename, diskFilenameLength
     +writeToBank1 .txtCouldntLoad
     +writeTermCharPtrToBank1 zp_currentPortPtr, .cr
     +writeLnToBank1 txtTrail
