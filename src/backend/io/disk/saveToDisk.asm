@@ -80,6 +80,8 @@ saveContentToDisk
     sta diskWriteEndAddress+1
 
     ;for now, use chars after the last slash of selector for filename
+    jsr parseAddress        ; put contents from address into .host, .port, .selector
+    jsr setRequestPointersToAddress ; sets pointers zp_currentHost, Port and Selector to .host, .port and .selector
     jsr selectorToFilename
 
 ;   we start saving from $0400 in bank 1 (bank is set down below with SETBNK)
