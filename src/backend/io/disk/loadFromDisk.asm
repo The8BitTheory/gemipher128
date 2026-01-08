@@ -4,6 +4,18 @@
 !zone loadcontent
 .load_address = $0400  ; make sure file size doesn't run over 4kb.
 
+loadDirectoryFromDisk
+        lda #0
+        sta fileOpError
+        sta .byteCount
+
+        ldx #<.filenameDirectory
+        ldy #>.filenameDirectory
+        lda #1
+
+        jmp +
+
+
 loadContentFromDisk
         lda #0
         sta fileOpError
@@ -12,7 +24,7 @@ loadContentFromDisk
         LDA diskFilenameLength
         LDX #<diskFilename
         LDY #>diskFilename
-        JSR $FFBD     ; call SETNAM
++       JSR $FFBD     ; call SETNAM
 
         LDA #$02      ; file number 2
         ;LDX $BA       ; last used device number
@@ -75,4 +87,4 @@ loadContentFromDisk
 
 .byteCount      !byte 0
 .maxBytes = 24
-
+.filenameDirectory  !text '$'

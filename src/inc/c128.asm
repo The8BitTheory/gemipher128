@@ -82,7 +82,7 @@ zp_currentType = $25    ; type of currently selected or iterated line. for type 
 zp_currentSelectorPtr = $26 ; and $27
 zp_currentHostPtr = $28 ; and $29
 zp_currentPortPtr = $2a ; and $2b
-;zp_currentTypePtr = $2c ; and $2d   --- AVAILABLE ---
+zp_directoryAddress = $2c; and $2d. this is like zp_contentAddress, but for disk directories
 zp_linkTableIncr = $2e      ; link table has entries of different sizes (gopher=9 bytes, plain text = 3 bytes)
 zp_responseSize = $2f ; and $30 ; the nr of bytes we counted for response. upfront information should be in zp_contentLength
 zp_scrollModeCrsr = $31 ; 0=cursor movement, else=just scroll screen lines

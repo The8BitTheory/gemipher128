@@ -15,6 +15,11 @@ initParser
     lda zp_responseSize+1
     sta leftToParse+1
 
+    lda #0
+    sta zp_linecount
+    sta zp_linecount+1
+
+
 clearLinkTable
 ; this clears 8x256 bytes
 
@@ -119,3 +124,4 @@ readNextByte
 leftToParse     !word 0
 charsSinceSpace !byte 0     ; how many characters have passed since the last space. supposed to help with word-wrap
 txtParsing      !text "Parsing... this can take a bit...",$0d,$0a,$0
+ 

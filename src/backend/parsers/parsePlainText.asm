@@ -17,8 +17,6 @@ parsePlainText
     jsr initParser
 
     lda #0
-    sta zp_linecount
-    sta zp_linecount+1
     sta .lineLength
     sta charsSinceSpace
 

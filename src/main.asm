@@ -107,7 +107,12 @@ getUserInput
 -   jsr k_getin
     beq -
 
-    cmp #17     ;cursor down
+    cmp #'$'
+    bne +
+    jsr createDirectoryPage
+    jmp afterRequest
+
++   cmp #17     ;cursor down
     bne +
     jmp .tryCursorDown
 
@@ -595,11 +600,14 @@ k_indsta
 
 !src "src/backend/parsers/parseGopher.asm"
 !src "src/backend/parsers/parsePlainText.asm"
+!src "src/backend/parsers/parseDirectory.asm"
 !src "src/backend/parsers/commonParse.asm"
+!src "src/frontend/pages/directoryPage.asm"
 !src "src/frontend/output/copyTextToVram.asm"
 !src "src/frontend/output/copyGopherToVram.asm"
 !src "src/frontend/output/copyCommon.asm"
 !src "src/frontend/output/uihelper.asm"
+!src "src/frontend/output/decHelper.asm"
 !src "src/frontend/output/displayText.asm"
 !src "src/frontend/output/displayGopher.asm"
 !src "src/frontend/input/address.asm"

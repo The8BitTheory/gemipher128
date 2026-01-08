@@ -27,8 +27,6 @@ parseGopher
     lda #0
     sta .parseSeq
     sta .parseMode
-    sta zp_linecount
-    sta zp_linecount+1
 
     lda #$ff
     sta .startFound

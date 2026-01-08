@@ -97,22 +97,22 @@ createSoundPage
 
 +   jsr doFast
     jsr .initInfoPage
-    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
     +writeLnToBank1 .txtSound0
 
-    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
     +writeLnToBank1 .txtSound1
     +writeLnToBank1 .txtSound2
 
-    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
 
 +   +writeToBank1 .txtSoundUrl
     +writeToBank1 mexServer
     +writeToBank1 mexUrlJoin
     +writeToBank1 mexJoinCode
     +writeLnToBank1 txtTrail
-    +writeLnToBank1 .txtEmptyLine
-    +writeLnToBank1 .txtDot
+    +writeLnToBank1 txtEmptyLine
+    +writeLnToBank1 txtDot
 
     lda #'s'
     sta zp_currentType
@@ -211,7 +211,7 @@ mexConnectionCheck
 
 createUnsupportedPage
     jsr .initInfoPage
-    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
     +writeLnToBank1 .txtUnsupported
     
     ; write the filename, which is the part after the last / of the selector
@@ -221,15 +221,15 @@ createUnsupportedPage
 
 .writeRemainingLines
     +writeLnToBank1 txtTrail
-    +writeLnToBank1 .txtEmptyLine
-    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
     +writeLnToBank1 .txtOptionG
     +writeLnToBank1 .txtOptionH
     +writeLnToBank1 .txtOptionS
     +writeLnToBank1 .txtOptionX
-    +writeLnToBank1 .txtEmptyLine
-    +writeLnToBank1 .txtEmptyLine
-    +writeLnToBank1 .txtDot
+    +writeLnToBank1 txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
+    +writeLnToBank1 txtDot
 
     rts
 
@@ -269,14 +269,14 @@ createUnsupportedPage
 
 createTimeoutPage
     jsr .initInfoPage
-    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
     +writeLnToBank1 .txtTimeout0
     
-    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
     +writeLnToBank1 .txtTimeout1
     +writeLnToBank1 .txtTimeout2
      
-    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
     +writeLnToBank1 .txtKeyOptions
     +writeLnToBank1 .txtTimeoutR
     +writeLnToBank1 .txtOptionCrsr
@@ -284,15 +284,15 @@ createTimeoutPage
     +writeLnToBank1 .txtOptionH
     +writeLnToBank1 .txtOptionS
     +writeLnToBank1 .txtOptionX
-    +writeLnToBank1 .txtEmptyLine
-    +writeLnToBank1 .txtEmptyLine
-    +writeLnToBank1 .txtDot
+    +writeLnToBank1 txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
+    +writeLnToBank1 txtDot
 
     rts
 
 createFileNotFoundPage
     jsr .initInfoPage
-    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
     +writeToBank1 .txtTheFile
 
 ;    jsr .writeFilenameFromSelector
@@ -301,7 +301,7 @@ createFileNotFoundPage
     +writeTermCharPtrToBank1 zp_currentPortPtr, .cr
     +writeLnToBank1 txtTrail
 
-    +writeLnToBank1 .txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
     +writeLnToBank1 .txtKeyOptions
     +writeLnToBank1 .txtTimeoutR
     +writeLnToBank1 .txtOptionCrsr
@@ -309,9 +309,9 @@ createFileNotFoundPage
     +writeLnToBank1 .txtOptionH
     +writeLnToBank1 .txtOptionS
     +writeLnToBank1 .txtOptionX
-    +writeLnToBank1 .txtEmptyLine
-    +writeLnToBank1 .txtEmptyLine
-    +writeLnToBank1 .txtDot
+    +writeLnToBank1 txtEmptyLine
+    +writeLnToBank1 txtEmptyLine
+    +writeLnToBank1 txtDot
 
     rts
 
@@ -333,7 +333,7 @@ storeInfopageInBank1
 
 .slashPos       !byte 0
 
-.txtDot         !text ".",$0d,$0a,$0
+txtDot         !text ".",$0d,$0a,$0
 .txtUnsupported !text "iThis content can't be displayed.",$09," ",$09," ",$09," ",$0d,$0a,$0
 
 .txtSound0      !text "iThis sound file can't be played back on the C128.",$09," ",$09," ",$09," ",$0d,$0a,$0
@@ -343,7 +343,7 @@ storeInfopageInBank1
 
 txtTrail       !text $09," ",$09," ",$09," ",$0d,$0a,$0
 
-.txtEmptyLine !text "i",$09," ",$09," ",$09," ",$0d,$0a,$0
+txtEmptyLine !text "i",$09," ",$09," ",$09," ",$0d,$0a,$0
 
 .txtTimeout0    !text "iThis page couldn't be loaded.",$09," ",$09," ",$09," ",$0d,$0a,$0
 .txtTimeout1    !text "iPlease check if the address is correct",$09," ",$09," ",$09," ",$0d,$0a,$0

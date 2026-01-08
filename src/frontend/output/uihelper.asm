@@ -2,7 +2,7 @@
 ; clear screen, conversions, create screen areas, etc.
 !zone uiHelper
 
-writeCurrentGopherToHeadline
+clearHeaderLine
     jsr setBlockFill
 
 ; set line 0 of attribute ram to inverse
@@ -22,8 +22,12 @@ writeCurrentGopherToHeadline
     sty zp_tempY
     ldy #02
     lda #00
+    jmp AY_to_vdc_regs_18_19
+
+writeCurrentGopherToHeadline
+    jsr clearHeaderLine
+    lda #0
     sta addressPos  ; this is used for cursorposition when entering a user-defined address
-    jsr AY_to_vdc_regs_18_19
 
     lda #<tcpOpenHostPort
     sta zp_memPtr  ;we're mis-using this here, as we're not doing indfet
@@ -35,7 +39,7 @@ writeCurrentGopherToHeadline
     lda tcpOpenSizeH
     sta zp_tempCalc+1
 
-    jsr .printHeaderLineUntilTab
+    jsr printHeaderLineUntilTab
 
     lda #'/'
     pha
@@ -63,14 +67,14 @@ writeCurrentGopherToHeadline
     lda tcpWriteSizeH
     sta zp_tempCalc+1
 
-    jmp .printHeaderLineUntilTab
+    jmp printHeaderLineUntilTab
     nop
 
 printAcc
     ldx #31
     jmp A_to_vdc_reg_X
 
-.printHeaderLineUntilTab
+printHeaderLineUntilTab
     ldy #0
 -   lda (zp_memPtr),y
     beq +

@@ -2,8 +2,10 @@
 
 readStatusChannel
     lda #1 ;filenr
-    ldx #8 ; device
-    ldy #15 ; secondary device
+    ldx deviceNumber ; device
+    bne +
+    ldx #8
++   ldy #15 ; secondary device
     jsr $ffba
     lda #0 ;kein name
     jsr $ffbd
