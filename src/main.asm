@@ -40,7 +40,7 @@ requestNewContent
 afterRequest
     lda zp_navModeHistory
     beq +
-    jsr .setToFirstContentLine
+    jsr setToFirstContentLine
 
 ; do the processing
 +   lda #$0d
@@ -65,6 +65,9 @@ afterRequest
     sta zp_linkTableIncr
     jsr copyGopherToVram
     lda #0
+    sta shouldWriteGopherToHeadline
+copyGopherDone
+    lda #0
     sta zp_scrollModeCrsr
 .doneProcessing
 ; history stack only if "active" navigation, not going back and forth on stack
@@ -74,7 +77,7 @@ afterRequest
     jmp .updateDisplay
 
 .resetDisplay
-    jsr .setToFirstContentLine
+    jsr setToFirstContentLine
 
     lda zp_scrollModeCrsr
     beq +
@@ -109,8 +112,7 @@ getUserInput
 
     cmp #'$'
     bne +
-    jsr createDirectoryPage
-    jmp afterRequest
+    jmp createDirectoryPage ; this jumps to copyGopherDone when finished
 
 +   cmp #17     ;cursor down
     bne +
@@ -220,7 +222,7 @@ getUserInput
 +   cmp #'H' ;go home
     bne +
     jsr setInitialGopherHostSelector
-    jsr .setToFirstContentLine
+    jsr setToFirstContentLine
     lda #1
     sta zp_navModeHistory
     jmp requestNewContent
@@ -229,7 +231,7 @@ getUserInput
     bne +
     jsr setParamsForLoadingLocalStartPage
     jsr loadPageFromDisk
-    jsr .setToFirstContentLine
+    jsr setToFirstContentLine
     jmp afterRequest
 
 +   cmp #'R' ;reload
@@ -270,7 +272,7 @@ getUserInput
 +   jmp exitc128
     nop ; only for debugging purposes to give breakpoints a safe spot
 
-.setToFirstContentLine
+setToFirstContentLine
     lda #0
     sta zp_linenumber_start
     sta zp_linenumber_start+1
@@ -461,7 +463,7 @@ getUserInput
 
 +   dec zp_historyStackPos
 .commonHistoryPageHandling
-    jsr .setToFirstContentLine
+    jsr setToFirstContentLine
     jsr readFromStack ;sets pointers zp_currentHostPtr, zp_currentPortPtr, zp_currentSelectorPtr to history entry
     jsr setFromHistory  ; reads from pointers and writes to to tcpOpenXyz and tcpWriteXyz
 ;    jsr writeCurrentGopherToHeadline ; writes to the header line AND to address (which is what we need)

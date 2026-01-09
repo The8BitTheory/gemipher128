@@ -18,13 +18,24 @@
 
 !zone gopher
 
+parseDirectoryIntoGopherFormat
+    jsr initParser
+
+    lda zp_directoryAddress
+    sta zp_contentAddress
+    lda zp_directoryAddress+1
+    sta zp_contentAddress+1
+
+    jmp +
+
+
 parseGopher
     +print txtParsing
     ; set zp_content to beginning of content so we can start parsing that now
     ; also sets linktableposition to the first byte
     jsr initParser
     
-    lda #0
++   lda #0
     sta .parseSeq
     sta .parseMode
 

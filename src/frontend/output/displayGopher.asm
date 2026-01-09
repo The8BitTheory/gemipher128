@@ -2,13 +2,19 @@
 
 ; zp_linkTablePosition will always point to the beginning of the current line
 ; this way we should be able to work with a single byte for offset (just y)
+
+
 displayGopher
-    ldy #LAST_LINE
+    lda shouldWriteGopherToHeadline
+    bne +
+    jsr writeCurrentGopherToHeadline
+    lda #0
+    sta shouldWriteGopherToHeadline ; set this to default behavior here. I'm sure I'll forget otherwise
+
++   ldy #LAST_LINE
     sty zp_lastLine
 
-    jsr writeCurrentGopherToHeadline
     jsr setStatusLineAttributeRam
-
     jsr .doGopherAttributeRam
     
 drawCursor
@@ -414,3 +420,4 @@ scrollGopherScreenDownOneLine
 .textLineNr       !text "LineNr: ",0
 .currentScreenLine      !byte 0     ; what screenline are we rendering currently
 
+shouldWriteGopherToHeadline !byte 0

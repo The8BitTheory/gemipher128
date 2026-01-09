@@ -74,10 +74,12 @@ parseDirectory
 
     jsr readNextByte
     sta .entryBlocks
+    pha
     jsr readNextByte
     sta .entryBlocks+1
-    lda .entryBlocks
-    ldx .entryBlocks+1
+    tax
+    pla
+    ;ldx .entryBlocks+1
     jsr makeItDec
     jsr .skipZeroes
     sty zp_tempX
@@ -119,11 +121,21 @@ parseDirectory
     +writeLnToDir txtEmptyLine
     +writeLnToDir txtEmptyLine
     +writeLnToDir txtDot
+
+    clc
+    lda dirAddress
+    adc #1
+    sta zp_directoryAddress
+    lda dirAddress+1
+    adc #0
+    sta zp_directoryAddress+1
     
     rts
 
 .handleDirEntry   ;blocks, name, type
     lda #'i'
+    jsr writeToDirectory
+    lda #' '
     jsr writeToDirectory
 
     ; write blocks. zp_tempX was written after .skipZeroes
@@ -134,6 +146,7 @@ parseDirectory
     inc zp_tempX
     jmp -
 
++
 -   jsr readNextByte    ; the first byte should be a quote char
     beq +
     jsr writeToDirectory
@@ -143,10 +156,9 @@ parseDirectory
     rts
 
 
-; we should write the diskname to the headerline
+; we write the diskname to the headerline
 .handleDiskName
-    ; write I and header
-    jsr writeToDirectory
+    jsr writeToDirectory    ; I forgot why we do this here
 
     ldx #0
     stx zp_tempX
@@ -183,14 +195,17 @@ parseDirectory
 .initDirectoryGopherOutput
     lda zp_contentAddress
     sta zp_directoryAddress
+    sta dirAddress
     lda zp_contentAddress+1
     sta zp_directoryAddress+1
+    sta dirAddress+1
 
     lda #0
     sta zp_linecount
     sta zp_linecount+1
-    jsr initRamLeft
-
+    sta zp_responseSize
+    sta zp_responseSize+1
+    
     lda #$31
     sta zp_pageType
 
@@ -229,3 +244,4 @@ writeToDirectory
 .entryBlocks    !word 0
 .txtDirOfDisk   !text "Directory of disk: ",0
 .txtDash        !text " - ",0
+

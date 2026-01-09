@@ -13,6 +13,22 @@
 
 !zone gopherRamToVram
 
+; copies a disk directory in the format of a gopher file to vram
+; that's different because the contentAddress is not at $1:0400
+copyGopherDirToVram
+    ldx #CONTENT_BANK
+    lda mmuBankConfig,X
+    sta zp_contentBank
+
+    ;initLinkTableAddress for directory
+    lda dirAddress
+    sta zp_linkTablePosition
+    lda dirAddress+1
+    sta zp_linkTablePosition+1
+
+    jmp +
+
+
 copyGopherToVram
     ldx #CONTENT_BANK
     lda mmuBankConfig,X
@@ -20,7 +36,7 @@ copyGopherToVram
     
     jsr initLinkTableAddress
 
-    jsr calculateLinkTableOffset
++   jsr calculateLinkTableOffset
 
     ; lines left to copy needs to be set accordingly
     sec

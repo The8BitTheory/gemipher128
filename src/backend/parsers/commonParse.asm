@@ -6,10 +6,6 @@ initParser
     lda #zp_contentAddress
     sta c_fetch_zp
 
-    ; setup indirect writing to bank 1
-    lda #zp_linkTablePosition
-    sta c_stash_zp
-
     lda zp_responseSize
     sta leftToParse
     lda zp_responseSize+1

@@ -7,6 +7,7 @@
 	"settings": {
 		"vs64.acmeInstallDir": "D:\\documents\\c128",
 		"vs64.viceExecutable": "D:\\prog\\GTK3VICE-3.9-win64-r45897\\bin\\x128.exe",
-		"vs64.viceArgs": ""
+		"vs64.viceArgs": "",
+		"vs64.viceTimeout": "20"
 	}
 }
