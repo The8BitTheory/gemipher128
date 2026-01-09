@@ -68,6 +68,8 @@ parseDirectory
     sta zp_memPtr+1
     jsr printHeaderLineUntilTab
 
+    +writeLnToDir txtEmptyLine  ; write an empty line on top. looks better
+
 ; parsing dir entries until end of dir
 -   jsr readNextByte    ;$01
     jsr readNextByte    ;$01
@@ -133,26 +135,145 @@ parseDirectory
     rts
 
 .handleDirEntry   ;blocks, name, type
-    lda #'i'
-    jsr writeToDirectory
+    sta zp_tempA
+
+    lda #0
+    sta .linePos
+
+    ;lda #'i'
+    ;jsr writeToDirectory
     lda #' '
-    jsr writeToDirectory
+    jsr writeToVisibleLine
 
     ; write blocks. zp_tempX was written after .skipZeroes
 -   ldy zp_tempX
     lda decResult,y
     beq +
+    jsr writeToVisibleLine
+    inc zp_tempX
+    jmp -
+
++   lda zp_tempA        ; this is the space character that was parsed but not displayed
+    jsr writeToVisibleLine
+    jsr writeToVisibleLine    ; write a second space character. makes the directory appear better imho
+
+-   jsr readNextByte        ; can be quote or space
+    cmp #$22                ; is quote?
+    beq +
+    jsr writeToVisibleLine
+    jmp -
+
+    
++   jsr writeToVisibleLine
+    
+    ; parse filename
+    ldy #0  ; index for filename
+    sty zp_tempY
+-   jsr readNextByte    ; the first byte should be a quote char
+    cmp #$22
+    beq .filenameDone   ; null byte. we're done with parsing the entry line
+    ldy zp_tempY
+    sta .filename,y                ; if yes, write to filename
+    inc zp_tempY
+    jsr writeToVisibleLine
+    jmp -
+
+.filenameDone
+    jsr writeToVisibleLine    ; the trailing quotes character
+
+    ldy zp_tempY
+    iny
+    lda #0
+    sta .filename,y             ; conclude .filename with null byte
+
+-   jsr readNextByte
+    cmp #' '    ; when space characters end, we'll parse the filetype
+    bne +
+    jsr writeToVisibleLine
+    jmp -
+
+; here comes the filetype. PRG, SEQ, REL, USR, DEL, ...
+; seq should be opened when pressing return (it's either a textfile or a gopher file)
+; directories should be opened and listed
+; all other filetypes should not do anything at the moment
++   sta .filetype
+    jsr writeToVisibleLine
+-   jsr readNextByte
+    beq .createGopherLine
+    jsr writeToVisibleLine
+    jmp -
+
+.createGopherLine
+    lda .filetype
+    cmp #'S'
+    beq +
+    lda #'i'
+    jmp ++
++   lda #$30
+++  jsr writeToDirectory
+
+    ldx #0
+    stx zp_tempX
+-   ldx zp_tempX
+    lda .visibleLine,x
+    jsr writeToDirectory
+    inc zp_tempX
+    dec .linePos
+    bne -
+    
+    lda .filetype
+    cmp #'S'
+    beq +
+    +writeLnToDir txtTrail
+    rts
+
+    
++   lda .txtTab
+    jsr writeToDirectory
+
+    ; selector
+    lda #'/'
+    jsr writeToDirectory
+    ldx #0
+    stx zp_tempX
+-   ldx zp_tempX
+    lda .filename,x
+    beq +
     jsr writeToDirectory
     inc zp_tempX
     jmp -
 
-+
--   jsr readNextByte    ; the first byte should be a quote char
+    
++   lda .txtTab
+    jsr writeToDirectory
+
+    ; host
+    ldx #0
+    stx zp_tempX
+-   ldx zp_tempX
+    lda .txtDevice,x
     beq +
     jsr writeToDirectory
+    inc zp_tempX
     jmp -
 
-+   +writeLnToDir txtTrail
++   lda .txtTab
+    jsr writeToDirectory
+
+    ; port
+    clc
+    lda deviceNumber
+    adc #$30
+    jsr writeToDirectory
+    ;lda .txtTab
+    ;jsr writeToDirectory
+    ;lda #' '
+    ;jsr writeToDirectory
+    lda #$0d
+    jsr writeToDirectory
+    lda #$0a
+    jsr writeToDirectory
+
     rts
 
 
@@ -240,9 +361,20 @@ writeToDirectory
 
     rts
 
+writeToVisibleLine
+    ldx .linePos
+    sta .visibleLine,x
+    inc .linePos
+    rts
+
+.filename       !fill 17,0  ; reserve one more byte, that will always be null
+.filetype       !byte 0     ; one byte to store filetype. first char of whatever it is
 .diskname       !fill 26,0
 .blocksFree     !fill 26,0
 .entryBlocks    !word 0
 .txtDirOfDisk   !text "Diskname: ",0
 .txtDash        !text " - ",0
-
+.txtTab         !byte $09
+.visibleLine    !fill 32,0
+.linePos        !byte 0
+.txtDevice      !text "device",0
