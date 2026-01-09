@@ -227,21 +227,22 @@ writeToDirectory
 +   rts
 
 .skipZeroes
-    ; skip leading zeroes
-    ldy #0
+    ; skip leading zeroes. if all zeroes, keep the last one (so we display "0" blocks)
     ldx #0
+    ldy #0
 -   lda decResult,x
-    beq ++  ; null byte found, we're done
     cmp #$30
     bne +
     iny
 +   inx
-    jmp -
-++  rts
+    cpx #4
+    bne -
+
+    rts
 
 .diskname       !fill 26,0
 .blocksFree     !fill 26,0
 .entryBlocks    !word 0
-.txtDirOfDisk   !text "Directory of disk: ",0
+.txtDirOfDisk   !text "Diskname: ",0
 .txtDash        !text " - ",0
 
