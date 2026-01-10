@@ -182,7 +182,7 @@ parseDirectory
     jsr writeToVisibleLine    ; the trailing quotes character
 
     ldy zp_tempY
-    iny
+    ;iny
     lda #0
     sta .filename,y             ; conclude .filename with null byte
 

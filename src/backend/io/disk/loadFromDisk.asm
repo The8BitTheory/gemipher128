@@ -13,18 +13,15 @@ loadDirectoryFromDisk
         ldy #>.filenameDirectory
         lda #1
 
-        jmp +
+        jsr prepareLoadOpen
 
+        ; we can't use BLOAD, as it can't go without two header bytes
+        jsr $ffd5       ;BLOAD
+        
+        jmp .concludeLoadOpen
 
-loadContentFromDisk
-        lda #0
-        sta fileOpError
-        sta .byteCount
-
-        LDA diskFilenameLength
-        LDX #<diskFilename
-        LDY #>diskFilename
-+       JSR $FFBD     ; call SETNAM
+prepareLoadOpen
+        JSR $FFBD     ; call SETNAM
 
         LDA #$02      ; file number 2
         ;LDX $BA       ; last used device number
@@ -41,9 +38,69 @@ loadContentFromDisk
         ldx #<.load_address
         ldy #>.load_address
         lda #0  ; 0=load, else=verify)
+
+        rts
+
+loadContentFromDisk
+        lda #0
+        sta fileOpError
+        sta .byteCount
+
+        LDA diskFilenameLength
+        LDX #<diskFilename
+        LDY #>diskFilename
+
+        jsr prepareLoadOpen
+        stx zp_memPtr
+        sty zp_memPtr+1
         
-        ; we can't use BLOAD, as it can't go without two header bytes
-        jsr $ffd5       ;BLOAD
+        ; do OPEN to read the first two bytes
+        ;jsr $ffc0       ; open
+
+        ; x: filenumber
+        ;ldx #$02
+        ;jsr $ffc6       ; jchkin
+        ;bcs .error
+
+        ;lda #zp_memPtr
+        ;sta c_stash_zp
+
+        ;jsr $ffcf       ; jbasin
+        ;ldy #0
+        ;ldx #zp_contentBank
+        ;jsr c_stash
+
+        ;jsr $ffcf       ; basin
+        ;iny
+        ;ldx #zp_contentBank
+        ;jsr c_stash
+
+        ;jsr $ffcc       ; clrch
+        ;jsr .concludeLoadOpen
+
+        lda #0
+        sta fileOpError
+        sta .byteCount
+
+        LDA diskFilenameLength
+        LDX #<diskFilename
+        LDY #>diskFilename
+
+        ;clc
+        ;lda .load_address
+        ;adc #2
+        ;sta .load_address
+        ;lda .load_address+1
+        ;adc #0
+        ;sta .load_address+1
+
+        jsr prepareLoadOpen
+
+        ; the rest of the content is loaded via BLOAD
+        jsr $ffd5      ; bload
+        
+        
+.concludeLoadOpen
         bcs .error
 
         ; write to content address here
