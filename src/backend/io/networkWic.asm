@@ -223,14 +223,14 @@ initRamLeft
 requestContentViaWiC64
     jsr initRamLeft
 
-    lda zp_perm_target
-    cmp #1
-    bne +
-    jsr initReu
-    jmp .afterMemoryInit
-+   cmp #2
-    bne +
-    jsr initGeoRam
+;    lda zp_perm_target
+;    cmp #1
+;    bne +
+;    jsr initReu
+;    jmp .afterMemoryInit
+;+   cmp #2
+;    bne +
+;    jsr initGeoRam
 ;    lda #0
 ;    sta zp_perm_target
 
@@ -369,19 +369,20 @@ requestContentViaWiC64
 
     jsr doFast
 
-    lda zp_perm_target
-    beq ++
+;    lda zp_perm_target
+;    beq ++
 
-    cmp #1
-    bne +
-    jsr readFromReu ; if we stored to REU, copy initial set of data to bank 1 for regular display
-    jmp ++
+;    cmp #1
+;    bne +
+;    jsr readFromReu ; if we stored to REU, copy initial set of data to bank 1 for regular display
+;    jmp ++
 
-+   cmp #2
-    bne ++
+;+   cmp #2
+;    bne ++
     ; jsr readFromGeoRam
 
-++  rts
+;++  
+    rts
 
 .endWithTimeout
 

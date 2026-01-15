@@ -3,11 +3,11 @@
 ; the different of this to "saveContentToDisk" is
 ; - writing the value in Acc to disk directly
 ; - no pre-defined diskWriteEndAddress. We write until either disk is full or download is done
-downloadDirectlyToDisk
-    jsr selectorToFilename
-    jsr .prepareDiskWrite
+;downloadDirectlyToDisk
+;    jsr selectorToFilename
+;    jsr .prepareDiskWrite
     ; writing to disk is called by the wic64 store instruction
-    jmp downloadWic2disk
+;    jmp downloadWic2disk
 
 finishDownload
     jmp .close

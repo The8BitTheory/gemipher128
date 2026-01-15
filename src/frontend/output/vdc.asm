@@ -7,19 +7,9 @@ initVdc
     ldx #26
     jsr A_to_vdc_reg_X
 
-    ;pal: 35 character rows (default: 40), reg 4 (40x8=320, 35*9=315 + 5 extra in reg5)
-    lda #35
-    ldx #4
-    jsr A_to_vdc_reg_X
-
-    lda #5
-    ldx #5
-    jsr A_to_vdc_reg_X
-
-    ; 9 scanlines per character (value 8 to reg 9)
-    lda #8
-    ldx #9
-    jsr A_to_vdc_reg_X
+    jsr .setScreenTo9Scanlines
+    lda #9
+    sta .nrScanlines
 
     ; reg 28 bit 4 select ram-type. 0=16kb, 1=64kb
     ldx #28
@@ -68,6 +58,48 @@ setBlockCopy
     ldx #24
     jsr vdc_reg_X_to_A
     ora #128
+    jmp A_to_vdc_reg_X
+
+switchScanlines
+    lda .nrScanlines
+    cmp #9
+    beq +
+    jsr .setScreenTo9Scanlines
+    lda #9
+    sta .nrScanlines
+    rts
+
++   jsr .setScreenTo8Scanlines
+    lda #8
+    sta .nrScanlines
+    rts
+
+.setScreenTo9Scanlines
+    ;pal: 35 character rows (default: 40), reg 4 (40x8=320, 35*9=315 + 5 extra in reg5)
+    lda #35
+    ldx #4
+    jsr A_to_vdc_reg_X
+
+    lda #5
+    ldx #5
+    jsr A_to_vdc_reg_X
+
+    ; 9 scanlines per character (value 8 to reg 9)
+    lda #8
+    ldx #9
+    jmp A_to_vdc_reg_X
+
+.setScreenTo8Scanlines
+    lda #38
+    ldx #4
+    jsr A_to_vdc_reg_X
+
+    lda #0
+    ldx #5
+    jsr A_to_vdc_reg_X
+
+    lda #7
+    ldx #9
     jmp A_to_vdc_reg_X
 
 ; moves lines 2-23 to 1-22. for scrolling down
@@ -152,5 +184,6 @@ moveLinesDown
 
 vdc_lineoffsets     !word   80, 160, 240, 320, 400, 480, 560, 640, 720, 800, 880, 960
                     !word 1040,1120,1200,1280,1360,1440,1520,1600,1680,1760,1840,1920
+.nrScanlines        !byte 9
 
 !src "src/lib/vdcbasic/vdcbasic.asm"

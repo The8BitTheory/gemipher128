@@ -110,6 +110,10 @@ getUserInput
 -   jsr k_getin
     beq -
 
+    cmp #'V'
+    jsr switchScanlines
+    jmp -
+
     cmp #'$'
     bne +
     jmp createDirectoryPage ; this jumps to copyGopherDone when finished
@@ -594,11 +598,11 @@ k_indsta
 !src "src/backend/io/disk/saveToDisk.asm"
 !src "src/backend/io/disk/disk.asm"
 !src "src/backend/io/disk/loadFromDisk.asm"
-!src "src/backend/io/wic2disk.asm"
+;!src "src/backend/io/wic2disk.asm"
 !src "src/frontend/output/vdc.asm"
 !src "src/history.asm"
-!src "src/backend/memory/georam.asm"
-!src "src/backend/memory/reu.asm"
+;!src "src/backend/memory/georam.asm"
+;!src "src/backend/memory/reu.asm"
 
 !src "src/backend/parsers/parseGopher.asm"
 !src "src/backend/parsers/parsePlainText.asm"
