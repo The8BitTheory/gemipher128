@@ -111,10 +111,11 @@ getUserInput
     beq -
 
     cmp #'V'
+    bne +
     jsr switchScanlines
     jmp -
 
-    cmp #'$'
++   cmp #'$'
     bne +
     jmp createDirectoryPage ; this jumps to copyGopherDone when finished
 

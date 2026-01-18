@@ -90,7 +90,7 @@ switchScanlines
     jmp A_to_vdc_reg_X
 
 .setScreenTo8Scanlines
-    lda #38
+    lda #39
     ldx #4
     jsr A_to_vdc_reg_X
 
