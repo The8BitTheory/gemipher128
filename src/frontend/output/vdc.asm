@@ -7,8 +7,9 @@ initVdc
     ldx #26
     jsr A_to_vdc_reg_X
 
-    jsr .setScreenTo9Scanlines
-    lda #9
+    ;jsr .setScreenTo9Scanlines
+    ;lda #9
+    lda #8
     sta .nrScanlines
 
     ; reg 28 bit 4 select ram-type. 0=16kb, 1=64kb

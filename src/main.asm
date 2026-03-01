@@ -110,10 +110,10 @@ getUserInput
 -   jsr k_getin
     beq -
 
-    cmp #'V'
-    bne +
-    jsr switchScanlines
-    jmp -
+    ;cmp #'V'
+    ;bne +
+    ;jsr switchScanlines
+    ;jmp -
 
 +   cmp #'$'
     bne +
