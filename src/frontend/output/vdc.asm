@@ -45,6 +45,7 @@ initVdc
     jsr vcc
     jsr doFast
 
+    lda #0  ; success. callers check the zero flag
     rts
 
 setBlockFill
